@@ -13378,6 +13378,33 @@ window.toggleFleetAnalysisPanel=function(){
 
         const minVal = efficiencies.length > 0 ? Math.floor(Math.min(...efficiencies) * 0.8) : 0;
 
+        const canvas = document.getElementById('fuelChart');
+
+        // Double-click a chart point to jump to the exact record row,
+        // using the same navigation/highlight behavior as the Invoice < OMR 500 warning.
+        canvas.ondblclick = function(event) {
+            if (!myChart || !validRecords.length) return;
+
+            const points = myChart.getElementsAtEventForMode(
+                event,
+                'nearest',
+                { intersect: true },
+                true
+            );
+
+            if (!points.length) return;
+
+            const selected = validRecords[points[0].index];
+            if (!selected || !selected.record) return;
+
+            const originalIndex = fuelRecords.indexOf(selected.record);
+            if (originalIndex === -1) return;
+
+            goToInvoiceWarningRecord(originalIndex);
+        };
+
+        canvas.style.cursor = validRecords.length ? 'crosshair' : 'default';
+
         myChart = new Chart(ctx, {
             type: 'line',
             data: {
