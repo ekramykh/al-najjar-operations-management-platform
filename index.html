@@ -13954,115 +13954,274 @@ window.toggleFleetAnalysisPanel=function(){
 <script>
 (() => {
   const $ = id => document.getElementById(id);
-  const status = (text, color="#fbbf24") => { $("cloudStatus").textContent=text; $("cloudStatus").style.color=color; };
-  const message = text => $("cloudMessage").textContent=text;
-  let client = null, channel = null, busy = false, lastSaved = "";
+  const status = (text, color="#fbbf24") => {
+    const el = $("cloudStatus");
+    if (el) { el.textContent=text; el.style.color=color; }
+  };
+  const message = text => {
+    const el = $("cloudMessage");
+    if (el) el.textContent=text;
+  };
+
+  let client = null;
+  let channel = null;
+  let busy = false;
+  let lastSaved = "";
+  let cloudDirty = false;
+  let cloudWriteQueue = Promise.resolve();
+
   const localUrl = localStorage.getItem("fuel_cloud_url") || "https://mykwxfifrjohhjhomegf.supabase.co";
-  const localKey = localStorage.getItem("fuel_cloud_key") || "sb_publishable_SfhtynG1iUjmsXjWF7eT7Q_NKOltEwF";
+  const localKey = localStorage.getItem("fuel_cloud_key") || "";
   $("cloudUrl").value = localUrl;
   $("cloudKey").value = localKey;
-  const setDirtyFlag = () => { try { isDataDirty = true; } catch(e) {} };
+
+  const setDirtyFlag = () => {
+    try { isDataDirty = true; } catch(e) {}
+  };
+
+  const currentSnapshot = () => JSON.stringify(fuelRecords);
+
+  function queueCloudWrite(snapshot) {
+    if (!client) return Promise.resolve();
+
+    cloudDirty = true;
+
+    cloudWriteQueue = cloudWriteQueue
+      .catch(() => {})
+      .then(async () => {
+        if (!client) return;
+
+        busy = true;
+        try {
+          const {error} = await client.from("fuel_shared_state").upsert({
+            id: "shared",
+            records: JSON.parse(snapshot),
+            updated_at: new Date().toISOString()
+          }, {onConflict:"id"});
+
+          if (error) throw error;
+
+          lastSaved = snapshot;
+          localStorage.setItem("fuel_system_records", snapshot);
+
+          // Only clear the dirty state if no newer local change happened
+          // while this write was in progress.
+          cloudDirty = (currentSnapshot() !== snapshot);
+
+          status("Connected & Synced", "#34d399");
+          message(cloudDirty
+            ? "A newer local change is waiting to be saved."
+            : "Latest data saved to the shared database.");
+        } catch(err) {
+          cloudDirty = true;
+          status("Save failed", "#f87171");
+          message("Sync failed: " + (err.message || err));
+        } finally {
+          busy = false;
+        }
+      });
+
+    return cloudWriteQueue;
+  }
 
   async function connect() {
-    if (!window.supabase?.createClient) throw new Error("Unable to load the connection library. Check your internet connection and reopen the page.");
-    const url = $("cloudUrl").value.trim(), key = $("cloudKey").value.trim();
-    const email = $("cloudEmail").value.trim(), password = $("cloudPassword").value;
-    if (!url || !key || !email || !password) throw new Error("Enter the project URL, public key, email, and password.");
+    if (!window.supabase?.createClient) {
+      throw new Error("Unable to load the connection library. Check your internet connection and reopen the page.");
+    }
+
+    const url = $("cloudUrl").value.trim();
+    const key = $("cloudKey").value.trim();
+    const email = $("cloudEmail").value.trim();
+    const password = $("cloudPassword").value;
+
+    if (!url || !key || !email || !password) {
+      throw new Error("Enter the project URL, public key, email, and password.");
+    }
+
     localStorage.setItem("fuel_cloud_url", url);
     localStorage.setItem("fuel_cloud_key", key);
+
     client = window.supabase.createClient(url, key);
-    const { data, error } = await client.auth.signInWithPassword({email, password});
+    const {data, error} = await client.auth.signInWithPassword({email, password});
     if (error) throw error;
     if (!data.session) throw new Error("Sign-in failed.");
+
     await startRealtime();
-    await pullCloud();
+
+    // On a fresh connection, preserve any local cloud-connected change
+    // instead of blindly replacing it with the server snapshot.
+    if (cloudDirty) {
+      await queueCloudWrite(currentSnapshot());
+    } else {
+      await pullCloud();
+    }
+
     status("Connected & Synced", "#34d399");
     $("cloudSettings").open = false;
     message("Connected. Changes are saved to the shared database and appear on connected devices.");
   }
 
-  async function pullCloud() {
+  async function pullCloud(options = {}) {
     if (!client) return;
-    const {data, error} = await client.from("fuel_shared_state").select("records,updated_at").eq("id","shared").maybeSingle();
+
+    const force = options.force === true;
+
+    // Never overwrite a local change that has not been confirmed in the cloud.
+    if (cloudDirty && !force) {
+      await queueCloudWrite(currentSnapshot());
+      return;
+    }
+
+    const {data, error} = await client
+      .from("fuel_shared_state")
+      .select("records,updated_at")
+      .eq("id","shared")
+      .maybeSingle();
+
     if (error) throw error;
+
     if (data && Array.isArray(data.records)) {
       fuelRecords = data.records;
       localStorage.setItem("fuel_system_records", JSON.stringify(fuelRecords));
       lastSaved = JSON.stringify(fuelRecords);
-      if (typeof sortRecordsArray === "function") sortRecordsArray(fuelRecords, currentSortColumn, currentSortDirection);
+      cloudDirty = false;
+
+      if (typeof sortRecordsArray === "function") {
+        sortRecordsArray(fuelRecords, currentSortColumn, currentSortDirection);
+      }
       if (typeof filterAndRender === "function") filterAndRender();
       if (typeof renderDashboard === "function") renderDashboard();
+
       message("Shared data loaded from the cloud.");
     } else {
-      await pushCloud();
+      await queueCloudWrite(currentSnapshot());
     }
   }
 
-  async function pushCloud() {
-    if (!client || busy) return;
-    busy = true;
-    try {
-      const snapshot = JSON.stringify(fuelRecords);
-      const {error} = await client.from("fuel_shared_state").upsert({
-        id:"shared", records:fuelRecords, updated_at:new Date().toISOString()
-      }, {onConflict:"id"});
-      if (error) throw error;
-      lastSaved = snapshot;
-      localStorage.setItem("fuel_system_records", snapshot);
-      status("Connected & Synced", "#34d399");
-      message("Latest data saved to the shared database.");
-    } catch(err) {
-      status("Save failed", "#f87171");
-      message("Sync failed: " + (err.message || err));
-    } finally { busy = false; }
+  async function pushCloud(snapshot = currentSnapshot()) {
+    return queueCloudWrite(snapshot);
   }
 
   async function startRealtime() {
-    if (channel) await client.removeChannel(channel);
-    channel = client.channel("fuel-shared-live")
-      .on("postgres_changes", {event:"*", schema:"public", table:"fuel_shared_state", filter:"id=eq.shared"}, payload => {
-        if (!payload.new?.records || busy) return;
-        const incoming = JSON.stringify(payload.new.records);
-        if (incoming === lastSaved) return;
-        fuelRecords = payload.new.records;
-        localStorage.setItem("fuel_system_records", incoming);
-        lastSaved = incoming;
-        if (typeof sortRecordsArray === "function") sortRecordsArray(fuelRecords, currentSortColumn, currentSortDirection);
-        if (typeof filterAndRender === "function") filterAndRender();
-        if (typeof renderDashboard === "function") renderDashboard();
-        message("A new update was received from another device.");
-      }).subscribe((state) => {
-        if (state === "SUBSCRIBED") status("Connected & Synced", "#34d399");
-        else if (state === "CHANNEL_ERROR" || state === "TIMED_OUT") status("Connection lost", "#f87171");
+    if (channel) {
+      await client.removeChannel(channel);
+      channel = null;
+    }
+
+    channel = client
+      .channel("fuel-shared-live")
+      .on(
+        "postgres_changes",
+        {event:"*", schema:"public", table:"fuel_shared_state", filter:"id=eq.shared"},
+        payload => {
+          if (!payload.new?.records) return;
+
+          const incoming = JSON.stringify(payload.new.records);
+
+          // Ignore the exact snapshot already confirmed by this device.
+          if (incoming === lastSaved) return;
+
+          // If this device has a local change waiting to be written, do not
+          // let an older remote event overwrite that local change.
+          if (cloudDirty) {
+            message("A remote update was received while a local change is waiting to be saved.");
+            return;
+          }
+
+          fuelRecords = payload.new.records;
+          localStorage.setItem("fuel_system_records", incoming);
+          lastSaved = incoming;
+
+          if (typeof sortRecordsArray === "function") {
+            sortRecordsArray(fuelRecords, currentSortColumn, currentSortDirection);
+          }
+          if (typeof filterAndRender === "function") filterAndRender();
+          if (typeof renderDashboard === "function") renderDashboard();
+
+          message("A new update was received from another device.");
+        }
+      )
+      .subscribe(state => {
+        if (state === "SUBSCRIBED") {
+          status("Connected & Synced", "#34d399");
+        } else if (state === "CHANNEL_ERROR" || state === "TIMED_OUT") {
+          status("Connection lost", "#f87171");
+        }
       });
   }
 
-  // Preserve the system's local backup while sending changes to the shared database.
+  // Preserve the system's local backup while reliably queueing every cloud
+  // write. The previous version silently discarded writes whenever busy=true.
   const originalSave = window.saveToLocalStorage;
   window.saveToLocalStorage = function() {
     if (originalSave) originalSave();
     setDirtyFlag();
-    if (client) pushCloud();
+    if (client) {
+      cloudDirty = true;
+      queueCloudWrite(currentSnapshot());
+    }
   };
-  window.addEventListener("online", () => { if (client) pullCloud().catch(e => message(e.message)); });
+
+  window.addEventListener("online", () => {
+    if (!client) return;
+    if (cloudDirty) {
+      queueCloudWrite(currentSnapshot()).catch(e => message(e.message));
+    } else {
+      pullCloud().catch(e => message(e.message));
+    }
+  });
+
   $("cloudConnect").addEventListener("click", async () => {
     $("cloudConnect").disabled = true;
-    try { await connect(); }
-    catch(err) { status("غير متصل", "#f87171"); message(err.message || String(err)); }
-    finally { $("cloudConnect").disabled = false; }
+    try {
+      await connect();
+    } catch(err) {
+      status("غير متصل", "#f87171");
+      message(err.message || String(err));
+    } finally {
+      $("cloudConnect").disabled = false;
+    }
   });
+
   $("cloudSyncNow").addEventListener("click", async () => {
-    if (!client) { message("Connect first from Connection Settings."); $("cloudSettings").open=true; return; }
-    try { await pullCloud(); await pushCloud(); } catch(err) { message(err.message || String(err)); }
+    if (!client) {
+      message("Connect first from Connection Settings.");
+      $("cloudSettings").open = true;
+      return;
+    }
+
+    try {
+      // Sync now means:
+      // 1) save an unsynced local edit, or
+      // 2) pull the current shared state when there is no local edit.
+      if (cloudDirty) {
+        await queueCloudWrite(currentSnapshot());
+      } else {
+        await pullCloud();
+      }
+    } catch(err) {
+      message(err.message || String(err));
+    }
   });
+
   $("cloudSignOut").addEventListener("click", async () => {
     if (client) await client.auth.signOut();
-    client=null; if(channel) channel=null;
-    status("Signed out"); message("You can sign in again from Connection Settings.");
+    client = null;
+    if (channel) {
+      channel = null;
+    }
+    cloudDirty = false;
+    status("Signed out");
+    message("You can sign in again from Connection Settings.");
   });
+
   $("cloudExport").addEventListener("click", () => {
     const blob = new Blob([JSON.stringify(fuelRecords,null,2)], {type:"application/json"});
-    const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download="fuel-records-backup.json"; a.click(); URL.revokeObjectURL(a.href);
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "fuel-records-backup.json";
+    a.click();
+    URL.revokeObjectURL(a.href);
   });
 })();
 </script>
