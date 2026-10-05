@@ -1632,8 +1632,268 @@
         .invoice-warning-cell span { color: #dc2626 !important; }
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style id="alnajjar-mobile-odoo-ui">
+/* ============================================================
+   AL-NAJJAR MOBILE ERP UI
+   Desktop is intentionally untouched: every rule below is scoped
+   to max-width: 767px and only affects the mobile presentation.
+   ============================================================ */
+#alnajjar-mobile-app{display:none}
+
+@media (max-width:767px){
+  html,body{width:100%;min-width:0;max-width:100%;overflow-x:hidden}
+  body{background:#f4f6f8!important;padding:0!important;margin:0!important}
+  body.modal-open{overflow:hidden!important}
+
+  /* Keep the established desktop application intact. */
+  body > .container{display:none!important}
+  body > #alnajjar-mobile-app{display:flex!important}
+
+  #alnajjar-mobile-app{
+    position:relative;min-height:100dvh;width:100%;box-sizing:border-box;
+    flex-direction:column;background:#f4f6f8;color:#172033;
+    font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    padding-bottom:74px;
+  }
+
+  .na-mobile-topbar{
+    position:sticky;top:0;z-index:80;height:64px;padding:0 16px;
+    display:flex;align-items:center;justify-content:space-between;
+    background:linear-gradient(135deg,#0b2140,#123c69);
+    color:#fff;box-shadow:0 4px 14px rgba(15,35,65,.18);
+  }
+  .na-mobile-brand{display:flex;align-items:center;gap:10px;min-width:0}
+  .na-mobile-brand-icon{
+    width:38px;height:38px;border-radius:11px;background:rgba(255,255,255,.12);
+    display:grid;place-items:center;border:1px solid rgba(255,255,255,.16);flex:none
+  }
+  .na-mobile-brand-icon svg{width:22px;height:22px;stroke:#fff;fill:none;stroke-width:1.8}
+  .na-mobile-brand-text{min-width:0}
+  .na-mobile-brand-text strong{display:block;font-size:14px;line-height:18px;white-space:nowrap}
+  .na-mobile-brand-text span{display:block;font-size:10px;color:#cbdcf0;white-space:nowrap}
+  .na-mobile-top-actions{display:flex;align-items:center;gap:7px}
+  .na-mobile-icon-btn{
+    width:38px;height:38px;border:1px solid rgba(255,255,255,.16);border-radius:11px;
+    background:rgba(255,255,255,.09);color:#fff;display:grid;place-items:center;
+    cursor:pointer;padding:0
+  }
+  .na-mobile-icon-btn svg{width:19px;height:19px;stroke:currentColor;fill:none;stroke-width:1.8}
+  .na-mobile-content{width:100%;box-sizing:border-box;padding:14px 14px 18px}
+  .na-mobile-view{display:none;animation:naMobileFade .18s ease}
+  .na-mobile-view.active{display:block}
+  @keyframes naMobileFade{from{opacity:.5;transform:translateY(3px)}to{opacity:1;transform:none}}
+
+  .na-mobile-welcome{
+    background:#fff;border:1px solid #e6eaf0;border-radius:16px;padding:15px;
+    box-shadow:0 2px 10px rgba(16,24,40,.04);margin-bottom:12px
+  }
+  .na-mobile-welcome-row{display:flex;align-items:center;justify-content:space-between;gap:10px}
+  .na-mobile-welcome h2{margin:0;font-size:19px;line-height:25px;color:#12233b}
+  .na-mobile-welcome p{margin:3px 0 0;color:#718096;font-size:11px}
+  .na-mobile-status{
+    display:inline-flex;align-items:center;gap:5px;padding:6px 8px;border-radius:999px;
+    background:#ecfdf3;color:#087443;font-size:10px;font-weight:700;white-space:nowrap
+  }
+  .na-mobile-status i{width:6px;height:6px;border-radius:50%;background:#12b76a}
+
+  .na-mobile-kpis{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin-bottom:12px}
+  .na-mobile-kpi{
+    min-width:0;background:#fff;border:1px solid #e6eaf0;border-radius:14px;padding:12px;
+    box-shadow:0 2px 9px rgba(16,24,40,.035)
+  }
+  .na-mobile-kpi-head{display:flex;align-items:center;gap:7px;color:#718096;font-size:10px;font-weight:600}
+  .na-mobile-kpi-icon{
+    width:28px;height:28px;border-radius:9px;background:#edf4fb;color:#1d5f9f;display:grid;place-items:center
+  }
+  .na-mobile-kpi-icon svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:1.8}
+  .na-mobile-kpi strong{display:block;margin-top:7px;font-size:20px;line-height:23px;color:#12233b}
+  .na-mobile-kpi small{font-size:9px;color:#98a2b3}
+
+  .na-mobile-section{
+    background:#fff;border:1px solid #e6eaf0;border-radius:16px;margin-bottom:12px;
+    box-shadow:0 2px 10px rgba(16,24,40,.035);overflow:hidden
+  }
+  .na-mobile-section-head{
+    display:flex;align-items:center;justify-content:space-between;gap:8px;
+    padding:13px 14px;border-bottom:1px solid #edf0f4
+  }
+  .na-mobile-section-head h3{margin:0;font-size:13px;color:#172033}
+  .na-mobile-section-head button{border:0;background:none;color:#1769aa;font-size:10px;font-weight:700;padding:3px}
+  .na-mobile-chart-box{height:185px;padding:8px 10px 10px}
+  .na-mobile-mini-bars{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;padding:12px}
+  .na-mobile-mini-bar{padding:10px;border-radius:11px;background:#f7f9fb;border:1px solid #edf0f4}
+  .na-mobile-mini-bar span{display:block;color:#667085;font-size:9px}
+  .na-mobile-mini-bar strong{display:block;color:#172033;font-size:16px;margin-top:3px}
+
+  .na-mobile-quick-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;padding:12px}
+  .na-mobile-quick{
+    min-width:0;border:1px solid #e5eaf0;background:#fff;border-radius:12px;padding:10px 5px;
+    display:flex;flex-direction:column;align-items:center;gap:5px;color:#344054;font-size:9px;
+    font-weight:700;cursor:pointer
+  }
+  .na-mobile-quick b{width:30px;height:30px;border-radius:9px;background:#edf4fb;color:#1769aa;display:grid;place-items:center;font-size:15px}
+  .na-mobile-quick:active{transform:scale(.97)}
+
+  .na-mobile-search-wrap{
+    position:sticky;top:64px;z-index:50;background:#f4f6f8;padding:8px 0 10px
+  }
+  .na-mobile-search{
+    height:43px;background:#fff;border:1px solid #dfe5ec;border-radius:13px;
+    display:flex;align-items:center;gap:8px;padding:0 12px;box-shadow:0 2px 8px rgba(16,24,40,.035)
+  }
+  .na-mobile-search svg{width:18px;height:18px;stroke:#98a2b3;fill:none;stroke-width:1.8;flex:none}
+  .na-mobile-search input{border:0;outline:0;width:100%;font-size:12px;background:transparent;color:#172033}
+  .na-mobile-filter-row{display:flex;gap:7px;overflow:auto;padding-top:7px}
+  .na-mobile-chip{
+    flex:none;border:1px solid #dfe5ec;background:#fff;color:#667085;border-radius:999px;
+    padding:7px 10px;font-size:9px;font-weight:700
+  }
+  .na-mobile-chip.active{background:#eaf3fb;color:#1769aa;border-color:#bcd8ee}
+
+  .na-mobile-records-count{padding:0 1px 8px;color:#667085;font-size:10px;font-weight:600}
+  .na-mobile-record-card{
+    background:#fff;border:1px solid #e5eaf0;border-radius:15px;padding:12px;margin-bottom:9px;
+    box-shadow:0 2px 9px rgba(16,24,40,.035);cursor:pointer
+  }
+  .na-mobile-record-card:active{transform:scale(.995)}
+  .na-mobile-record-top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px}
+  .na-mobile-record-main{min-width:0}
+  .na-mobile-record-date{font-size:10px;color:#98a2b3;margin-bottom:3px}
+  .na-mobile-record-car{font-size:13px;font-weight:800;color:#172033;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .na-mobile-record-driver{font-size:10px;color:#667085;margin-top:2px}
+  .na-mobile-eff{
+    flex:none;background:#ecfdf3;color:#087443;border-radius:9px;padding:7px 8px;text-align:right
+  }
+  .na-mobile-eff strong{display:block;font-size:13px}
+  .na-mobile-eff span{display:block;font-size:8px;margin-top:1px}
+  .na-mobile-record-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin-top:10px;padding-top:9px;border-top:1px solid #edf0f4}
+  .na-mobile-record-stat{min-width:0}
+  .na-mobile-record-stat span{display:block;color:#98a2b3;font-size:8px}
+  .na-mobile-record-stat strong{display:block;color:#344054;font-size:10px;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .na-mobile-record-arrow{color:#98a2b3;font-size:16px}
+
+  .na-mobile-empty{padding:35px 15px;text-align:center;color:#98a2b3;font-size:12px}
+  .na-mobile-detail{
+    position:fixed;inset:0;background:#f4f6f8;z-index:120;display:none;overflow:auto
+  }
+  .na-mobile-detail.active{display:block}
+  .na-mobile-detail-head{
+    position:sticky;top:0;z-index:5;height:60px;padding:0 14px;background:#fff;border-bottom:1px solid #e6eaf0;
+    display:flex;align-items:center;gap:10px
+  }
+  .na-mobile-back{border:0;background:#edf4fb;color:#1769aa;width:36px;height:36px;border-radius:10px;font-size:18px}
+  .na-mobile-detail-head strong{font-size:14px;color:#172033}
+  .na-mobile-detail-body{padding:14px}
+  .na-mobile-detail-card{background:#fff;border:1px solid #e6eaf0;border-radius:16px;padding:14px;margin-bottom:10px}
+  .na-mobile-detail-title{font-size:17px;font-weight:800;color:#172033;margin-bottom:3px}
+  .na-mobile-detail-sub{font-size:10px;color:#667085}
+  .na-mobile-detail-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin-top:13px}
+  .na-mobile-detail-item{background:#f8fafc;border-radius:10px;padding:9px;min-width:0}
+  .na-mobile-detail-item span{display:block;color:#98a2b3;font-size:8px}
+  .na-mobile-detail-item strong{display:block;color:#344054;font-size:11px;margin-top:3px;word-break:break-word}
+  .na-mobile-detail-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+  .na-mobile-primary,.na-mobile-secondary{
+    height:42px;border-radius:11px;font-weight:800;font-size:11px;cursor:pointer
+  }
+  .na-mobile-primary{border:0;background:#1769aa;color:#fff}
+  .na-mobile-secondary{border:1px solid #dfe5ec;background:#fff;color:#344054}
+
+  .na-mobile-fleet-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+  .na-mobile-fleet-card{background:#fff;border:1px solid #e5eaf0;border-radius:14px;padding:12px}
+  .na-mobile-fleet-card .fleet-car{font-size:12px;font-weight:800;color:#172033;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .na-mobile-fleet-card .fleet-value{font-size:20px;font-weight:800;color:#1769aa;margin-top:7px}
+  .na-mobile-fleet-card small{font-size:8px;color:#98a2b3}
+  .na-mobile-fleet-row{display:flex;justify-content:space-between;gap:8px;border-top:1px solid #edf0f4;margin-top:8px;padding-top:8px;font-size:9px;color:#667085}
+  .na-mobile-fleet-row strong{color:#344054}
+
+  .na-mobile-more-list{background:#fff;border:1px solid #e5eaf0;border-radius:16px;overflow:hidden}
+  .na-mobile-more-item{
+    width:100%;border:0;border-bottom:1px solid #edf0f4;background:#fff;min-height:54px;
+    display:flex;align-items:center;gap:12px;padding:0 14px;text-align:left;color:#172033;cursor:pointer
+  }
+  .na-mobile-more-item:last-child{border-bottom:0}
+  .na-mobile-more-icon{width:32px;height:32px;border-radius:9px;background:#edf4fb;color:#1769aa;display:grid;place-items:center;font-size:15px;flex:none}
+  .na-mobile-more-text{min-width:0;flex:1}
+  .na-mobile-more-text strong{display:block;font-size:11px}
+  .na-mobile-more-text span{display:block;color:#98a2b3;font-size:8px;margin-top:2px}
+  .na-mobile-more-arrow{color:#98a2b3;font-size:15px}
+
+  .na-mobile-bottom{
+    position:fixed;left:0;right:0;bottom:0;height:68px;z-index:100;
+    background:rgba(255,255,255,.97);backdrop-filter:blur(12px);
+    border-top:1px solid #e6eaf0;display:grid;grid-template-columns:repeat(4,1fr);
+    padding-bottom:env(safe-area-inset-bottom);box-sizing:content-box
+  }
+  .na-mobile-nav{
+    border:0;background:transparent;color:#98a2b3;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;gap:4px;font-size:8px;font-weight:700;cursor:pointer
+  }
+  .na-mobile-nav svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.8}
+  .na-mobile-nav.active{color:#1769aa}
+  .na-mobile-nav.active .na-mobile-nav-icon{background:#eaf3fb;border-radius:9px;padding:3px}
+
+  /* Existing desktop modal becomes a touch-first full-screen mobile form. */
+  .record-modal-overlay,.change-password-modal,.modal-overlay{z-index:1000!important}
+  .record-modal-box{
+    width:100%!important;max-width:none!important;height:100dvh!important;max-height:none!important;
+    border-radius:0!important;padding:16px!important;box-sizing:border-box!important
+  }
+  .record-modal-box .form-panel-title{position:sticky;top:-16px;z-index:3;background:var(--bg-surface);padding-top:8px}
+  .record-modal-box input,.record-modal-box select,.record-modal-box textarea{
+    min-height:44px!important;font-size:16px!important
+  }
+  .record-modal-box button{min-height:42px}
+}
+</style>
+
 </head>
 <body class="">
+
+
+<!-- Odoo-like mobile ERP layer. Hidden on desktop and shares the existing data/functions. -->
+<div id="alnajjar-mobile-app" aria-label="AlNajjar Mobile ERP">
+  <div class="na-mobile-topbar">
+    <div class="na-mobile-brand">
+      <div class="na-mobile-brand-icon">
+        <svg viewBox="0 0 24 24"><path d="M3 22V4a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v18"></path><path d="M15 7h2a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2h-2"></path><path d="M7 9h4M7 13h4"></path></svg>
+      </div>
+      <div class="na-mobile-brand-text"><strong>AlNajjar ERP</strong><span>Operations Management</span></div>
+    </div>
+    <div class="na-mobile-top-actions">
+      <button class="na-mobile-icon-btn" type="button" title="Sync" onclick="naMobileSync()">
+        <svg viewBox="0 0 24 24"><path d="M20 11a8 8 0 0 0-14.9-4M4 5v4h4"></path><path d="M4 13a8 8 0 0 0 14.9 4M20 19v-4h-4"></path></svg>
+      </button>
+      <button class="na-mobile-icon-btn" type="button" title="More" onclick="naMobileGo('more')">
+        <svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.2"></circle><circle cx="12" cy="12" r="1.2"></circle><circle cx="19" cy="12" r="1.2"></circle></svg>
+      </button>
+    </div>
+  </div>
+
+  <main class="na-mobile-content">
+    <section id="na-mobile-home" class="na-mobile-view active"></section>
+    <section id="na-mobile-records" class="na-mobile-view"></section>
+    <section id="na-mobile-fleet" class="na-mobile-view"></section>
+    <section id="na-mobile-more" class="na-mobile-view"></section>
+  </main>
+
+  <div id="na-mobile-detail" class="na-mobile-detail"></div>
+
+  <nav class="na-mobile-bottom" aria-label="Mobile navigation">
+    <button class="na-mobile-nav active" data-view="home" onclick="naMobileGo('home')">
+      <span class="na-mobile-nav-icon"><svg viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5"></path><path d="M5 10v10h14V10M9 20v-6h6v6"></path></svg></span>Home
+    </button>
+    <button class="na-mobile-nav" data-view="records" onclick="naMobileGo('records')">
+      <span class="na-mobile-nav-icon"><svg viewBox="0 0 24 24"><path d="M6 4h12v16H6z"></path><path d="M9 8h6M9 12h6M9 16h4"></path></svg></span>Records
+    </button>
+    <button class="na-mobile-nav" data-view="fleet" onclick="naMobileGo('fleet')">
+      <span class="na-mobile-nav-icon"><svg viewBox="0 0 24 24"><path d="M3 17h18M5 17l1-6h12l1 6"></path><circle cx="8" cy="18" r="2"></circle><circle cx="16" cy="18" r="2"></circle><path d="M7 11l2-4h6l2 4"></path></svg></span>Fleet
+    </button>
+    <button class="na-mobile-nav" data-view="more" onclick="naMobileGo('more')">
+      <span class="na-mobile-nav-icon"><svg viewBox="0 0 24 24"><path d="M4 5h16v14H4z"></path><path d="M8 9h8M8 13h5"></path></svg></span>More
+    </button>
+  </nav>
+</div>
 
 <div class="container">
     <header>
@@ -13123,6 +13383,7 @@ window.toggleFleetAnalysisPanel=function(){
         renderFinancialLineChart(chartRecords);
         updateFormAndFilterDatalists();
         syncActionsBarWidth();
+        if (typeof renderMobileAll === 'function') renderMobileAll();
     }
 
     function executeChartAction() {
@@ -13313,7 +13574,225 @@ window.toggleFleetAnalysisPanel=function(){
                 htmlTable += '</tr>';
             });
 
-            htmlTable += '</table></body></html>';
+            htmlTable += '</table>
+<script id="alnajjar-mobile-logic">
+(function(){
+  let mobileView = 'home';
+  let mobileQuery = '';
+  let mobileCar = '';
+
+  function esc(v){
+    if (typeof escapeHtml === 'function') return escapeHtml(String(v ?? ''));
+    return String(v ?? '').replace(/[&<>"']/g,s=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s]));
+  }
+  function n(v){ const x=Number(v); return Number.isFinite(x)?x:0; }
+  function eff(r){
+    const km = typeof calculateVariantKm==='function' ? calculateVariantKm(r.lastKm,r.currentKm) : (n(r.currentKm)-n(r.lastKm));
+    return n(r.fuel)>0 ? km/n(r.fuel) : 0;
+  }
+  function fmt(v,d=2){ return n(v).toLocaleString(undefined,{minimumFractionDigits:d,maximumFractionDigits:d}); }
+
+  window.naMobileGo = function(view){
+    mobileView=view;
+    document.querySelectorAll('.na-mobile-view').forEach(x=>x.classList.remove('active'));
+    const target=document.getElementById('na-mobile-'+view);
+    if(target) target.classList.add('active');
+    document.querySelectorAll('.na-mobile-nav').forEach(x=>x.classList.toggle('active',x.dataset.view===view));
+    if(view==='home') renderMobileHome();
+    if(view==='records') renderMobileRecords();
+    if(view==='fleet') renderMobileFleet();
+    if(view==='more') renderMobileMore();
+    window.scrollTo({top:0,behavior:'instant'});
+  };
+
+  window.naMobileSync = function(){
+    const b=document.getElementById('cloudSyncNow');
+    if(b){ b.click(); setTimeout(()=>renderMobileAll(),700); }
+    else if(typeof pullCloud==='function'){ pullCloud().then(()=>renderMobileAll()); }
+  };
+
+  window.naMobileOpenRecord = function(index){
+    const r=fuelRecords[index]; if(!r) return;
+    const v=eff(r);
+    const detail=document.getElementById('na-mobile-detail');
+    detail.innerHTML=`
+      <div class="na-mobile-detail-head">
+        <button class="na-mobile-back" onclick="naMobileCloseDetail()">‹</button>
+        <strong>Record Details</strong>
+      </div>
+      <div class="na-mobile-detail-body">
+        <div class="na-mobile-detail-card">
+          <div class="na-mobile-detail-title">${esc(r.car||'Vehicle')}</div>
+          <div class="na-mobile-detail-sub">${esc(r.date||'-')} · ${esc(r.driver||'-')}</div>
+          <div class="na-mobile-detail-grid">
+            <div class="na-mobile-detail-item"><span>Fuel</span><strong>${fmt(r.fuel)} L</strong></div>
+            <div class="na-mobile-detail-item"><span>Efficiency</span><strong>${fmt(v)} KM/L</strong></div>
+            <div class="na-mobile-detail-item"><span>Last KM</span><strong>${fmt(r.lastKm)}</strong></div>
+            <div class="na-mobile-detail-item"><span>Current KM</span><strong>${fmt(r.currentKm)}</strong></div>
+            <div class="na-mobile-detail-item"><span>Invoice No.</span><strong>${esc(r.invoiceNumber||'-')}</strong></div>
+            <div class="na-mobile-detail-item"><span>Invoice Amount</span><strong>${fmt(r.invoiceAmount,3)} OMR</strong></div>
+            <div class="na-mobile-detail-item"><span>Site</span><strong>${esc(r.site||'-')}</strong></div>
+            <div class="na-mobile-detail-item"><span>Delivery No.</span><strong>${esc(r.deliveryNumber||'-')}</strong></div>
+            <div class="na-mobile-detail-item"><span>Trip 1</span><strong>${esc(r.trip1||'-')}</strong></div>
+            <div class="na-mobile-detail-item"><span>Trip 2</span><strong>${esc(r.trip2||'-')}</strong></div>
+          </div>
+        </div>
+        <div class="na-mobile-detail-actions">
+          <button class="na-mobile-primary" onclick="naMobileEditRecord(${index})">Edit Record</button>
+          <button class="na-mobile-secondary" onclick="naMobileCloseDetail()">Back to Records</button>
+        </div>
+      </div>`;
+    detail.classList.add('active');
+  };
+
+  window.naMobileCloseDetail=function(){
+    const d=document.getElementById('na-mobile-detail'); if(d)d.classList.remove('active');
+  };
+  window.naMobileEditRecord=function(index){
+    naMobileCloseDetail();
+    if(typeof editRecord==='function') editRecord(index);
+  };
+
+  function renderMobileHome(){
+    const root=document.getElementById('na-mobile-home'); if(!root)return;
+    const records=fuelRecords||[];
+    let fuel=0,km=0,count=0;
+    records.forEach(r=>{const f=n(r.fuel);const k=typeof calculateVariantKm==='function'?calculateVariantKm(r.lastKm,r.currentKm):n(r.currentKm)-n(r.lastKm);fuel+=f;if(k>0)km+=k;if(f>0)count++;});
+    const avg=fuel>0?km/fuel:0;
+    const latest=[...records].sort((a,b)=>(parseFlexibleDate(b.date)?.getTime()||0)-(parseFlexibleDate(a.date)?.getTime()||0)).slice(0,4);
+    const merc=records.filter(r=>(r.car||'').toUpperCase().includes('MERC'));
+    const volvo=records.filter(r=>(r.car||'').toUpperCase().includes('VOLVO'));
+    const fleetEff=list=>{let f=0,k=0;list.forEach(r=>{f+=n(r.fuel);k+=typeof calculateVariantKm==='function'?Math.max(0,calculateVariantKm(r.lastKm,r.currentKm)):Math.max(0,n(r.currentKm)-n(r.lastKm));});return f?k/f:0;};
+    root.innerHTML=`
+      <div class="na-mobile-welcome">
+        <div class="na-mobile-welcome-row">
+          <div><h2>Operations Dashboard</h2><p>Fleet, fuel & delivery control</p></div>
+          <span class="na-mobile-status"><i></i>Synced</span>
+        </div>
+      </div>
+      <div class="na-mobile-kpis">
+        <div class="na-mobile-kpi"><div class="na-mobile-kpi-head"><span class="na-mobile-kpi-icon">▣</span>Records</div><strong>${records.length.toLocaleString()}</strong><small>Total registered records</small></div>
+        <div class="na-mobile-kpi"><div class="na-mobile-kpi-head"><span class="na-mobile-kpi-icon">⛽</span>Fuel</div><strong>${fmt(fuel)}</strong><small>Liters consumed</small></div>
+        <div class="na-mobile-kpi"><div class="na-mobile-kpi-head"><span class="na-mobile-kpi-icon">↗</span>Total KM</div><strong>${fmt(km)}</strong><small>Recorded distance</small></div>
+        <div class="na-mobile-kpi"><div class="na-mobile-kpi-head"><span class="na-mobile-kpi-icon">✓</span>KM / L</div><strong>${fmt(avg)}</strong><small>Overall efficiency</small></div>
+      </div>
+      <div class="na-mobile-section">
+        <div class="na-mobile-section-head"><h3>Fuel Efficiency Trend</h3><button onclick="naMobileGo('records')">View records</button></div>
+        <div class="na-mobile-mini-bars">
+          <div class="na-mobile-mini-bar"><span>Mercedes</span><strong>${fmt(fleetEff(merc))} KM/L</strong></div>
+          <div class="na-mobile-mini-bar"><span>Volvo</span><strong>${fmt(fleetEff(volvo))} KM/L</strong></div>
+        </div>
+      </div>
+      <div class="na-mobile-section">
+        <div class="na-mobile-section-head"><h3>Quick Actions</h3></div>
+        <div class="na-mobile-quick-grid">
+          <button class="na-mobile-quick" onclick="openRecordModal()"><b>＋</b>Add</button>
+          <button class="na-mobile-quick" onclick="naMobileGo('records')"><b>▤</b>Records</button>
+          <button class="na-mobile-quick" onclick="naMobileGo('fleet')"><b>▱</b>Fleet</button>
+          <button class="na-mobile-quick" onclick="naMobileExport()"><b>⇧</b>Export</button>
+        </div>
+      </div>
+      <div class="na-mobile-section">
+        <div class="na-mobile-section-head"><h3>Recent Records</h3><button onclick="naMobileGo('records')">See all</button></div>
+        ${latest.length?latest.map(r=>{const i=fuelRecords.indexOf(r);return mobileCard(r,i,true)}).join(''):'<div class="na-mobile-empty">No records available.</div>'}
+      </div>`;
+  }
+
+  function mobileCard(r,i,compact){
+    const v=eff(r);
+    return `<div class="na-mobile-record-card" onclick="naMobileOpenRecord(${i})">
+      <div class="na-mobile-record-top"><div class="na-mobile-record-main"><div class="na-mobile-record-date">${esc(r.date||'-')}</div><div class="na-mobile-record-car">${esc(r.car||'-')}</div><div class="na-mobile-record-driver">${esc(r.driver||'-')}</div></div>
+      <div class="na-mobile-eff"><strong>${fmt(v)}</strong><span>KM/L</span></div></div>
+      <div class="na-mobile-record-grid"><div class="na-mobile-record-stat"><span>Fuel</span><strong>${fmt(r.fuel)} L</strong></div><div class="na-mobile-record-stat"><span>Invoice</span><strong>${esc(r.invoiceNumber||'-')}</strong></div><div class="na-mobile-record-stat"><span>Site</span><strong>${esc(r.site||'-')}</strong></div></div>
+    </div>`;
+  }
+
+  function renderMobileRecords(){
+    const root=document.getElementById('na-mobile-records'); if(!root)return;
+    const list=(fuelRecords||[]).map((r,i)=>({r,i})).filter(x=>{
+      const q=mobileQuery.toLowerCase().trim();
+      const text=[x.r.date,x.r.car,x.r.driver,x.r.invoiceNumber,x.r.site,x.r.deliveryNumber,x.r.trip1,x.r.trip2].join(' ').toLowerCase();
+      return (!q||text.includes(q))&&(!mobileCar||x.r.car===mobileCar);
+    });
+    const cars=[...new Set((fuelRecords||[]).map(r=>r.car).filter(Boolean))];
+    root.innerHTML=`
+      <div class="na-mobile-search-wrap">
+        <div class="na-mobile-search"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"></circle><path d="m16 16 5 5"></path></svg><input value="${esc(mobileQuery)}" oninput="naMobileSetQuery(this.value)" placeholder="Search vehicle, driver, invoice, site..."></div>
+        <div class="na-mobile-filter-row"><button class="na-mobile-chip ${!mobileCar?'active':''}" onclick="naMobileSetCar('')">All vehicles</button>${cars.map(c=>`<button class="na-mobile-chip ${mobileCar===c?'active':''}" onclick="naMobileSetCar(${JSON.stringify(c).replace(/"/g,'&quot;')})">${esc(c)}</button>`).join('')}</div>
+      </div>
+      <div class="na-mobile-records-count">${list.length.toLocaleString()} record${list.length===1?'':'s'} found</div>
+      ${list.length?list.map(x=>mobileCard(x.r,x.i,false)).join(''):'<div class="na-mobile-empty">No matching records.</div>'}`;
+  }
+  window.naMobileSetQuery=function(v){mobileQuery=v;renderMobileRecords()};
+  window.naMobileSetCar=function(v){mobileCar=v;renderMobileRecords()};
+
+  function renderMobileFleet(){
+    const root=document.getElementById('na-mobile-fleet'); if(!root)return;
+    const map={};
+    (fuelRecords||[]).forEach(r=>{
+      const car=r.car||'Unknown Vehicle';
+      if(!map[car])map[car]={car,trips:0,km:0,fuel:0};
+      map[car].trips++;
+      map[car].km+=typeof calculateVariantKm==='function'?Math.max(0,calculateVariantKm(r.lastKm,r.currentKm)):Math.max(0,n(r.currentKm)-n(r.lastKm));
+      map[car].fuel+=n(r.fuel);
+    });
+    const vehicles=Object.values(map).sort((a,b)=>a.car.localeCompare(b.car));
+    root.innerHTML=`
+      <div class="na-mobile-welcome"><div class="na-mobile-welcome-row"><div><h2>Fleet Analysis</h2><p>Vehicle performance from registered fuel records</p></div><span class="na-mobile-status"><i></i>Live data</span></div></div>
+      <div class="na-mobile-fleet-grid">
+        ${vehicles.length?vehicles.map(v=>`<div class="na-mobile-fleet-card"><div class="fleet-car">${esc(v.car)}</div><div class="fleet-value">${fmt(v.fuel? v.km/v.fuel:0)}</div><small>Actual KM/L</small><div class="na-mobile-fleet-row"><span>Trips <strong>${v.trips}</strong></span><span>Fuel <strong>${fmt(v.fuel)} L</strong></span></div><div class="na-mobile-fleet-row"><span>Total KM</span><strong>${fmt(v.km)}</strong></div></div>`).join(''):'<div class="na-mobile-empty">No vehicle data.</div>'}
+      </div>
+      <div class="na-mobile-section" style="margin-top:12px"><div class="na-mobile-section-head"><h3>Management Tools</h3></div>
+        <button class="na-mobile-more-item" onclick="naMobileOpenDesktopFleet()"><span class="na-mobile-more-icon">📊</span><span class="na-mobile-more-text"><strong>Fleet Analysis & Vehicle Settings</strong><span>Open the complete analysis and vehicle standards</span></span><span class="na-mobile-more-arrow">›</span></button>
+      </div>`;
+  }
+
+  window.naMobileOpenDesktopFleet=function(){
+    const c=document.querySelector('body > .container');
+    const p=document.getElementById('fleetAnalysisPanel');
+    if(!c||!p)return;
+    c.style.display='block';
+    p.classList.add('fleet-analysis-open');
+    p.scrollIntoView({behavior:'smooth',block:'start'});
+  };
+
+  function renderMobileMore(){
+    const root=document.getElementById('na-mobile-more'); if(!root)return;
+    root.innerHTML=`
+      <div class="na-mobile-welcome"><h2>More</h2><p>System actions and administration</p></div>
+      <div class="na-mobile-more-list">
+        <button class="na-mobile-more-item" onclick="openRecordModal()"><span class="na-mobile-more-icon">＋</span><span class="na-mobile-more-text"><strong>Add New Record</strong><span>Create a new fuel/refueling entry</span></span><span class="na-mobile-more-arrow">›</span></button>
+        <button class="na-mobile-more-item" onclick="naMobileImport()"><span class="na-mobile-more-icon">⇩</span><span class="na-mobile-more-text"><strong>Import Excel / CSV</strong><span>Load authorized records from a file</span></span><span class="na-mobile-more-arrow">›</span></button>
+        <button class="na-mobile-more-item" onclick="naMobileExport()"><span class="na-mobile-more-icon">⇧</span><span class="na-mobile-more-text"><strong>Export Data</strong><span>Excel, CSV, HTML or PDF</span></span><span class="na-mobile-more-arrow">›</span></button>
+        <button class="na-mobile-more-item" onclick="openChangePasswordModal()"><span class="na-mobile-more-icon">🔑</span><span class="na-mobile-more-text"><strong>Change Password</strong><span>Update system authorization</span></span><span class="na-mobile-more-arrow">›</span></button>
+        <button class="na-mobile-more-item" onclick="naMobileSync()"><span class="na-mobile-more-icon">↻</span><span class="na-mobile-more-text"><strong>Sync Now</strong><span>Sync shared records with the cloud</span></span><span class="na-mobile-more-arrow">›</span></button>
+        <button class="na-mobile-more-item" onclick="naMobileOpenDesktopFleet()"><span class="na-mobile-more-icon">⚙</span><span class="na-mobile-more-text"><strong>Vehicle Settings</strong><span>Fleet standards and service settings</span></span><span class="na-mobile-more-arrow">›</span></button>
+      </div>`;
+  }
+
+  window.naMobileExport=function(){
+    const s=document.getElementById('exportFormat'); if(s)s.value='xlsx';
+    if(typeof exportData==='function') exportData();
+  };
+  window.naMobileImport=function(){
+    if(typeof checkUploadPermission==='function'){
+      const fake={preventDefault:function(){}};
+      checkUploadPermission(fake);
+    }
+  };
+
+  function renderMobileAll(){renderMobileHome();if(mobileView==='records')renderMobileRecords();if(mobileView==='fleet')renderMobileFleet();if(mobileView==='more')renderMobileMore();}
+  window.renderMobileAll=renderMobileAll;
+  window.renderMobileHome=renderMobileHome;
+  window.renderMobileRecords=renderMobileRecords;
+  window.renderMobileFleet=renderMobileFleet;
+
+  // First paint and responsive refresh.
+  document.addEventListener('DOMContentLoaded',function(){setTimeout(renderMobileAll,60);});
+})();
+</script>
+
+</body></html>';
             contentString = htmlTable;
             mimeType = 'application/vnd.ms-excel;charset=utf-8;';
         }
