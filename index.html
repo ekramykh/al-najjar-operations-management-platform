@@ -13368,8 +13368,35 @@ window.toggleFleetAnalysisPanel=function(){
         const dates = validRecords.map(item => item.record.date + ` (${item.record.car})`);
         const efficiencies = validRecords.map(item => parseFloat(item.eff.toFixed(2)));
 
-        const ctx = document.getElementById('fuelChart').getContext('2d');
+        const canvas = document.getElementById('fuelChart');
+        const ctx = canvas.getContext('2d');
         if (myChart) { myChart.destroy(); }
+
+        // Double-click any efficiency point to open the exact underlying fuel record.
+        // The chart is date-sorted, so we keep the original record object with each point
+        // and resolve its current index in fuelRecords before opening the edit modal.
+        canvas.ondblclick = function(event) {
+            if (!myChart || !validRecords.length) return;
+            const points = myChart.getElementsAtEventForMode(
+                event,
+                'nearest',
+                { intersect: true },
+                true
+            );
+            if (!points.length) return;
+
+            const pointIndex = points[0].index;
+            const selected = validRecords[pointIndex];
+            if (!selected || !selected.record) return;
+
+            const recordIndex = fuelRecords.indexOf(selected.record);
+            if (recordIndex === -1) return;
+
+            if (typeof editRecord === 'function') {
+                editRecord(recordIndex);
+            }
+        };
+        canvas.style.cursor = validRecords.length ? 'crosshair' : 'default';
 
         const gradientFill = ctx.createLinearGradient(0, 0, 0, 420);
         gradientFill.addColorStop(0, 'rgba(59, 130, 246, 0.25)');
