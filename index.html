@@ -14215,8 +14215,36 @@ window.toggleFleetAnalysisPanel=function(){
     }
   });
 
+  async function ensureCloudClient() {
+    if (client) return true;
+    if (!window.supabase?.createClient) return false;
+
+    const url = $("cloudUrl").value.trim();
+    const key = $("cloudKey").value.trim();
+    if (!url || !key) return false;
+
+    try {
+      client = window.supabase.createClient(url, key);
+      const {data, error} = await client.auth.getSession();
+      if (error || !data?.session) {
+        client = null;
+        return false;
+      }
+      await startRealtime();
+      return true;
+    } catch (err) {
+      client = null;
+      message(err.message || String(err));
+      return false;
+    }
+  }
+
   $("cloudSyncNow").addEventListener("click", async () => {
-    if (!client) {
+    status("Synchronizing…", "#fbbf24");
+    message("Synchronizing with the shared database…");
+
+    if (!(await ensureCloudClient())) {
+      status("Connection required", "#fbbf24");
       message("Connect first from Connection Settings.");
       $("cloudSettings").open = true;
       return;
@@ -14232,7 +14260,8 @@ window.toggleFleetAnalysisPanel=function(){
         await pullCloud();
       }
     } catch(err) {
-      message(err.message || String(err));
+      status("Sync failed", "#f87171");
+      message("Sync failed: " + (err.message || String(err)));
     }
   });
 
@@ -14333,7 +14362,7 @@ window.nafExport=function(){var e=document.getElementById('cloudExport');if(e)e.
 window.nafImport=function(){var e=document.getElementById('excelFileInput');if(e)e.click();else status('Import unavailable',false)}
 window.nafOpenCloud=function(){var p=document.getElementById('cloudSyncPanel');if(!p){status('Cloud settings unavailable',false);return}if(p.parentElement!==document.body)document.body.appendChild(p);p.classList.add('naf-cloud-mobile','naf-cloud-mobile-open');var s=document.getElementById('cloudSettings');if(s)s.open=true}
 window.nafCloseCloud=function(){var p=document.getElementById('cloudSyncPanel');if(p)p.classList.remove('naf-cloud-mobile-open')}
-window.nafSync=function(){var e=document.getElementById('cloudSyncNow');if(!e){status('Sync control unavailable',false);return}status('Synchronizing…',true);e.click();var t=0,id=setInterval(function(){nafRefreshAll();if(++t>=10){clearInterval(id);status('Sync request sent',true)}},350)}
+window.nafSync=async function(){var e=document.getElementById('cloudSyncNow');if(!e){status('Sync control unavailable',false);return}e.click();setTimeout(function(){nafRefreshAll()},700)}
 function hook(){var f=document.getElementById('fuelForm');if(f&&!f.dataset.nafMobileHook){f.dataset.nafMobileHook='1';f.addEventListener('submit',function(){setTimeout(function(){nafRefreshAll();status('Operation saved',true)},450)})}}
 window.addEventListener('load',function(){var p=document.getElementById('cloudSyncPanel');if(p&&window.matchMedia&&window.matchMedia('(max-width:767px)').matches){document.body.appendChild(p);p.classList.add('naf-cloud-mobile');p.classList.remove('naf-cloud-mobile-open')}var c=document.getElementById('naf-cloud-close');if(c)c.addEventListener('click',nafCloseCloud);hook();setTimeout(function(){hook();nafRefreshAll()},300);var modal=document.getElementById('recordModal');if(modal)new MutationObserver(function(){if(!modal.classList.contains('active'))setTimeout(nafRefreshAll,150)}).observe(modal,{attributes:true,attributeFilter:['class']});var inp=document.getElementById('excelFileInput');if(inp)inp.addEventListener('change',function(){setTimeout(nafRefreshAll,700)})});
 })();
