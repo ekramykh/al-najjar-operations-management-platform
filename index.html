@@ -14320,6 +14320,21 @@ window.toggleFleetAnalysisPanel=function(){
 .naf-bottom{position:absolute;left:0;right:0;bottom:0;height:66px;padding-bottom:env(safe-area-inset-bottom);background:#fff;border-top:1px solid #dfe4ea;display:grid;grid-template-columns:repeat(4,1fr);z-index:10}.naf-nav{border:0;background:none;color:#7b8796;font-size:9px;font-weight:700}.naf-nav span{display:block;font-size:20px;margin:5px 0 1px}.naf-nav.active{color:#123d68}
 .naf-drawer{display:none;position:absolute;inset:0;background:rgba(0,0,0,.42);z-index:20}.naf-drawer.open{display:block}.naf-drawer-panel{position:absolute;left:0;top:0;bottom:0;width:min(84%,330px);background:#fff;padding:18px 14px;overflow:auto;box-shadow:8px 0 24px rgba(0,0,0,.2)}.naf-drawer-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:15px}.naf-drawer-head b{font-size:18px}.naf-close{width:35px;height:35px;border:0;border-radius:9px;background:#eef2f6;font-size:19px}
 @media(max-width:380px){.naf-main{padding-left:9px;padding-right:9px}.naf-grid,.naf-actions,.naf-appgrid{gap:7px}.naf-card,.naf-action,.naf-app{padding:10px}.naf-title{font-size:20px}}
+@media(max-width:767px){
+  body>#cloudSyncPanel.naf-cloud-mobile{
+    position:fixed!important;left:8px!important;right:8px!important;top:70px!important;bottom:auto!important;
+    width:auto!important;max-width:none!important;z-index:100000!important;
+    display:none!important;background:#111827!important;border:1px solid #31577e!important;border-radius:14px!important;
+    padding:13px!important;box-shadow:0 18px 45px rgba(0,0,0,.32)!important;
+  }
+  body>#cloudSyncPanel.naf-cloud-mobile.naf-cloud-mobile-open{display:block!important}
+  body>#cloudSyncPanel.naf-cloud-mobile .cloud-sync-body{
+    opacity:1!important;visibility:visible!important;height:auto!important;overflow:visible!important;
+  }
+  body>#cloudSyncPanel.naf-cloud-mobile .cloud-sync-hint{display:none!important}
+  body>#cloudSyncPanel.naf-cloud-mobile input{font-size:15px!important;min-height:42px!important}
+  body>#cloudSyncPanel.naf-cloud-mobile button{min-height:42px!important}
+}
 </style>
 
 <div id="alnajjar-mobile-app" aria-label="AlNajjar ERP Mobile">
@@ -14472,7 +14487,15 @@ window.toggleFleetAnalysisPanel=function(){
   };
   window.nafExport=function(){var e=document.getElementById('cloudExport');if(e){e.click();setStatus('Backup downloaded',true)}else if(typeof window.exportData==='function'){window.exportData()}};
   window.nafImport=function(){var e=document.getElementById('excelFileInput');if(e)e.click();else setStatus('Import control unavailable',false)};
-  window.nafOpenCloud=function(){var e=document.getElementById('cloudSettings');if(e){e.open=true;e.scrollIntoView({behavior:'smooth',block:'center'});setStatus('Cloud settings opened',true)}else setStatus('Cloud settings unavailable',false)};
+  window.nafOpenCloud=function(){
+    var panel=document.getElementById('cloudSyncPanel');
+    if(panel){
+      if(panel.parentElement!==document.body)document.body.appendChild(panel);
+      panel.classList.add('naf-cloud-mobile-open');
+      var e=document.getElementById('cloudSettings');if(e)e.open=true;
+      setStatus('Cloud connection settings opened',true);
+    }else setStatus('Cloud settings unavailable',false);
+  };
   window.nafSync=function(){
     var e=document.getElementById('cloudSyncNow');
     if(!e){setStatus('Sync control unavailable',false);return}
@@ -14487,6 +14510,11 @@ window.toggleFleetAnalysisPanel=function(){
     form.addEventListener('submit',function(){setTimeout(function(){nafRefreshAll();setStatus('Record saved',true)},350)});
   }
   window.addEventListener('load',function(){
+    var cp=document.getElementById('cloudSyncPanel');
+    if(cp && window.matchMedia && window.matchMedia('(max-width:767px)').matches){
+      document.body.appendChild(cp);
+      cp.classList.add('naf-cloud-mobile');
+    }
     hookForm();
     setTimeout(function(){hookForm();nafRefreshAll()},300);
     var modal=document.getElementById('recordModal');
