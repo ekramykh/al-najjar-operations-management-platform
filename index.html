@@ -14342,7 +14342,7 @@ window.toggleFleetAnalysisPanel=function(){
   body>#cloudSyncPanel.naf-cloud-mobile{
     position:fixed!important;left:8px!important;right:8px!important;top:70px!important;bottom:auto!important;
     width:auto!important;max-width:none!important;z-index:100000!important;
-    display:none!important;background:#111827!important;border:1px solid #31577e!important;border-radius:14px!important;
+    display:none!important;background:#fff!important;border:1px solid #dfe6ee!important;border-radius:16px!important;
     padding:13px!important;box-shadow:0 18px 45px rgba(0,0,0,.32)!important;
   }
   body>#cloudSyncPanel.naf-cloud-mobile.naf-cloud-mobile-open{display:block!important}
@@ -14370,11 +14370,23 @@ window.toggleFleetAnalysisPanel=function(){
       </div>
       <div class="naf-status"><i></i><span id="naf-status">Ready</span></div>
 
-      <div class="naf-grid">
-        <button class="naf-card naf-kpi" onclick="nafShow('records')"><span class="naf-kpi-icon">▤</span><small>Total Records</small><b id="naf-kpi-count">0</b><small>View all operations</small></button>
-        <button class="naf-card naf-kpi" onclick="nafShow('fleet')"><span class="naf-kpi-icon">↗</span><small>Avg. KM/L</small><b id="naf-kpi-eff">0.00</b><small>Fleet efficiency</small></button>
-        <button class="naf-card naf-kpi" onclick="nafShow('records')"><span class="naf-kpi-icon">↔</span><small>Total KM</small><b id="naf-kpi-km">0</b><small>Recorded distance</small></button>
-        <button class="naf-card naf-kpi" onclick="nafShow('records')"><span class="naf-kpi-icon">⛽</span><small>Fuel Used</small><b id="naf-kpi-fuel">0.00</b><small>Recorded fuel</small></button>
+      <div class="naf-kpi-grid">
+        <button class="naf-card naf-kpi" onclick="nafShow('records')"><span class="naf-kpi-icon">▤</span><span class="naf-kpi-label">Total Records</span><b id="naf-kpi-count">0</b><span class="naf-kpi-unit">Entries</span></button>
+        <button class="naf-card naf-kpi" onclick="nafShow('fleet')"><span class="naf-kpi-icon">↗</span><span class="naf-kpi-label">Overall Efficiency</span><b id="naf-kpi-eff">0.00</b><span class="naf-kpi-unit">KM/L</span></button>
+        <button class="naf-card naf-kpi" onclick="nafShow('records')"><span class="naf-kpi-icon">↔</span><span class="naf-kpi-label">Total Distance</span><b id="naf-kpi-km">0</b><span class="naf-kpi-unit">KM</span></button>
+        <button class="naf-card naf-kpi" onclick="nafShow('records')"><span class="naf-kpi-icon">⛽</span><span class="naf-kpi-label">Total Fuel</span><b id="naf-kpi-fuel">0.00</b><span class="naf-kpi-unit">Liters</span></button>
+        <button class="naf-card naf-kpi naf-kpi-more" onclick="nafShow('records')"><span class="naf-kpi-icon">◷</span><span class="naf-kpi-label">Avg Distance / Record</span><b id="naf-kpi-avg-km">0.00</b><span class="naf-kpi-unit">KM</span></button>
+        <button class="naf-card naf-kpi naf-kpi-more" onclick="nafShow('records')"><span class="naf-kpi-icon">⛽</span><span class="naf-kpi-label">Avg Fuel / Record</span><b id="naf-kpi-avg-fuel">0.00</b><span class="naf-kpi-unit">Liters</span></button>
+        <button class="naf-card naf-kpi naf-kpi-more" onclick="nafShow('fleet')"><span class="naf-kpi-icon">🚚</span><span class="naf-kpi-label">Mercedes Distance</span><b id="naf-kpi-mercedes-km">0.00</b><span class="naf-kpi-unit">KM</span></button>
+        <button class="naf-card naf-kpi naf-kpi-more" onclick="nafShow('fleet')"><span class="naf-kpi-icon">🚚</span><span class="naf-kpi-label">Volvo Distance</span><b id="naf-kpi-volvo-km">0.00</b><span class="naf-kpi-unit">KM</span></button>
+        <button class="naf-card naf-kpi naf-kpi-more" onclick="nafShow('fleet')"><span class="naf-kpi-icon">M</span><span class="naf-kpi-label">Mercedes Efficiency</span><b id="naf-kpi-mercedes-eff">0.00</b><span class="naf-kpi-unit">KM/L</span></button>
+        <button class="naf-card naf-kpi naf-kpi-more" onclick="nafShow('fleet')"><span class="naf-kpi-icon">V</span><span class="naf-kpi-label">Volvo Efficiency</span><b id="naf-kpi-volvo-eff">0.00</b><span class="naf-kpi-unit">KM/L</span></button>
+        <button class="naf-card naf-kpi naf-kpi-more" onclick="nafShow('fleet')"><span class="naf-kpi-icon">M</span><span class="naf-kpi-label">Mercedes Avg Fuel</span><b id="naf-kpi-mercedes-fuel">0.00</b><span class="naf-kpi-unit">Liters / record</span></button>
+        <button class="naf-card naf-kpi naf-kpi-more" onclick="nafShow('fleet')"><span class="naf-kpi-icon">V</span><span class="naf-kpi-label">Volvo Avg Fuel</span><b id="naf-kpi-volvo-fuel">0.00</b><span class="naf-kpi-unit">Liters / record</span></button>
+      </div>
+      <div class="naf-section">
+        <div class="naf-section-title">Operational Indicators</div>
+        <div id="naf-dashboard-alert" class="naf-dashboard-alert"><b>Loading indicators…</b></div>
       </div>
 
       <div class="naf-section">
@@ -14400,8 +14412,14 @@ window.toggleFleetAnalysisPanel=function(){
 
     <section id="naf-records" class="naf-screen">
       <div class="naf-head"><div><div class="naf-title">Records</div><div class="naf-sub">Tap a record to edit</div></div></div>
-      <div class="naf-search"><input id="naf-search" placeholder="Vehicle, driver, invoice..." oninput="nafRenderRecords()"><button onclick="nafClearSearch()">×</button></div>
+      <div class="naf-search"><input id="naf-search" type="search" autocomplete="off" placeholder="Vehicle, driver, invoice..." oninput="nafRecordsPage=1;nafRenderRecords()"><button onclick="nafClearSearch()">×</button></div>
       <div id="naf-record-list" class="naf-list"></div>
+      <div class="naf-pagination">
+        <button id="naf-prev" class="naf-page-btn" onclick="nafRecordsPrev()">‹</button>
+        <div id="naf-page-info" class="naf-page-info">Page 1 of 1</div>
+        <select id="naf-page-size" class="naf-page-size" onchange="nafRecordsPage=1;nafRenderRecords()"><option value="20">20</option><option value="30" selected>30</option><option value="50">50</option></select>
+        <button id="naf-next" class="naf-page-btn" onclick="nafRecordsNext()">›</button>
+      </div>
     </section>
 
     <section id="naf-fleet" class="naf-screen">
@@ -14474,7 +14492,7 @@ window.toggleFleetAnalysisPanel=function(){
     document.querySelectorAll('#alnajjar-mobile-app .naf-nav').forEach(function(e){e.classList.toggle('active',e.dataset.screen===screen)});
     var main=document.querySelector('.naf-main');if(main)main.scrollTop=0;
     if(screen==='home')nafRefresh();
-    if(screen==='records')nafRenderRecords();
+    if(screen==='records'){window.nafRecordsPage=1;nafRenderRecords();}
     if(screen==='fleet')nafRenderFleet();
   };
   window.nafNewRecord=function(){
@@ -14483,7 +14501,7 @@ window.toggleFleetAnalysisPanel=function(){
   };
   window.nafRefreshAll=function(){nafRefresh();nafRenderRecords();nafRenderFleet()};
   window.nafRefreshFromDesktop=function(){setTimeout(nafRefreshAll,80)}
-  window.nafClearSearch=function(){var e=document.getElementById('naf-search');if(e){e.value='';nafRenderRecords();e.focus()}}
+  window.nafClearSearch=function(){var e=document.getElementById('naf-search');if(e){e.value='';window.nafRecordsPage=1;nafRenderRecords();e.focus()}}
   function mobileDateValue(v){
     if(!v)return 0;
     var s=String(v).trim(), d=0;
@@ -14491,6 +14509,9 @@ window.toggleFleetAnalysisPanel=function(){
     if(m){var y=Number(m[3]);if(y<100)y+=2000;d=new Date(y,Number(m[2])-1,Number(m[1])).getTime();if(Number.isFinite(d))return d}
     d=Date.parse(s);return Number.isFinite(d)?d:0;
   }
+  window.nafRecordsPage=1;
+  window.nafRecordsPrev=function(){if(window.nafRecordsPage>1){window.nafRecordsPage--;nafRenderRecords()}};
+  window.nafRecordsNext=function(){var list=data();var q=(document.getElementById('naf-search')?.value||'').trim().toLowerCase();var total=list.filter(function(x){return !q||JSON.stringify(x).toLowerCase().includes(q)}).length;var size=Number(document.getElementById('naf-page-size')?.value||30),pages=Math.max(1,Math.ceil(total/size));if(window.nafRecordsPage<pages){window.nafRecordsPage++;nafRenderRecords()}};
   window.nafRenderRecords=function(){
     var list=document.getElementById('naf-record-list');if(!list)return;
     var q=(document.getElementById('naf-search')?.value||'').trim().toLowerCase();
@@ -14500,7 +14521,13 @@ window.toggleFleetAnalysisPanel=function(){
       if(db!==da)return db-da;
       return b.i-a.i;
     });
-    list.innerHTML=rows.slice(0,150).map(function(o){
+    var size=Number(document.getElementById('naf-page-size')?.value||30),pages=Math.max(1,Math.ceil(rows.length/size));
+    if(window.nafRecordsPage>pages)window.nafRecordsPage=pages;
+    var start=(window.nafRecordsPage-1)*size;
+    var pageRows=rows.slice(start,start+size);
+    var info=document.getElementById('naf-page-info');if(info)info.textContent='Page '+window.nafRecordsPage+' of '+pages+' · '+rows.length+' records';
+    var prev=document.getElementById('naf-prev'),next=document.getElementById('naf-next');if(prev)prev.disabled=window.nafRecordsPage<=1;if(next)next.disabled=window.nafRecordsPage>=pages;
+    list.innerHTML=pageRows.map(function(o){
       var r=o.x, date=r.date||'No date', vehicle=r.car||r.vehicle||'Vehicle';
       return '<article class="naf-record" onclick="editRecord('+o.i+')"><div class="naf-row"><strong>'+esc(vehicle)+'</strong><span class="naf-num">#'+esc(r.sn||o.i+1)+'</span></div><div class="naf-row" style="margin-top:7px"><span class="naf-meta">'+esc(date)+' · '+esc(r.driver||'No driver')+'</span><span class="naf-eff">'+eff(r).toFixed(2)+' KM/L</span></div><div class="naf-meta">'+esc(r.site||'No site')+' · Invoice '+esc(r.invoiceNumber||'—')+'</div></article>';
     }).join('')||'<div class="naf-empty">No matching records.</div>';
@@ -14518,8 +14545,17 @@ window.toggleFleetAnalysisPanel=function(){
     var r=data(), validEff=r.map(eff).filter(function(x){return x>0});
     var count=r.length,avg=validEff.length?validEff.reduce(function(a,b){return a+b},0)/validEff.length:0;
     var totalKm=r.reduce(function(a,x){return a+km(x)},0),fuel=r.reduce(function(a,x){return a+n(x.fuel)},0);
-    var vals={'naf-kpi-count':count,'naf-kpi-eff':avg.toFixed(2),'naf-kpi-km':Math.round(totalKm).toLocaleString(),'naf-kpi-fuel':fuel.toFixed(2)};
+    var avgKm=count?totalKm/count:0, fuelRows=r.filter(function(x){return n(x.fuel)>0}), avgFuel=fuelRows.length?fuel/fuelRows.length:0;
+    var merc=r.filter(function(x){return String(x.car||'').toUpperCase().includes('MERCEDES')}), volvo=r.filter(function(x){return String(x.car||'').toUpperCase().includes('VOLVO')});
+    var mercKm=merc.reduce(function(a,x){return a+km(x)},0),volvoKm=volvo.reduce(function(a,x){return a+km(x)},0);
+    var mercFuel=merc.reduce(function(a,x){return a+n(x.fuel)},0),volvoFuel=volvo.reduce(function(a,x){return a+n(x.fuel)},0);
+    var mercFuelRows=merc.filter(function(x){return n(x.fuel)>0}),volvoFuelRows=volvo.filter(function(x){return n(x.fuel)>0});
+    var vals={'naf-kpi-count':count,'naf-kpi-eff':avg.toFixed(2),'naf-kpi-km':Math.round(totalKm).toLocaleString(),'naf-kpi-fuel':fuel.toFixed(2),'naf-kpi-avg-km':avgKm.toFixed(2),'naf-kpi-avg-fuel':avgFuel.toFixed(2),'naf-kpi-mercedes-km':mercKm.toFixed(2),'naf-kpi-volvo-km':volvoKm.toFixed(2),'naf-kpi-mercedes-eff':(mercFuel?mercKm/mercFuel:0).toFixed(2),'naf-kpi-volvo-eff':(volvoFuel?volvoKm/volvoFuel:0).toFixed(2),'naf-kpi-mercedes-fuel':(mercFuelRows.length?mercFuel/mercFuelRows.length:0).toFixed(2),'naf-kpi-volvo-fuel':(volvoFuelRows.length?volvoFuel/volvoFuelRows.length:0).toFixed(2)};
     Object.keys(vals).forEach(function(id){var e=document.getElementById(id);if(e)e.textContent=vals[id]});
+    var alert=document.getElementById('naf-dashboard-alert');if(alert){
+      var noFuel=r.filter(function(x){return n(x.fuel)<=0}).length, noKm=r.filter(function(x){return km(x)<=0}).length, noInvoice=r.filter(function(x){return !String(x.invoiceNumber||'').trim()}).length;
+      alert.innerHTML='<b>Data quality & operations</b><br>'+noFuel+' records without fuel · '+noKm+' records without distance · '+noInvoice+' records without invoice number';
+    }
     var d=document.getElementById('naf-date');if(d)d.textContent=new Date().toLocaleDateString(undefined,{day:'2-digit',month:'short',year:'numeric'});
 
     var rows=r.map(function(x,i){return{x:x,i:i}}).sort(function(a,b){
