@@ -14487,7 +14487,7 @@ window.toggleFleetAnalysisPanel=function(){
   function mobileDateValue(v){
     if(!v)return 0;
     var s=String(v).trim(), d=0;
-    var m=s.match(/^(\\d{1,2})[\\/\\-](\\d{1,2})[\\/\\-](\\d{2,4})$/);
+    var m=s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})$/);
     if(m){var y=Number(m[3]);if(y<100)y+=2000;d=new Date(y,Number(m[2])-1,Number(m[1])).getTime();if(Number.isFinite(d))return d}
     d=Date.parse(s);return Number.isFinite(d)?d:0;
   }
@@ -14516,7 +14516,7 @@ window.toggleFleetAnalysisPanel=function(){
   };
   window.nafRefresh=function(){
     var r=data(), validEff=r.map(eff).filter(function(x){return x>0});
-    var count=r.length,avg=validEff.length?validEff.reduce(function(a,b){return a+b},0)/validEff.length;
+    var count=r.length,avg=validEff.length?validEff.reduce(function(a,b){return a+b},0)/validEff.length:0;
     var totalKm=r.reduce(function(a,x){return a+km(x)},0),fuel=r.reduce(function(a,x){return a+n(x.fuel)},0);
     var vals={'naf-kpi-count':count,'naf-kpi-eff':avg.toFixed(2),'naf-kpi-km':Math.round(totalKm).toLocaleString(),'naf-kpi-fuel':fuel.toFixed(2)};
     Object.keys(vals).forEach(function(id){var e=document.getElementById(id);if(e)e.textContent=vals[id]});
