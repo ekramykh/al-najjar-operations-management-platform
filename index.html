@@ -13946,7 +13946,7 @@ window.toggleFleetAnalysisPanel=function(){
 }
 </style>
 <div id="cloudSyncPanel">
-  <div class="cloud-sync-header">
+  <div class="cloud-sync-header"><button type="button" id="naf-cloud-close" class="naf-cloud-mobile-close" aria-label="Close">×</button>
     <strong>☁️ Cloud Sync</strong>
     <span class="cloud-sync-hint">Hover to expand</span>
     <span id="cloudStatus" style="font-size:12px;color:#fbbf24">Disconnected</span>
@@ -14284,11 +14284,17 @@ window.toggleFleetAnalysisPanel=function(){
 
   #alnajjar-mobile-app{display:flex!important}
   #recordModal{display:none!important}
-  #recordModal.active{display:flex!important;position:fixed!important;inset:0!important;z-index:100001!important;align-items:flex-start!important;justify-content:center!important;padding:8px!important;background:rgba(7,18,32,.72)!important}
-  #recordModal .record-modal-box{width:100%!important;max-width:680px!important;max-height:calc(100dvh - 16px)!important;margin:0!important;overflow:auto!important;border-radius:16px!important}
+  #recordModal.active{display:flex!important;position:fixed!important;inset:0!important;z-index:100001!important;align-items:flex-end!important;justify-content:center!important;padding:0!important;background:rgba(15,31,48,.28)!important;backdrop-filter:blur(3px)!important}
+  #recordModal .record-modal-box{width:100%!important;max-width:720px!important;height:min(92dvh,900px)!important;max-height:92dvh!important;margin:0!important;overflow:auto!important;border-radius:22px 22px 0 0!important;background:#fff!important;color:#1e293b!important;box-shadow:0 -8px 35px rgba(15,31,48,.18)!important}
+  #recordModal .form-panel-title{position:sticky!important;top:0!important;z-index:5!important;background:#fff!important;color:#163e67!important;border-bottom:1px solid #e7edf3!important;padding:15px 16px!important}
+  #recordModal .form-section{background:#fff!important;border-color:#e5ebf1!important}
+  #recordModal .form-section-title,#recordModal label{color:#334155!important}
+  #recordModal input,#recordModal select,#recordModal textarea{font-size:16px!important;min-height:44px!important;background:#fff!important;color:#172033!important;border:1px solid #d5dee8!important;border-radius:10px!important}
+  #recordModal input:focus,#recordModal select:focus,#recordModal textarea:focus{border-color:#2d78bd!important;box-shadow:0 0 0 3px rgba(45,120,189,.10)!important;outline:none!important}
   #recordModal .form-grid-2{grid-template-columns:1fr!important}
-  #recordModal .btn-group-form{position:sticky!important;bottom:0!important;background:inherit!important;padding-top:10px!important}
-  #recordModal input,#recordModal select,#recordModal textarea,#recordModal button{font-size:16px!important;min-height:44px}
+  #recordModal .btn-group-form{position:sticky!important;bottom:0!important;background:#fff!important;padding:10px 0!important;border-top:1px solid #e7edf3!important}
+  #recordModal button{font-size:16px!important;min-height:44px}
+  #recordModal .close-modal-x{color:#526274!important;background:#eef3f7!important;border:0!important;border-radius:9px!important}
 }
 @media (min-width:768px){#alnajjar-mobile-app{display:none!important}}
 
@@ -14320,6 +14326,18 @@ window.toggleFleetAnalysisPanel=function(){
 .naf-bottom{position:absolute;left:0;right:0;bottom:0;height:66px;padding-bottom:env(safe-area-inset-bottom);background:#fff;border-top:1px solid #dfe4ea;display:grid;grid-template-columns:repeat(4,1fr);z-index:10}.naf-nav{border:0;background:none;color:#7b8796;font-size:9px;font-weight:700}.naf-nav span{display:block;font-size:20px;margin:5px 0 1px}.naf-nav.active{color:#123d68}
 .naf-drawer{display:none;position:absolute;inset:0;background:rgba(0,0,0,.42);z-index:20}.naf-drawer.open{display:block}.naf-drawer-panel{position:absolute;left:0;top:0;bottom:0;width:min(84%,330px);background:#fff;padding:18px 14px;overflow:auto;box-shadow:8px 0 24px rgba(0,0,0,.2)}.naf-drawer-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:15px}.naf-drawer-head b{font-size:18px}.naf-close{width:35px;height:35px;border:0;border-radius:9px;background:#eef2f6;font-size:19px}
 @media(max-width:380px){.naf-main{padding-left:9px;padding-right:9px}.naf-grid,.naf-actions,.naf-appgrid{gap:7px}.naf-card,.naf-action,.naf-app{padding:10px}.naf-title{font-size:20px}}
+.naf-kpi{cursor:pointer;transition:transform .12s ease,box-shadow .12s ease;text-align:left;border:1px solid #dfe7ef}
+.naf-kpi:active,.naf-action:active,.naf-app:active{transform:scale(.98)}
+.naf-kpi .naf-kpi-icon{width:30px;height:30px;border-radius:9px;background:#edf4fa;color:#164b78;display:grid;place-items:center;font-size:15px;float:right}
+.naf-kpi b{font-variant-numeric:tabular-nums}
+.naf-home-recent{display:grid;gap:7px}.naf-recent-head{display:flex;align-items:center;justify-content:space-between;margin:0 2px 7px}.naf-recent-head b{font-size:13px;color:#26394e}.naf-recent-head button{border:0;background:none;color:#2169a3;font-size:11px;font-weight:700}
+.naf-recent{background:#fff;border:1px solid #e0e6ed;border-radius:12px;padding:10px 11px;display:block;width:100%;text-align:left}.naf-recent .naf-row strong{font-size:12px}.naf-recent .naf-meta{font-size:9px}
+.naf-empty{box-shadow:none}
+.naf-cloud-mobile-close{display:none}
+@media(max-width:767px){
+  body>#cloudSyncPanel.naf-cloud-mobile .naf-cloud-mobile-close{display:grid;place-items:center;position:absolute;right:9px;top:9px;width:34px;height:34px;border:0;border-radius:9px;background:#273548;color:#fff;font-size:20px}
+  body>#cloudSyncPanel.naf-cloud-mobile{top:74px!important;max-height:calc(100dvh - 92px)!important;overflow:auto!important}
+}
 @media(max-width:767px){
   body>#cloudSyncPanel.naf-cloud-mobile{
     position:fixed!important;left:8px!important;right:8px!important;top:70px!important;bottom:auto!important;
@@ -14347,25 +14365,33 @@ window.toggleFleetAnalysisPanel=function(){
   <main class="naf-main">
     <section id="naf-home" class="naf-screen active">
       <div class="naf-head">
-        <div><div class="naf-title">Dashboard</div><div class="naf-sub">Live operations overview</div></div>
+        <div><div class="naf-title">Overview</div><div class="naf-sub">AlNajjar Operations</div></div>
         <div class="naf-date" id="naf-date">Today</div>
       </div>
-      <div class="naf-status"><i></i><span id="naf-status">Local data ready</span></div>
+      <div class="naf-status"><i></i><span id="naf-status">Ready</span></div>
+
       <div class="naf-grid">
-        <div class="naf-card naf-kpi"><small>Total Records</small><b id="naf-kpi-count">0</b><small>All operations</small></div>
-        <div class="naf-card naf-kpi"><small>Avg KM/L</small><b id="naf-kpi-eff">0.00</b><small>Fuel efficiency</small></div>
-        <div class="naf-card naf-kpi"><small>Total KM</small><b id="naf-kpi-km">0</b><small>Recorded distance</small></div>
-        <div class="naf-card naf-kpi"><small>Fuel Used</small><b id="naf-kpi-fuel">0.00</b><small>Recorded fuel</small></div>
+        <button class="naf-card naf-kpi" onclick="nafShow('records')"><span class="naf-kpi-icon">▤</span><small>Total Records</small><b id="naf-kpi-count">0</b><small>View all operations</small></button>
+        <button class="naf-card naf-kpi" onclick="nafShow('fleet')"><span class="naf-kpi-icon">↗</span><small>Avg. KM/L</small><b id="naf-kpi-eff">0.00</b><small>Fleet efficiency</small></button>
+        <button class="naf-card naf-kpi" onclick="nafShow('records')"><span class="naf-kpi-icon">↔</span><small>Total KM</small><b id="naf-kpi-km">0</b><small>Recorded distance</small></button>
+        <button class="naf-card naf-kpi" onclick="nafShow('records')"><span class="naf-kpi-icon">⛽</span><small>Fuel Used</small><b id="naf-kpi-fuel">0.00</b><small>Recorded fuel</small></button>
       </div>
+
       <div class="naf-section">
         <div class="naf-section-title">Quick Actions</div>
         <div class="naf-actions">
-          <button class="naf-action" onclick="nafNewRecord()"><b>＋</b>New Record<small>Create operation</small></button>
-          <button class="naf-action" onclick="nafShow('records')"><b>▤</b>Records<small>Search & edit</small></button>
-          <button class="naf-action" onclick="nafShow('fleet')"><b>▦</b>Fleet<small>Vehicle performance</small></button>
-          <button class="naf-action" onclick="nafExport()"><b>⇩</b>Export<small>Download backup</small></button>
+          <button class="naf-action" onclick="nafNewRecord()"><b>＋</b>New Record<small>Add operation</small></button>
+          <button class="naf-action" onclick="nafShow('records')"><b>▤</b>Records<small>Latest first</small></button>
+          <button class="naf-action" onclick="nafShow('fleet')"><b>▦</b>Fleet<small>Vehicle analysis</small></button>
+          <button class="naf-action" onclick="nafOpenCloud()"><b>☁</b>Cloud Sync<small>Connection & sync</small></button>
         </div>
       </div>
+
+      <div class="naf-section">
+        <div class="naf-recent-head"><b>Latest Operations</b><button onclick="nafShow('records')">View all →</button></div>
+        <div id="naf-recent-list" class="naf-home-recent"></div>
+      </div>
+
       <div class="naf-section">
         <div class="naf-section-title">Efficiency Trend</div>
         <div id="naf-chart" class="naf-chart"><div class="naf-empty">No records.</div></div>
@@ -14458,13 +14484,25 @@ window.toggleFleetAnalysisPanel=function(){
   window.nafRefreshAll=function(){nafRefresh();nafRenderRecords();nafRenderFleet()};
   window.nafRefreshFromDesktop=function(){setTimeout(nafRefreshAll,80)}
   window.nafClearSearch=function(){var e=document.getElementById('naf-search');if(e){e.value='';nafRenderRecords();e.focus()}}
+  function mobileDateValue(v){
+    if(!v)return 0;
+    var s=String(v).trim(), d=0;
+    var m=s.match(/^(\\d{1,2})[\\/\\-](\\d{1,2})[\\/\\-](\\d{2,4})$/);
+    if(m){var y=Number(m[3]);if(y<100)y+=2000;d=new Date(y,Number(m[2])-1,Number(m[1])).getTime();if(Number.isFinite(d))return d}
+    d=Date.parse(s);return Number.isFinite(d)?d:0;
+  }
   window.nafRenderRecords=function(){
     var list=document.getElementById('naf-record-list');if(!list)return;
     var q=(document.getElementById('naf-search')?.value||'').trim().toLowerCase();
-    var rows=data().map(function(x,i){return{x:x,i:i}}).filter(function(o){return !q||JSON.stringify(o.x).toLowerCase().includes(q)}).reverse();
+    var rows=data().map(function(x,i){return{x:x,i:i}}).filter(function(o){return !q||JSON.stringify(o.x).toLowerCase().includes(q)});
+    rows.sort(function(a,b){
+      var da=mobileDateValue(a.x.date),db=mobileDateValue(b.x.date);
+      if(db!==da)return db-da;
+      return b.i-a.i;
+    });
     list.innerHTML=rows.slice(0,150).map(function(o){
-      var r=o.x;
-      return '<article class="naf-record" onclick="editRecord('+o.i+')"><div class="naf-row"><strong>'+esc(r.car||r.vehicle||'Vehicle')+'</strong><span class="naf-num">#'+esc(r.sn||o.i+1)+'</span></div><div class="naf-row" style="margin-top:7px"><span class="naf-meta">'+esc(r.driver||'No driver')+' · '+esc(r.date||'')+'</span><span class="naf-eff">'+eff(r).toFixed(2)+' KM/L</span></div><div class="naf-meta">'+esc(r.site||'No site')+' · Invoice '+esc(r.invoiceNumber||'—')+'</div></article>';
+      var r=o.x, date=r.date||'No date', vehicle=r.car||r.vehicle||'Vehicle';
+      return '<article class="naf-record" onclick="editRecord('+o.i+')"><div class="naf-row"><strong>'+esc(vehicle)+'</strong><span class="naf-num">#'+esc(r.sn||o.i+1)+'</span></div><div class="naf-row" style="margin-top:7px"><span class="naf-meta">'+esc(date)+' · '+esc(r.driver||'No driver')+'</span><span class="naf-eff">'+eff(r).toFixed(2)+' KM/L</span></div><div class="naf-meta">'+esc(r.site||'No site')+' · Invoice '+esc(r.invoiceNumber||'—')+'</div></article>';
     }).join('')||'<div class="naf-empty">No matching records.</div>';
   };
   window.nafRenderFleet=function(){
@@ -14477,13 +14515,24 @@ window.toggleFleetAnalysisPanel=function(){
     if(list)list.innerHTML=rows.slice(0,40).map(function(r){return '<article class="naf-record"><div class="naf-row"><strong>'+esc(r.car)+'</strong><span class="naf-eff">'+r.avg.toFixed(2)+' KM/L</span></div><div class="naf-meta">Records: '+r.n+'</div></article>'}).join('');
   };
   window.nafRefresh=function(){
-    var r=data(),count=r.length,avg=r.length?r.map(eff).filter(function(x){return x>0}).reduce(function(a,b){return a+b},0)/Math.max(1,r.map(eff).filter(function(x){return x>0}).length):0;
+    var r=data(), validEff=r.map(eff).filter(function(x){return x>0});
+    var count=r.length,avg=validEff.length?validEff.reduce(function(a,b){return a+b},0)/validEff.length;
     var totalKm=r.reduce(function(a,x){return a+km(x)},0),fuel=r.reduce(function(a,x){return a+n(x.fuel)},0);
     var vals={'naf-kpi-count':count,'naf-kpi-eff':avg.toFixed(2),'naf-kpi-km':Math.round(totalKm).toLocaleString(),'naf-kpi-fuel':fuel.toFixed(2)};
     Object.keys(vals).forEach(function(id){var e=document.getElementById(id);if(e)e.textContent=vals[id]});
-    var d=document.getElementById('naf-date');if(d)d.textContent=new Date().toLocaleDateString(undefined,{day:'2-digit',month:'short'});
-    var recent=r.slice(-7),mx=Math.max.apply(null,recent.map(eff).concat([1])),chart=document.getElementById('naf-chart');
-    if(chart)chart.innerHTML=recent.length?recent.map(function(x,i){var v=eff(x);return '<div class="naf-barrow"><span>#'+esc(x.sn||r.length-recent.length+i+1)+'</span><div class="naf-bar"><i style="width:'+Math.min(100,v/mx*100)+'%"></i></div><b>'+v.toFixed(1)+'</b></div>'}).join(''):'<div class="naf-empty">No records.</div>';
+    var d=document.getElementById('naf-date');if(d)d.textContent=new Date().toLocaleDateString(undefined,{day:'2-digit',month:'short',year:'numeric'});
+
+    var rows=r.map(function(x,i){return{x:x,i:i}}).sort(function(a,b){
+      var da=mobileDateValue(a.x.date),db=mobileDateValue(b.x.date);return db!==da?db-da:b.i-a.i;
+    });
+    var recent=document.getElementById('naf-recent-list');
+    if(recent)recent.innerHTML=rows.slice(0,4).map(function(o){
+      var x=o.x;
+      return '<button class="naf-recent" onclick="editRecord('+o.i+')"><div class="naf-row"><strong>'+esc(x.car||x.vehicle||'Vehicle')+'</strong><span class="naf-num">'+esc(x.date||'No date')+'</span></div><div class="naf-meta">'+esc(x.driver||'No driver')+' · '+esc(x.site||'No site')+' · '+eff(x).toFixed(2)+' KM/L</div></button>';
+    }).join('')||'<div class="naf-empty">No operations recorded yet.</div>';
+
+    var trend=rows.slice(0,7).reverse(),mx=Math.max.apply(null,trend.map(eff).concat([1])),chart=document.getElementById('naf-chart');
+    if(chart)chart.innerHTML=trend.length?trend.map(function(x,i){var v=eff(x.x);return '<div class="naf-barrow"><span>'+esc(x.x.date||('#'+(i+1)))+'</span><div class="naf-bar"><i style="width:'+Math.min(100,v/mx*100)+'%"></i></div><b>'+v.toFixed(1)+'</b></div>'}).join(''):'<div class="naf-empty">No records.</div>';
   };
   window.nafExport=function(){var e=document.getElementById('cloudExport');if(e){e.click();setStatus('Backup downloaded',true)}else if(typeof window.exportData==='function'){window.exportData()}};
   window.nafImport=function(){var e=document.getElementById('excelFileInput');if(e)e.click();else setStatus('Import control unavailable',false)};
@@ -14495,6 +14544,10 @@ window.toggleFleetAnalysisPanel=function(){
       var e=document.getElementById('cloudSettings');if(e)e.open=true;
       setStatus('Cloud connection settings opened',true);
     }else setStatus('Cloud settings unavailable',false);
+  };
+  window.nafCloseCloud=function(){
+    var panel=document.getElementById('cloudSyncPanel');
+    if(panel)panel.classList.remove('naf-cloud-mobile-open');
   };
   window.nafSync=function(){
     var e=document.getElementById('cloudSyncNow');
@@ -14515,6 +14568,8 @@ window.toggleFleetAnalysisPanel=function(){
       document.body.appendChild(cp);
       cp.classList.add('naf-cloud-mobile');
     }
+    var closeCloud=document.getElementById('naf-cloud-close');if(closeCloud)closeCloud.addEventListener('click',nafCloseCloud);
+    var cp2=document.getElementById('cloudSyncPanel');if(cp2)cp2.classList.remove('naf-cloud-mobile-open');
     hookForm();
     setTimeout(function(){hookForm();nafRefreshAll()},300);
     var modal=document.getElementById('recordModal');
