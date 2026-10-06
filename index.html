@@ -13946,31 +13946,29 @@ window.toggleFleetAnalysisPanel=function(){
 }
 </style>
 <div id="cloudSyncPanel">
-  <div class="cloud-sync-header"><button type="button" id="naf-cloud-close" class="naf-cloud-mobile-close" aria-label="Close">×</button>
-    <strong>☁️ Cloud Sync</strong>
-    <span class="cloud-sync-hint">Hover to expand</span>
-    <span id="cloudStatus" style="font-size:12px;color:#fbbf24">Disconnected</span>
+  <div class="cloud-sync-header">
+    <button type="button" id="naf-cloud-close" class="naf-cloud-mobile-close" aria-label="Close">×</button>
+    <div class="cloud-title-wrap"><span class="cloud-title-icon">☁</span><div><strong>Cloud Sync</strong><small>Shared operations database</small></div></div>
+    <span id="cloudStatus" class="cloud-status-pill">Disconnected</span>
   </div>
   <div class="cloud-sync-body">
-    <div style="font-size:12px;color:#cbd5e1;margin:7px 0 10px">Connect this system to Supabase once per device.</div>
-    <details id="cloudSettings">
-      <summary style="cursor:pointer;margin-bottom:8px">Connection / Sign In Settings</summary>
-      <label style="display:block;margin:6px 0 3px">Supabase Project URL</label>
-      <input id="cloudUrl" type="url" placeholder="https://xxxx.supabase.co" style="box-sizing:border-box;width:100%;padding:8px;border-radius:6px;border:1px solid #475569;background:#1f2937;color:white">
-      <label style="display:block;margin:6px 0 3px">Supabase anon/public key</label>
-      <input id="cloudKey" type="password" placeholder="Public anon key" style="box-sizing:border-box;width:100%;padding:8px;border-radius:6px;border:1px solid #475569;background:#1f2937;color:white">
-      <label style="display:block;margin:6px 0 3px">Email Address</label>
-      <input id="cloudEmail" type="email" autocomplete="username" placeholder="name@company.com" style="box-sizing:border-box;width:100%;padding:8px;border-radius:6px;border:1px solid #475569;background:#1f2937;color:white">
-      <label style="display:block;margin:6px 0 3px">Password</label>
-      <input id="cloudPassword" type="password" autocomplete="current-password" placeholder="Supabase account password" style="box-sizing:border-box;width:100%;padding:8px;border-radius:6px;border:1px solid #475569;background:#1f2937;color:white">
-      <button id="cloudConnect" style="margin-top:10px;width:100%;padding:9px;border:0;border-radius:6px;background:#2563eb;color:white;cursor:pointer">Save Settings & Connect</button>
-      <button id="cloudSignOut" style="margin-top:6px;width:100%;padding:8px;border:1px solid #64748b;border-radius:6px;background:transparent;color:white;cursor:pointer">Sign Out</button>
+    <div class="cloud-intro"><b>Cloud connection</b><span>Keep your operations synchronized across devices.</span></div>
+    <details id="cloudSettings" open>
+      <summary>Connection Settings <span>⌄</span></summary>
+      <div class="cloud-fields">
+        <label>Project URL<input id="cloudUrl" type="url" placeholder="https://xxxx.supabase.co"></label>
+        <label>Public anon key<input id="cloudKey" type="password" placeholder="Supabase public key"></label>
+        <label>Email address<input id="cloudEmail" type="email" autocomplete="username" placeholder="name@company.com"></label>
+        <label>Password<input id="cloudPassword" type="password" autocomplete="current-password" placeholder="Supabase account password"></label>
+      </div>
+      <button id="cloudConnect" class="cloud-primary-btn">Save Settings &amp; Connect</button>
+      <button id="cloudSignOut" class="cloud-secondary-btn">Sign Out</button>
     </details>
-    <div style="display:flex;gap:8px;margin-top:10px">
-      <button id="cloudSyncNow" style="flex:1;padding:9px;border:0;border-radius:6px;background:#059669;color:white;cursor:pointer">Sync Now</button>
-      <button id="cloudExport" style="padding:9px;border:1px solid #64748b;border-radius:6px;background:transparent;color:white;cursor:pointer">Backup</button>
+    <div class="cloud-actions">
+      <button id="cloudSyncNow" class="cloud-sync-btn"><span>↻</span><b>Synchronize Now</b></button>
+      <button id="cloudExport" class="cloud-backup-btn"><span>⇩</span><b>Backup</b></button>
     </div>
-    <div id="cloudMessage" style="font-size:12px;color:#cbd5e1;margin-top:8px;line-height:1.5"></div>
+    <div id="cloudMessage" class="cloud-message"></div>
   </div>
 </div>
 <script>
@@ -14239,7 +14237,7 @@ window.toggleFleetAnalysisPanel=function(){
     }
   }
 
-  $("cloudSyncNow").addEventListener("click", async () => {
+  window.performCloudSync = async function() {
     status("Synchronizing…", "#fbbf24");
     message("Synchronizing with the shared database…");
 
@@ -14247,23 +14245,26 @@ window.toggleFleetAnalysisPanel=function(){
       status("Connection required", "#fbbf24");
       message("Connect first from Connection Settings.");
       $("cloudSettings").open = true;
-      return;
+      return false;
     }
 
     try {
-      // Sync now means:
-      // 1) save an unsynced local edit, or
-      // 2) pull the current shared state when there is no local edit.
       if (cloudDirty) {
         await queueCloudWrite(currentSnapshot());
       } else {
         await pullCloud();
       }
+      status("Connected & Synced", "#34d399");
+      message("Synchronization completed successfully.");
+      return true;
     } catch(err) {
       status("Sync failed", "#f87171");
       message("Sync failed: " + (err.message || String(err)));
+      return false;
     }
-  });
+  };
+
+  $("cloudSyncNow").addEventListener("click", window.performCloudSync);
 
   $("cloudSignOut").addEventListener("click", async () => {
     if (client) await client.auth.signOut();
@@ -14315,8 +14316,7 @@ body>.container>header,body>.container>.header,body>.container>.actions-bar,body
 .naf-menu{background:#fff;border:1px solid #dce4eb;border-radius:12px;overflow:hidden}.naf-menu button{display:block;width:100%;text-align:left;background:#fff;border:0;border-bottom:1px solid #edf1f4;padding:13px;color:#365168;font-size:11px}.naf-menu button:last-child{border-bottom:0}
 .naf-bottom{height:70px;flex:0 0 70px;display:grid;grid-template-columns:repeat(4,1fr);background:#fff;border-top:1px solid #dce4eb;box-shadow:0 -2px 12px rgba(18,48,74,.06)}.naf-nav{border:0;background:#fff;color:#8291a0;font-size:9px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px}.naf-nav span{font-size:19px}.naf-nav.active{color:#176092;font-weight:800}
 .naf-drawer{position:fixed;inset:0;background:rgba(8,27,43,.35);z-index:100000;visibility:hidden;opacity:0}.naf-drawer.open{visibility:visible;opacity:1}.naf-drawer-panel{position:absolute;left:0;top:0;bottom:0;width:min(86vw,350px);background:#f7f9fb;padding:16px;overflow:auto;box-shadow:10px 0 35px rgba(0,0,0,.18)}.naf-drawer-head{display:flex;justify-content:space-between;align-items:center;color:#123f67;font-size:17px}.naf-close{border:0;background:#e9eff4;color:#4d6377;border-radius:8px;width:34px;height:34px;font-size:20px}.naf-empty{text-align:center;padding:24px 10px;color:#8998a7;font-size:11px;background:#fff;border:1px dashed #d7e0e7;border-radius:11px}
-#cloudSyncPanel.naf-cloud-mobile,#cloudSyncPanel.naf-cloud-mobile-open{position:fixed!important;left:50%!important;right:auto!important;top:50%!important;transform:translate(-50%,-50%)!important;width:calc(100% - 24px)!important;max-width:480px!important;max-height:88dvh!important;z-index:100002!important;background:#fff!important;color:#21384d!important;border:1px solid #d5e0e8!important;border-radius:16px!important;box-shadow:0 18px 55px rgba(10,31,48,.28)!important;padding:0!important;overflow:auto!important;display:none!important}#cloudSyncPanel.naf-cloud-mobile-open{display:block!important}#cloudSyncPanel.naf-cloud-mobile .cloud-sync-header,#cloudSyncPanel.naf-cloud-mobile-open .cloud-sync-header{background:#123f67!important;color:#fff!important;border-radius:15px 15px 0 0!important;padding:12px!important;display:flex!important;align-items:center!important;gap:8px!important}.naf-cloud-mobile .cloud-sync-hint,.naf-cloud-mobile-open .cloud-sync-hint{display:none!important}.naf-cloud-mobile input,.naf-cloud-mobile-open input{background:#fff!important;color:#1d3347!important;border:1px solid #cbd7e1!important}
-</style>
+#cloudSyncPanel.naf-cloud-mobile,#cloudSyncPanel.naf-cloud-mobile-open{position:fixed!important;left:50%!important;right:auto!important;top:50%!important;transform:translate(-50%,-50%)!important;width:calc(100% - 28px)!important;max-width:500px!important;max-height:86dvh!important;z-index:100002!important;background:#f7fafc!important;color:#18344b!important;border:1px solid #d9e4ec!important;border-radius:22px!important;box-shadow:0 24px 70px rgba(9,39,63,.30)!important;padding:0!important;overflow:auto!important;display:none!important}#cloudSyncPanel.naf-cloud-mobile-open{display:block!important}#cloudSyncPanel.naf-cloud-mobile .cloud-sync-header,#cloudSyncPanel.naf-cloud-mobile-open .cloud-sync-header{background:linear-gradient(135deg,#123f67,#1c5b88)!important;color:#fff!important;border-radius:21px 21px 0 0!important;padding:17px 16px!important;display:flex!important;align-items:center!important;gap:12px!important}.naf-cloud-mobile .naf-cloud-mobile-close,.naf-cloud-mobile-open .naf-cloud-mobile-close{width:36px!important;height:36px!important;flex:0 0 36px!important;border:1px solid rgba(255,255,255,.22)!important;border-radius:10px!important;background:rgba(255,255,255,.12)!important;color:#fff!important;font-size:24px!important;line-height:1!important}.cloud-title-wrap{display:flex;align-items:center;gap:10px;min-width:0;flex:1}.cloud-title-icon{width:38px;height:38px;border-radius:11px;background:rgba(255,255,255,.14);display:flex;align-items:center;justify-content:center;font-size:20px}.cloud-title-wrap strong{display:block;font-size:18px;line-height:1.15}.cloud-title-wrap small{display:block;margin-top:3px;color:rgba(255,255,255,.72);font-size:10px}.cloud-status-pill{white-space:nowrap;padding:7px 9px;border-radius:999px;background:rgba(255,255,255,.13);color:#ffe08a;font-size:10px;font-weight:800}.naf-cloud-mobile .cloud-sync-body,.naf-cloud-mobile-open .cloud-sync-body{padding:16px!important}.cloud-intro{display:flex;flex-direction:column;gap:4px;padding:12px 13px;margin-bottom:12px;background:#edf5fa;border:1px solid #dce9f1;border-radius:13px}.cloud-intro b{font-size:12px;color:#174b70}.cloud-intro span{font-size:10px;color:#718394}.naf-cloud-mobile details,.naf-cloud-mobile-open details{background:#fff;border:1px solid #dce5ec;border-radius:14px;padding:0 12px;margin:0!important}.naf-cloud-mobile details summary,.naf-cloud-mobile-open details summary{padding:13px 2px!important;cursor:pointer!important;list-style:none!important;font-size:12px!important;font-weight:800!important;color:#244b67!important;display:flex!important;justify-content:space-between!important}.naf-cloud-mobile details summary::-webkit-details-marker,.naf-cloud-mobile-open details summary::-webkit-details-marker{display:none}.cloud-fields{display:grid;grid-template-columns:1fr;gap:9px;padding:2px 0 11px}.cloud-fields label{display:flex;flex-direction:column;gap:5px;font-size:10px;font-weight:700;color:#5d7181}.naf-cloud-mobile input,.naf-cloud-mobile-open input{box-sizing:border-box!important;width:100%!important;height:43px!important;padding:10px 11px!important;border-radius:10px!important;background:#f9fbfc!important;color:#18344b!important;border:1px solid #ccd9e2!important;font-size:12px!important;outline:none!important}.naf-cloud-mobile input:focus,.naf-cloud-mobile-open input:focus{border-color:#3182b8!important;box-shadow:0 0 0 3px rgba(49,130,184,.10)!important}.cloud-primary-btn,.cloud-secondary-btn,.cloud-sync-btn,.cloud-backup-btn{font-family:inherit!important;cursor:pointer!important}.cloud-primary-btn{width:100%;height:43px;border:0;border-radius:10px;background:#2569d8;color:#fff;font-size:12px;font-weight:800}.cloud-secondary-btn{width:100%;height:38px;margin-top:7px;border:1px solid #d3dee6;border-radius:10px;background:#fff;color:#557082;font-size:11px;font-weight:700}.cloud-actions{display:grid;grid-template-columns:1fr 110px;gap:9px;margin-top:12px}.cloud-sync-btn{height:46px;border:0;border-radius:12px;background:#07966f;color:#fff;display:flex;align-items:center;justify-content:center;gap:8px}.cloud-sync-btn span{font-size:19px}.cloud-sync-btn b{font-size:12px}.cloud-backup-btn{height:46px;border:1px solid #d2dee6;border-radius:12px;background:#fff;color:#36586d;display:flex;align-items:center;justify-content:center;gap:5px}.cloud-backup-btn span{font-size:17px}.cloud-backup-btn b{font-size:11px}.cloud-message{min-height:18px;margin-top:10px;padding:0 3px;color:#607586;font-size:10px;line-height:1.45}.naf-cloud-mobile .cloud-sync-hint,.naf-cloud-mobile-open .cloud-sync-hint{display:none!important}</style>
 <div id="alnajjar-mobile-app" aria-label="AlNajjar ERP Mobile">
 <header class="naf-top"><button class="naf-icon" onclick="nafDrawer(true)">☰</button><div class="naf-brand"><strong>AlNajjar ERP</strong><small>Operations Management</small></div><button class="naf-icon" onclick="nafSync()">↻</button></header>
 <main class="naf-main">
@@ -14362,7 +14362,7 @@ window.nafExport=function(){var e=document.getElementById('cloudExport');if(e)e.
 window.nafImport=function(){var e=document.getElementById('excelFileInput');if(e)e.click();else status('Import unavailable',false)}
 window.nafOpenCloud=function(){var p=document.getElementById('cloudSyncPanel');if(!p){status('Cloud settings unavailable',false);return}if(p.parentElement!==document.body)document.body.appendChild(p);p.classList.add('naf-cloud-mobile','naf-cloud-mobile-open');var s=document.getElementById('cloudSettings');if(s)s.open=true}
 window.nafCloseCloud=function(){var p=document.getElementById('cloudSyncPanel');if(p)p.classList.remove('naf-cloud-mobile-open')}
-window.nafSync=async function(){var e=document.getElementById('cloudSyncNow');if(!e){status('Sync control unavailable',false);return}e.click();setTimeout(function(){nafRefreshAll()},700)}
+window.nafSync=async function(){if(typeof window.performCloudSync==='function'){await window.performCloudSync();nafRefreshAll()}else{var e=document.getElementById('cloudSyncNow');if(e)e.click()}}
 function hook(){var f=document.getElementById('fuelForm');if(f&&!f.dataset.nafMobileHook){f.dataset.nafMobileHook='1';f.addEventListener('submit',function(){setTimeout(function(){nafRefreshAll();status('Operation saved',true)},450)})}}
 window.addEventListener('load',function(){var p=document.getElementById('cloudSyncPanel');if(p&&window.matchMedia&&window.matchMedia('(max-width:767px)').matches){document.body.appendChild(p);p.classList.add('naf-cloud-mobile');p.classList.remove('naf-cloud-mobile-open')}var c=document.getElementById('naf-cloud-close');if(c)c.addEventListener('click',nafCloseCloud);hook();setTimeout(function(){hook();nafRefreshAll()},300);var modal=document.getElementById('recordModal');if(modal)new MutationObserver(function(){if(!modal.classList.contains('active'))setTimeout(nafRefreshAll,150)}).observe(modal,{attributes:true,attributeFilter:['class']});var inp=document.getElementById('excelFileInput');if(inp)inp.addEventListener('change',function(){setTimeout(nafRefreshAll,700)})});
 })();
