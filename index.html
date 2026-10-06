@@ -13946,29 +13946,31 @@ window.toggleFleetAnalysisPanel=function(){
 }
 </style>
 <div id="cloudSyncPanel">
-  <div class="cloud-sync-header">
-    <button type="button" id="naf-cloud-close" class="naf-cloud-mobile-close" aria-label="Close">×</button>
-    <div class="cloud-title-wrap"><span class="cloud-title-icon">☁</span><div><strong>Cloud Sync</strong><small>Shared operations database</small></div></div>
-    <span id="cloudStatus" class="cloud-status-pill">Disconnected</span>
+  <div class="cloud-sync-header"><button type="button" id="naf-cloud-close" class="naf-cloud-mobile-close" aria-label="Close">×</button>
+    <strong>☁️ Cloud Sync</strong>
+    <span class="cloud-sync-hint">Hover to expand</span>
+    <span id="cloudStatus" style="font-size:12px;color:#fbbf24">Disconnected</span>
   </div>
   <div class="cloud-sync-body">
-    <div class="cloud-intro"><b>Cloud connection</b><span>Keep your operations synchronized across devices.</span></div>
-    <details id="cloudSettings" open>
-      <summary>Connection Settings <span>⌄</span></summary>
-      <div class="cloud-fields">
-        <label>Project URL<input id="cloudUrl" type="url" placeholder="https://xxxx.supabase.co"></label>
-        <label>Public anon key<input id="cloudKey" type="password" placeholder="Supabase public key"></label>
-        <label>Email address<input id="cloudEmail" type="email" autocomplete="username" placeholder="name@company.com"></label>
-        <label>Password<input id="cloudPassword" type="password" autocomplete="current-password" placeholder="Supabase account password"></label>
-      </div>
-      <button id="cloudConnect" class="cloud-primary-btn">Save Settings &amp; Connect</button>
-      <button id="cloudSignOut" class="cloud-secondary-btn">Sign Out</button>
+    <div style="font-size:12px;color:#cbd5e1;margin:7px 0 10px">Connect this system to Supabase once per device.</div>
+    <details id="cloudSettings">
+      <summary style="cursor:pointer;margin-bottom:8px">Connection / Sign In Settings</summary>
+      <label style="display:block;margin:6px 0 3px">Supabase Project URL</label>
+      <input id="cloudUrl" type="url" placeholder="https://xxxx.supabase.co" style="box-sizing:border-box;width:100%;padding:8px;border-radius:6px;border:1px solid #475569;background:#1f2937;color:white">
+      <label style="display:block;margin:6px 0 3px">Supabase anon/public key</label>
+      <input id="cloudKey" type="password" placeholder="Public anon key" style="box-sizing:border-box;width:100%;padding:8px;border-radius:6px;border:1px solid #475569;background:#1f2937;color:white">
+      <label style="display:block;margin:6px 0 3px">Email Address</label>
+      <input id="cloudEmail" type="email" autocomplete="username" placeholder="name@company.com" style="box-sizing:border-box;width:100%;padding:8px;border-radius:6px;border:1px solid #475569;background:#1f2937;color:white">
+      <label style="display:block;margin:6px 0 3px">Password</label>
+      <input id="cloudPassword" type="password" autocomplete="current-password" placeholder="Supabase account password" style="box-sizing:border-box;width:100%;padding:8px;border-radius:6px;border:1px solid #475569;background:#1f2937;color:white">
+      <button id="cloudConnect" style="margin-top:10px;width:100%;padding:9px;border:0;border-radius:6px;background:#2563eb;color:white;cursor:pointer">Save Settings & Connect</button>
+      <button id="cloudSignOut" style="margin-top:6px;width:100%;padding:8px;border:1px solid #64748b;border-radius:6px;background:transparent;color:white;cursor:pointer">Sign Out</button>
     </details>
-    <div class="cloud-actions">
-      <button id="cloudSyncNow" class="cloud-sync-btn"><span>↻</span><b>Synchronize Now</b></button>
-      <button id="cloudExport" class="cloud-backup-btn"><span>⇩</span><b>Backup</b></button>
+    <div style="display:flex;gap:8px;margin-top:10px">
+      <button id="cloudSyncNow" style="flex:1;padding:9px;border:0;border-radius:6px;background:#059669;color:white;cursor:pointer">Sync Now</button>
+      <button id="cloudExport" style="padding:9px;border:1px solid #64748b;border-radius:6px;background:transparent;color:white;cursor:pointer">Backup</button>
     </div>
-    <div id="cloudMessage" class="cloud-message"></div>
+    <div id="cloudMessage" style="font-size:12px;color:#cbd5e1;margin-top:8px;line-height:1.5"></div>
   </div>
 </div>
 <script>
