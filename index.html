@@ -14261,358 +14261,82 @@ window.toggleFleetAnalysisPanel=function(){
 
 
 <style id="alnajjar-mobile-final-style">
-/* =========================================================
-   ALNAJJAR MOBILE — production mobile layer
-   Uses the original desktop data model, forms and sync engine.
-   ========================================================= */
-@media (max-width:767px){
-  html,body{width:100%;height:100%;margin:0!important;padding:0!important;overflow:hidden!important;background:#f5f7fa!important}
-  body{color:#172033!important}
-  body>.container{display:block!important;max-width:none!important;width:100%!important;margin:0!important;padding:0!important}
-  body>.container>header,
-  body>.container>.header,
-  body>.container>.actions-bar,
-  body>.container>.dashboard,
-  body>.container>.table-container,
-  body>.container>.section,
-  body>.container>section,
-  body>.container>main,
-  body>.container>footer,
-  body>.container>div:not(#recordModal),
-  body>.container>form,
-  body>header{display:none!important}
-
-  #alnajjar-mobile-app{display:flex!important}
-  #recordModal{display:none!important}
-  #recordModal.active{display:flex!important;position:fixed!important;inset:0!important;z-index:100001!important;align-items:flex-end!important;justify-content:center!important;padding:0!important;background:rgba(15,31,48,.28)!important;backdrop-filter:blur(3px)!important}
-  #recordModal .record-modal-box{width:100%!important;max-width:720px!important;height:min(92dvh,900px)!important;max-height:92dvh!important;margin:0!important;overflow:auto!important;border-radius:22px 22px 0 0!important;background:#fff!important;color:#1e293b!important;box-shadow:0 -8px 35px rgba(15,31,48,.18)!important}
-  #recordModal .form-panel-title{position:sticky!important;top:0!important;z-index:5!important;background:#fff!important;color:#163e67!important;border-bottom:1px solid #e7edf3!important;padding:15px 16px!important}
-  #recordModal .form-section{background:#fff!important;border-color:#e5ebf1!important}
-  #recordModal .form-section-title,#recordModal label{color:#334155!important}
-  #recordModal input,#recordModal select,#recordModal textarea{font-size:16px!important;min-height:44px!important;background:#fff!important;color:#172033!important;border:1px solid #d5dee8!important;border-radius:10px!important}
-  #recordModal input:focus,#recordModal select:focus,#recordModal textarea:focus{border-color:#2d78bd!important;box-shadow:0 0 0 3px rgba(45,120,189,.10)!important;outline:none!important}
-  #recordModal .form-grid-2{grid-template-columns:1fr!important}
-  #recordModal .btn-group-form{position:sticky!important;bottom:0!important;background:#fff!important;padding:10px 0!important;border-top:1px solid #e7edf3!important}
-  #recordModal button{font-size:16px!important;min-height:44px}
-  #recordModal .close-modal-x{color:#526274!important;background:#eef3f7!important;border:0!important;border-radius:9px!important}
-}
-@media (min-width:768px){#alnajjar-mobile-app{display:none!important}}
-
-#alnajjar-mobile-app{
-  display:none;position:fixed;inset:0;z-index:99990;background:#f5f7fa;
-  color:#172033;font-family:'Inter','Segoe UI',Arial,sans-serif;flex-direction:column;
-}
-.naf-top{height:62px;flex:0 0 62px;background:#0f3b68;color:#fff;display:flex;align-items:center;gap:10px;padding:0 13px;box-shadow:0 2px 12px rgba(0,0,0,.18)}
-.naf-icon{width:40px;height:40px;border:0;border-radius:11px;background:rgba(255,255,255,.12);color:#fff;font-size:20px;display:grid;place-items:center}
-.naf-brand{flex:1;min-width:0}.naf-brand strong{display:block;font-size:16px}.naf-brand small{display:block;font-size:10px;opacity:.72;margin-top:2px}
-.naf-main{flex:1;min-height:0;overflow:auto;-webkit-overflow-scrolling:touch;padding:12px 12px 82px}
-.naf-screen{display:none}.naf-screen.active{display:block}
-.naf-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin:3px 1px 10px}
-.naf-title{font-size:22px;font-weight:800;line-height:1.1}.naf-sub{font-size:11px;color:#738094;margin-top:4px}
-.naf-date{font-size:10px;background:#fff;border:1px solid #e0e6ed;border-radius:9px;padding:7px 9px;color:#607086}
-.naf-status{display:flex;align-items:center;gap:6px;font-size:10px;color:#64748b;margin:0 2px 10px}
-.naf-status i{width:7px;height:7px;border-radius:50%;background:#18a66a;display:block}
-.naf-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}
-.naf-card{background:#fff;border:1px solid #e1e6ec;border-radius:14px;padding:13px;box-shadow:0 2px 8px rgba(20,38,60,.05)}
-.naf-kpi{min-height:78px}.naf-kpi small{display:block;font-size:9px;color:#7d8998}.naf-kpi b{display:block;font-size:23px;color:#123d68;margin:6px 0 3px}
-.naf-section{margin-top:12px}.naf-section-title{font-size:13px;font-weight:800;color:#26394e;margin:0 2px 8px}
-.naf-actions{display:grid;grid-template-columns:1fr 1fr;gap:9px}.naf-action{min-height:76px;text-align:left;background:#fff;border:1px solid #dde4eb;border-radius:13px;padding:12px;color:#173f69;font-weight:800}.naf-action b{display:block;font-size:20px;margin-bottom:5px}.naf-action small{font-size:9px;color:#7b8796;font-weight:400}
-.naf-chart{background:#fff;border:1px solid #e1e6ec;border-radius:14px;padding:10px}.naf-barrow{display:grid;grid-template-columns:36px 1fr 42px;gap:7px;align-items:center;margin:8px 0}.naf-barrow span{font-size:9px;color:#7b8796}.naf-bar{height:8px;background:#edf0f4;border-radius:8px;overflow:hidden}.naf-bar i{height:100%;display:block;background:#2b78c5;border-radius:8px}.naf-barrow b{font-size:10px;text-align:right}
-.naf-search{display:flex;gap:7px;margin-bottom:10px;position:sticky;top:0;z-index:5}.naf-search input{flex:1;min-width:0;height:44px;border:1px solid #d7dfe8;border-radius:11px;background:#fff;padding:0 12px;font-size:15px;outline:none}.naf-search button{width:44px;border:1px solid #d7dfe8;border-radius:11px;background:#fff;color:#607086;font-size:18px}
-.naf-list{display:grid;gap:8px}.naf-record{background:#fff;border:1px solid #dfe5eb;border-radius:13px;padding:12px;box-shadow:0 2px 7px rgba(20,38,60,.04);cursor:pointer}.naf-row{display:flex;justify-content:space-between;align-items:center;gap:8px}.naf-row strong{font-size:13px}.naf-num{font-size:10px;font-weight:800;color:#123d68;background:#eef4fa;border-radius:7px;padding:4px 7px}.naf-eff{font-size:14px;font-weight:800;color:#173f69;white-space:nowrap}.naf-meta{font-size:10px;color:#778395;line-height:1.45;margin-top:6px}
-.naf-empty{background:#fff;border:1px dashed #ccd5df;border-radius:13px;padding:28px 12px;text-align:center;color:#7a8797;font-size:12px}
-.naf-appgrid{display:grid;grid-template-columns:1fr 1fr;gap:9px}.naf-app{background:#fff;border:1px solid #dfe5eb;border-radius:13px;padding:13px;text-align:left}.naf-app span{font-size:22px;color:#123d68}.naf-app b{display:block;font-size:12px;margin-top:8px;color:#26394e}
-.naf-menu{display:grid;gap:8px}.naf-menu button{width:100%;min-height:48px;border:1px solid #dfe5eb;border-radius:12px;background:#fff;text-align:left;padding:10px 13px;font-weight:700;color:#26394e}
-.naf-bottom{position:absolute;left:0;right:0;bottom:0;height:66px;padding-bottom:env(safe-area-inset-bottom);background:#fff;border-top:1px solid #dfe4ea;display:grid;grid-template-columns:repeat(4,1fr);z-index:10}.naf-nav{border:0;background:none;color:#7b8796;font-size:9px;font-weight:700}.naf-nav span{display:block;font-size:20px;margin:5px 0 1px}.naf-nav.active{color:#123d68}
-.naf-drawer{display:none;position:absolute;inset:0;background:rgba(0,0,0,.42);z-index:20}.naf-drawer.open{display:block}.naf-drawer-panel{position:absolute;left:0;top:0;bottom:0;width:min(84%,330px);background:#fff;padding:18px 14px;overflow:auto;box-shadow:8px 0 24px rgba(0,0,0,.2)}.naf-drawer-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:15px}.naf-drawer-head b{font-size:18px}.naf-close{width:35px;height:35px;border:0;border-radius:9px;background:#eef2f6;font-size:19px}
-@media(max-width:380px){.naf-main{padding-left:9px;padding-right:9px}.naf-grid,.naf-actions,.naf-appgrid{gap:7px}.naf-card,.naf-action,.naf-app{padding:10px}.naf-title{font-size:20px}}
-.naf-kpi{cursor:pointer;transition:transform .12s ease,box-shadow .12s ease;text-align:left;border:1px solid #dfe7ef}
-.naf-kpi:active,.naf-action:active,.naf-app:active{transform:scale(.98)}
-.naf-kpi .naf-kpi-icon{width:30px;height:30px;border-radius:9px;background:#edf4fa;color:#164b78;display:grid;place-items:center;font-size:15px;float:right}
-.naf-kpi b{font-variant-numeric:tabular-nums}
-.naf-home-recent{display:grid;gap:7px}.naf-recent-head{display:flex;align-items:center;justify-content:space-between;margin:0 2px 7px}.naf-recent-head b{font-size:13px;color:#26394e}.naf-recent-head button{border:0;background:none;color:#2169a3;font-size:11px;font-weight:700}
-.naf-recent{background:#fff;border:1px solid #e0e6ed;border-radius:12px;padding:10px 11px;display:block;width:100%;text-align:left}.naf-recent .naf-row strong{font-size:12px}.naf-recent .naf-meta{font-size:9px}
-.naf-empty{box-shadow:none}
-.naf-cloud-mobile-close{display:none}
+@media(min-width:768px){#alnajjar-mobile-app{display:none!important}}
 @media(max-width:767px){
-  body>#cloudSyncPanel.naf-cloud-mobile .naf-cloud-mobile-close{display:grid;place-items:center;position:absolute;right:9px;top:9px;width:34px;height:34px;border:0;border-radius:9px;background:#273548;color:#fff;font-size:20px}
-  body>#cloudSyncPanel.naf-cloud-mobile{top:74px!important;max-height:calc(100dvh - 92px)!important;overflow:auto!important}
+html,body{width:100%;height:100%;margin:0!important;padding:0!important;overflow:hidden!important;background:#f3f6f9!important}body{color:#172b3f!important}
+body>.container{display:block!important;width:100%!important;max-width:none!important;margin:0!important;padding:0!important}
+body>.container>header,body>.container>.header,body>.container>.actions-bar,body>.container>.dashboard,body>.container>.table-container,body>.container>.section,body>.container>section,body>.container>main,body>.container>footer,body>.container>div:not(#recordModal),body>.container>form,body>header{display:none!important}
+#alnajjar-mobile-app{display:flex!important}#recordModal{display:none!important}#recordModal.active{display:flex!important;position:fixed!important;inset:0!important;z-index:100001!important;align-items:flex-end!important;background:rgba(9,28,46,.34)!important;backdrop-filter:blur(3px)!important}
+#recordModal .record-modal-box{width:100%!important;max-width:720px!important;height:min(94dvh,920px)!important;max-height:94dvh!important;margin:0!important;overflow:auto!important;border-radius:20px 20px 0 0!important;background:#fff!important;color:#172b3f!important}
+#recordModal input,#recordModal select,#recordModal textarea{font-size:16px!important;min-height:44px!important;background:#fff!important;color:#172b3f!important;border:1px solid #cfd9e3!important;border-radius:9px!important}#recordModal .form-grid-2{grid-template-columns:1fr!important}
 }
-@media(max-width:767px){
-  body>#cloudSyncPanel.naf-cloud-mobile{
-    position:fixed!important;left:8px!important;right:8px!important;top:70px!important;bottom:auto!important;
-    width:auto!important;max-width:none!important;z-index:100000!important;
-    display:none!important;background:#fff!important;border:1px solid #dfe6ee!important;border-radius:16px!important;
-    padding:13px!important;box-shadow:0 18px 45px rgba(0,0,0,.32)!important;
-  }
-  body>#cloudSyncPanel.naf-cloud-mobile.naf-cloud-mobile-open{display:block!important}
-  body>#cloudSyncPanel.naf-cloud-mobile .cloud-sync-body{
-    opacity:1!important;visibility:visible!important;height:auto!important;overflow:visible!important;
-  }
-  body>#cloudSyncPanel.naf-cloud-mobile .cloud-sync-hint{display:none!important}
-  body>#cloudSyncPanel.naf-cloud-mobile input{font-size:15px!important;min-height:42px!important}
-  body>#cloudSyncPanel.naf-cloud-mobile button{min-height:42px!important}
-}
+#alnajjar-mobile-app{display:none;position:fixed;inset:0;z-index:99990;background:#f3f6f9;color:#172b3f;font-family:'Inter','Segoe UI',Arial,sans-serif;flex-direction:column}#alnajjar-mobile-app *{box-sizing:border-box}
+.naf-top{height:64px;flex:0 0 64px;background:#123f67;color:#fff;display:flex;align-items:center;gap:10px;padding:0 14px;box-shadow:0 2px 14px rgba(12,38,62,.18)}.naf-icon{width:40px;height:40px;border:1px solid rgba(255,255,255,.14);border-radius:10px;background:rgba(255,255,255,.1);color:#fff;font-size:19px;display:grid;place-items:center}.naf-brand{flex:1}.naf-brand strong{display:block;font-size:16px}.naf-brand small{display:block;font-size:10px;opacity:.72;margin-top:2px}
+.naf-main{flex:1;min-height:0;overflow:auto;-webkit-overflow-scrolling:touch;padding:13px 13px 88px}.naf-screen{display:none}.naf-screen.active{display:block}.naf-head{display:flex;justify-content:space-between;gap:10px;margin:2px 1px 12px}.naf-title{font-size:23px;font-weight:800;color:#183a58}.naf-sub{font-size:11px;color:#708196;margin-top:4px}.naf-date{font-size:10px;background:#fff;border:1px solid #dce4eb;border-radius:9px;padding:7px 9px;color:#5d7186;white-space:nowrap}.naf-status{display:flex;gap:7px;align-items:center;font-size:10px;color:#6b7c8f;margin:-4px 2px 11px}.naf-status i{width:7px;height:7px;border-radius:50%;background:#16a66a}
+.naf-card{background:#fff;border:1px solid #dce4eb;border-radius:14px;box-shadow:0 2px 8px rgba(18,48,74,.045)}.naf-section{margin-top:15px}.naf-section-title{font-size:13px;font-weight:800;color:#29435b;margin:0 2px 8px}.naf-kpi-primary{padding:15px}.naf-kpi-primary .label{font-size:11px;color:#687c90}.naf-kpi-primary .value{display:flex;align-items:baseline;gap:5px;margin-top:5px}.naf-kpi-primary b{font-size:29px;color:#123f67}.naf-kpi-primary em{font-size:11px;color:#728499;font-style:normal}
+.naf-kpi-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}.naf-kpi{padding:12px;min-height:89px}.naf-kpi .label{display:block;font-size:10px;color:#728398}.naf-kpi b{display:block;font-size:21px;color:#17486f;margin-top:8px}.naf-kpi .unit{display:block;font-size:9px;color:#8997a6;margin-top:2px}.naf-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.naf-summary .item{padding:11px 9px}.naf-summary .item b{display:block;font-size:17px;color:#183f61}.naf-summary .item span{font-size:9px;color:#77899b;display:block;margin-top:3px}
+.naf-alerts{display:grid;gap:7px}.naf-alert{display:flex;gap:9px;align-items:center;padding:10px 11px;background:#fff;border:1px solid #dce4eb;border-radius:11px}.naf-alert .dot{width:8px;height:8px;border-radius:50%;flex:0 0 8px}.naf-alert strong{font-size:11px;color:#294258}.naf-alert span{display:block;font-size:9px;color:#7b8b9c;margin-top:2px}
+.naf-actions,.naf-appgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.naf-action,.naf-app{min-height:70px;text-align:left;background:#fff;border:1px solid #dce4eb;border-radius:12px;padding:11px;color:#1b496d}.naf-action b{display:block;font-size:18px;margin-bottom:4px}.naf-action small{display:block;font-size:9px;color:#8190a0}.naf-app{min-height:78px}.naf-app span{font-size:20px;display:block;margin-bottom:6px}.naf-app b{font-size:11px}
+.naf-card-head{display:flex;align-items:center;justify-content:space-between;padding:12px 13px;border-bottom:1px solid #e7edf2}.naf-card-head b{font-size:12px;color:#29435b}.naf-card-head button{border:0;background:none;color:#2871a8;font-size:10px;font-weight:700}.naf-recent-list{padding:0 13px}.naf-recent{display:block;width:100%;text-align:left;background:#fff;border:0;border-bottom:1px solid #edf1f4;padding:12px 0;color:#1e374e}.naf-row{display:flex;justify-content:space-between;align-items:center;gap:8px}.naf-row strong,.record-title{font-size:11px;font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.naf-num,.record-id{font-size:9px;color:#7d8c9c}.naf-meta{font-size:9px;color:#7d8d9e;margin-top:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.naf-eff{font-size:9px;font-weight:800;color:#23764f}
+.naf-chart{padding:12px}.naf-barrow{display:grid;grid-template-columns:50px 1fr 42px;gap:7px;align-items:center;margin:9px 0}.naf-barrow span{font-size:8px;color:#7c8b9b;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.naf-bar{height:7px;background:#edf2f5;border-radius:10px;overflow:hidden}.naf-bar i{display:block;height:100%;background:#2876ad;border-radius:10px}.naf-barrow b{font-size:9px;text-align:right;color:#4b647b}
+.naf-searchbar{display:flex;gap:7px;margin-bottom:9px}.naf-searchbar input{flex:1;min-width:0;height:43px;border:1px solid #cfd9e3;border-radius:10px;background:#fff!important;color:#1c3348!important;padding:0 12px;font-size:15px;outline:none}.naf-searchbar input::placeholder{color:#8a99a8}.naf-searchbar button{width:42px;border:1px solid #cfd9e3;border-radius:10px;background:#fff;color:#52687d;font-size:18px}.naf-filters{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:10px}.naf-filters select{width:100%;height:38px;border:1px solid #d3dde5;border-radius:9px;background:#fff;color:#30485e;padding:0 8px;font-size:11px}
+.naf-list-head{display:flex;justify-content:space-between;margin:8px 1px}.naf-list-head b{font-size:11px;color:#536a80}.naf-list-head span{font-size:9px;color:#8795a4}.naf-list{display:grid;gap:7px}.naf-record{background:#fff;border:1px solid #dce4eb;border-radius:12px;padding:12px;cursor:pointer}.naf-record .record-title{color:#20445f}.naf-record .record-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:9px;padding-top:8px;border-top:1px solid #edf1f4}.naf-field-label{font-size:8px;color:#8a98a6;text-transform:uppercase}.naf-field-value{font-size:10px;color:#354d62;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.naf-pagination{display:flex;align-items:center;justify-content:center;gap:7px;padding:12px 0 3px}.naf-page-btn,.naf-page-size{height:35px;border:1px solid #d1dce5;border-radius:9px;background:#fff;color:#365168}.naf-page-btn{width:36px;font-size:18px}.naf-page-btn:disabled{opacity:.4}.naf-page-info{font-size:9px;color:#718397;min-width:120px;text-align:center}.naf-page-size{padding:0 7px;font-size:10px}
+.naf-fleet-hero{padding:14px}.naf-fleet-hero .value{font-size:24px;font-weight:800;color:#16476c}.naf-fleet-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}.naf-fleet-mini{padding:10px}.naf-fleet-mini b{display:block;font-size:16px;color:#214b6b}.naf-fleet-mini span{font-size:9px;color:#7e8e9e}
+.naf-menu{background:#fff;border:1px solid #dce4eb;border-radius:12px;overflow:hidden}.naf-menu button{display:block;width:100%;text-align:left;background:#fff;border:0;border-bottom:1px solid #edf1f4;padding:13px;color:#365168;font-size:11px}.naf-menu button:last-child{border-bottom:0}
+.naf-bottom{height:70px;flex:0 0 70px;display:grid;grid-template-columns:repeat(4,1fr);background:#fff;border-top:1px solid #dce4eb;box-shadow:0 -2px 12px rgba(18,48,74,.06)}.naf-nav{border:0;background:#fff;color:#8291a0;font-size:9px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px}.naf-nav span{font-size:19px}.naf-nav.active{color:#176092;font-weight:800}
+.naf-drawer{position:fixed;inset:0;background:rgba(8,27,43,.35);z-index:100000;visibility:hidden;opacity:0}.naf-drawer.open{visibility:visible;opacity:1}.naf-drawer-panel{position:absolute;left:0;top:0;bottom:0;width:min(86vw,350px);background:#f7f9fb;padding:16px;overflow:auto;box-shadow:10px 0 35px rgba(0,0,0,.18)}.naf-drawer-head{display:flex;justify-content:space-between;align-items:center;color:#123f67;font-size:17px}.naf-close{border:0;background:#e9eff4;color:#4d6377;border-radius:8px;width:34px;height:34px;font-size:20px}.naf-empty{text-align:center;padding:24px 10px;color:#8998a7;font-size:11px;background:#fff;border:1px dashed #d7e0e7;border-radius:11px}
+#cloudSyncPanel.naf-cloud-mobile,#cloudSyncPanel.naf-cloud-mobile-open{position:fixed!important;left:50%!important;right:auto!important;top:50%!important;transform:translate(-50%,-50%)!important;width:calc(100% - 24px)!important;max-width:480px!important;max-height:88dvh!important;z-index:100002!important;background:#fff!important;color:#21384d!important;border:1px solid #d5e0e8!important;border-radius:16px!important;box-shadow:0 18px 55px rgba(10,31,48,.28)!important;padding:0!important;overflow:auto!important;display:none!important}#cloudSyncPanel.naf-cloud-mobile-open{display:block!important}#cloudSyncPanel.naf-cloud-mobile .cloud-sync-header,#cloudSyncPanel.naf-cloud-mobile-open .cloud-sync-header{background:#123f67!important;color:#fff!important;border-radius:15px 15px 0 0!important;padding:12px!important;display:flex!important;align-items:center!important;gap:8px!important}.naf-cloud-mobile .cloud-sync-hint,.naf-cloud-mobile-open .cloud-sync-hint{display:none!important}.naf-cloud-mobile input,.naf-cloud-mobile-open input{background:#fff!important;color:#1d3347!important;border:1px solid #cbd7e1!important}
 </style>
-
 <div id="alnajjar-mobile-app" aria-label="AlNajjar ERP Mobile">
-  <header class="naf-top">
-    <button class="naf-icon" onclick="nafDrawer(true)" aria-label="Menu">☰</button>
-    <div class="naf-brand"><strong>AlNajjar ERP</strong><small>Operations Management</small></div>
-    <button class="naf-icon" onclick="nafSync()" aria-label="Synchronize">↻</button>
-  </header>
-
-  <main class="naf-main">
-    <section id="naf-home" class="naf-screen active">
-      <div class="naf-head">
-        <div><div class="naf-title">Overview</div><div class="naf-sub">AlNajjar Operations</div></div>
-        <div class="naf-date" id="naf-date">Today</div>
-      </div>
-      <div class="naf-status"><i></i><span id="naf-status">Ready</span></div>
-
-      <div class="naf-kpi-grid">
-        <button class="naf-card naf-kpi" onclick="nafShow('records')"><span class="naf-kpi-icon">▤</span><span class="naf-kpi-label">Total Records</span><b id="naf-kpi-count">0</b><span class="naf-kpi-unit">Entries</span></button>
-        <button class="naf-card naf-kpi" onclick="nafShow('fleet')"><span class="naf-kpi-icon">↗</span><span class="naf-kpi-label">Overall Efficiency</span><b id="naf-kpi-eff">0.00</b><span class="naf-kpi-unit">KM/L</span></button>
-        <button class="naf-card naf-kpi" onclick="nafShow('records')"><span class="naf-kpi-icon">↔</span><span class="naf-kpi-label">Total Distance</span><b id="naf-kpi-km">0</b><span class="naf-kpi-unit">KM</span></button>
-        <button class="naf-card naf-kpi" onclick="nafShow('records')"><span class="naf-kpi-icon">⛽</span><span class="naf-kpi-label">Total Fuel</span><b id="naf-kpi-fuel">0.00</b><span class="naf-kpi-unit">Liters</span></button>
-        <button class="naf-card naf-kpi naf-kpi-more" onclick="nafShow('records')"><span class="naf-kpi-icon">◷</span><span class="naf-kpi-label">Avg Distance / Record</span><b id="naf-kpi-avg-km">0.00</b><span class="naf-kpi-unit">KM</span></button>
-        <button class="naf-card naf-kpi naf-kpi-more" onclick="nafShow('records')"><span class="naf-kpi-icon">⛽</span><span class="naf-kpi-label">Avg Fuel / Record</span><b id="naf-kpi-avg-fuel">0.00</b><span class="naf-kpi-unit">Liters</span></button>
-        <button class="naf-card naf-kpi naf-kpi-more" onclick="nafShow('fleet')"><span class="naf-kpi-icon">🚚</span><span class="naf-kpi-label">Mercedes Distance</span><b id="naf-kpi-mercedes-km">0.00</b><span class="naf-kpi-unit">KM</span></button>
-        <button class="naf-card naf-kpi naf-kpi-more" onclick="nafShow('fleet')"><span class="naf-kpi-icon">🚚</span><span class="naf-kpi-label">Volvo Distance</span><b id="naf-kpi-volvo-km">0.00</b><span class="naf-kpi-unit">KM</span></button>
-        <button class="naf-card naf-kpi naf-kpi-more" onclick="nafShow('fleet')"><span class="naf-kpi-icon">M</span><span class="naf-kpi-label">Mercedes Efficiency</span><b id="naf-kpi-mercedes-eff">0.00</b><span class="naf-kpi-unit">KM/L</span></button>
-        <button class="naf-card naf-kpi naf-kpi-more" onclick="nafShow('fleet')"><span class="naf-kpi-icon">V</span><span class="naf-kpi-label">Volvo Efficiency</span><b id="naf-kpi-volvo-eff">0.00</b><span class="naf-kpi-unit">KM/L</span></button>
-        <button class="naf-card naf-kpi naf-kpi-more" onclick="nafShow('fleet')"><span class="naf-kpi-icon">M</span><span class="naf-kpi-label">Mercedes Avg Fuel</span><b id="naf-kpi-mercedes-fuel">0.00</b><span class="naf-kpi-unit">Liters / record</span></button>
-        <button class="naf-card naf-kpi naf-kpi-more" onclick="nafShow('fleet')"><span class="naf-kpi-icon">V</span><span class="naf-kpi-label">Volvo Avg Fuel</span><b id="naf-kpi-volvo-fuel">0.00</b><span class="naf-kpi-unit">Liters / record</span></button>
-      </div>
-      <div class="naf-section">
-        <div class="naf-section-title">Operational Indicators</div>
-        <div id="naf-dashboard-alert" class="naf-dashboard-alert"><b>Loading indicators…</b></div>
-      </div>
-
-      <div class="naf-section">
-        <div class="naf-section-title">Quick Actions</div>
-        <div class="naf-actions">
-          <button class="naf-action" onclick="nafNewRecord()"><b>＋</b>New Record<small>Add operation</small></button>
-          <button class="naf-action" onclick="nafShow('records')"><b>▤</b>Records<small>Latest first</small></button>
-          <button class="naf-action" onclick="nafShow('fleet')"><b>▦</b>Fleet<small>Vehicle analysis</small></button>
-          <button class="naf-action" onclick="nafOpenCloud()"><b>☁</b>Cloud Sync<small>Connection & sync</small></button>
-        </div>
-      </div>
-
-      <div class="naf-section">
-        <div class="naf-recent-head"><b>Latest Operations</b><button onclick="nafShow('records')">View all →</button></div>
-        <div id="naf-recent-list" class="naf-home-recent"></div>
-      </div>
-
-      <div class="naf-section">
-        <div class="naf-section-title">Efficiency Trend</div>
-        <div id="naf-chart" class="naf-chart"><div class="naf-empty">No records.</div></div>
-      </div>
-    </section>
-
-    <section id="naf-records" class="naf-screen">
-      <div class="naf-head"><div><div class="naf-title">Records</div><div class="naf-sub">Tap a record to edit</div></div></div>
-      <div class="naf-search"><input id="naf-search" type="search" autocomplete="off" placeholder="Vehicle, driver, invoice..." oninput="nafRecordsPage=1;nafRenderRecords()"><button onclick="nafClearSearch()">×</button></div>
-      <div id="naf-record-list" class="naf-list"></div>
-      <div class="naf-pagination">
-        <button id="naf-prev" class="naf-page-btn" onclick="nafRecordsPrev()">‹</button>
-        <div id="naf-page-info" class="naf-page-info">Page 1 of 1</div>
-        <select id="naf-page-size" class="naf-page-size" onchange="nafRecordsPage=1;nafRenderRecords()"><option value="20">20</option><option value="30" selected>30</option><option value="50">50</option></select>
-        <button id="naf-next" class="naf-page-btn" onclick="nafRecordsNext()">›</button>
-      </div>
-    </section>
-
-    <section id="naf-fleet" class="naf-screen">
-      <div class="naf-head"><div><div class="naf-title">Fleet</div><div class="naf-sub">Performance by vehicle</div></div></div>
-      <div class="naf-card"><div class="naf-section-title" style="margin-left:0">Top Vehicles</div><div id="naf-fleet-bars"></div></div>
-      <div id="naf-fleet-list" class="naf-list" style="margin-top:10px"></div>
-    </section>
-
-    <section id="naf-apps" class="naf-screen">
-      <div class="naf-head"><div><div class="naf-title">Apps & Tools</div><div class="naf-sub">Operations and system actions</div></div></div>
-      <div class="naf-appgrid">
-        <button class="naf-app" onclick="nafNewRecord()"><span>＋</span><b>New Record</b></button>
-        <button class="naf-app" onclick="nafShow('records')"><span>▤</span><b>Records</b></button>
-        <button class="naf-app" onclick="nafShow('fleet')"><span>▦</span><b>Fleet</b></button>
-        <button class="naf-app" onclick="nafSync()"><span>↻</span><b>Sync</b></button>
-      </div>
-      <div class="naf-section">
-        <div class="naf-section-title">Data</div>
-        <div class="naf-menu">
-          <button onclick="nafImport()">⇧ Import Excel / CSV</button>
-          <button onclick="nafExport()">⇩ Export Data</button>
-          <button onclick="nafOpenCloud()">☁ Cloud Connection</button>
-        </div>
-      </div>
-    </section>
-  </main>
-
-  <nav class="naf-bottom">
-    <button class="naf-nav active" data-screen="home" onclick="nafShow('home')"><span>⌂</span>Home</button>
-    <button class="naf-nav" data-screen="records" onclick="nafShow('records')"><span>▤</span>Records</button>
-    <button class="naf-nav" data-screen="fleet" onclick="nafShow('fleet')"><span>▦</span>Fleet</button>
-    <button class="naf-nav" data-screen="apps" onclick="nafShow('apps')"><span>⋯</span>Apps</button>
-  </nav>
-
-  <div id="naf-drawer" class="naf-drawer" onclick="if(event.target===this)nafDrawer(false)">
-    <div class="naf-drawer-panel">
-      <div class="naf-drawer-head"><b>AlNajjar ERP</b><button class="naf-close" onclick="nafDrawer(false)">×</button></div>
-      <div class="naf-sub" style="margin-bottom:12px">Operations Management</div>
-      <div class="naf-appgrid">
-        <button class="naf-app" onclick="nafDrawer(false);nafShow('home')"><span>⌂</span><b>Dashboard</b></button>
-        <button class="naf-app" onclick="nafDrawer(false);nafShow('records')"><span>▤</span><b>Records</b></button>
-        <button class="naf-app" onclick="nafDrawer(false);nafShow('fleet')"><span>▦</span><b>Fleet</b></button>
-        <button class="naf-app" onclick="nafDrawer(false);nafNewRecord()"><span>＋</span><b>New Record</b></button>
-      </div>
-      <div class="naf-section">
-        <div class="naf-section-title">System</div>
-        <div class="naf-menu">
-          <button onclick="nafDrawer(false);nafImport()">⇧ Import Excel / CSV</button>
-          <button onclick="nafDrawer(false);nafExport()">⇩ Export Data</button>
-          <button onclick="nafDrawer(false);nafSync()">↻ Synchronize</button>
-          <button onclick="nafDrawer(false);nafOpenCloud()">☁ Cloud Connection</button>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-
+<header class="naf-top"><button class="naf-icon" onclick="nafDrawer(true)">☰</button><div class="naf-brand"><strong>AlNajjar ERP</strong><small>Operations Management</small></div><button class="naf-icon" onclick="nafSync()">↻</button></header>
+<main class="naf-main">
+<section id="naf-home" class="naf-screen active"><div class="naf-head"><div><div class="naf-title">Operations Dashboard</div><div class="naf-sub">Fleet, fuel and daily operations</div></div><div class="naf-date" id="naf-date">Today</div></div><div class="naf-status"><i></i><span id="naf-status">Ready</span></div>
+<div class="naf-card naf-kpi-primary"><span class="label">Total Operations</span><div class="value"><b id="naf-kpi-count">0</b><em>records</em></div></div>
+<div class="naf-section"><div class="naf-section-title">Key Performance Indicators</div><div class="naf-kpi-grid"><div class="naf-card naf-kpi"><span class="label">Total Distance</span><b id="naf-kpi-km">0</b><span class="unit">KM</span></div><div class="naf-card naf-kpi"><span class="label">Total Fuel Consumption</span><b id="naf-kpi-fuel">0.00</b><span class="unit">Liters</span></div><div class="naf-card naf-kpi"><span class="label">Average Distance / Record</span><b id="naf-kpi-avg-km">0.00</b><span class="unit">KM / record</span></div><div class="naf-card naf-kpi"><span class="label">Average Fuel / Record</span><b id="naf-kpi-avg-fuel">0.00</b><span class="unit">Liters / record</span></div><div class="naf-card naf-kpi"><span class="label">Overall Fuel Efficiency</span><b id="naf-kpi-eff">0.00</b><span class="unit">KM / L</span></div><div class="naf-card naf-kpi"><span class="label">Records With Fuel</span><b id="naf-kpi-fuel-records">0</b><span class="unit">records</span></div></div></div>
+<div class="naf-section"><div class="naf-section-title">Operational Indicators</div><div class="naf-alerts" id="naf-dashboard-alert"></div></div>
+<div class="naf-section"><div class="naf-section-title">Fleet Snapshot</div><div class="naf-summary"><div class="naf-card item"><b id="naf-kpi-mercedes-km">0</b><span>Mercedes KM</span></div><div class="naf-card item"><b id="naf-kpi-mercedes-eff">0.00</b><span>Mercedes KM/L</span></div><div class="naf-card item"><b id="naf-kpi-mercedes-fuel">0.00</b><span>Mercedes L/record</span></div><div class="naf-card item"><b id="naf-kpi-volvo-km">0</b><span>Volvo KM</span></div><div class="naf-card item"><b id="naf-kpi-volvo-eff">0.00</b><span>Volvo KM/L</span></div><div class="naf-card item"><b id="naf-kpi-volvo-fuel">0.00</b><span>Volvo L/record</span></div></div></div>
+<div class="naf-section"><div class="naf-section-title">Quick Actions</div><div class="naf-actions"><button class="naf-action" onclick="nafNewRecord()"><b>＋</b>New Operation<small>Create a fuel record</small></button><button class="naf-action" onclick="nafShow('records')"><b>▤</b>Operations<small>Search and review</small></button><button class="naf-action" onclick="nafShow('fleet')"><b>▦</b>Fleet Analysis<small>Vehicle performance</small></button><button class="naf-action" onclick="nafOpenCloud()"><b>☁</b>Cloud Sync<small>Connection and data sync</small></button></div></div>
+<div class="naf-section naf-card"><div class="naf-card-head"><b>Latest Operations</b><button onclick="nafShow('records')">View all</button></div><div id="naf-recent-list" class="naf-recent-list"></div></div><div class="naf-section"><div class="naf-section-title">Efficiency Trend</div><div id="naf-chart" class="naf-card naf-chart"></div></div></section>
+<section id="naf-records" class="naf-screen"><div class="naf-head"><div><div class="naf-title">Operations</div><div class="naf-sub">Review and edit recorded operations</div></div></div><div class="naf-searchbar"><input id="naf-search" type="search" autocomplete="off" placeholder="Search vehicle, driver, site, invoice..." oninput="nafRecordsPage=1;nafRenderRecords()"><button onclick="nafClearSearch()">×</button></div><div class="naf-filters"><select id="naf-filter-car" onchange="nafRecordsPage=1;nafRenderRecords()"><option value="">All vehicles</option></select><select id="naf-filter-driver" onchange="nafRecordsPage=1;nafRenderRecords()"><option value="">All drivers</option></select></div><div class="naf-list-head"><b id="naf-record-count">0 records</b><span>Tap a record to edit</span></div><div id="naf-record-list" class="naf-list"></div><div class="naf-pagination"><button id="naf-prev" class="naf-page-btn" onclick="nafRecordsPrev()">‹</button><div id="naf-page-info" class="naf-page-info">Page 1 of 1</div><select id="naf-page-size" class="naf-page-size" onchange="nafRecordsPage=1;nafRenderRecords()"><option value="20">20</option><option value="30" selected>30</option><option value="50">50</option></select><button id="naf-next" class="naf-page-btn" onclick="nafRecordsNext()">›</button></div></section>
+<section id="naf-fleet" class="naf-screen"><div class="naf-head"><div><div class="naf-title">Fleet Analysis</div><div class="naf-sub">Performance by vehicle</div></div></div><div class="naf-card naf-fleet-hero"><span class="naf-sub">Fleet average efficiency</span><div class="value" id="naf-fleet-avg">0.00 KM/L</div><div class="naf-fleet-grid"><div class="naf-card naf-fleet-mini"><b id="naf-fleet-count">0</b><span>Vehicles</span></div><div class="naf-card naf-fleet-mini"><b id="naf-fleet-km">0</b><span>Total KM</span></div></div></div><div class="naf-section"><div class="naf-section-title">Vehicle Efficiency</div><div class="naf-card naf-chart" id="naf-fleet-bars"></div></div><div class="naf-section"><div class="naf-section-title">Vehicle Details</div><div id="naf-fleet-list" class="naf-list"></div></div></section>
+<section id="naf-apps" class="naf-screen"><div class="naf-head"><div><div class="naf-title">Tools</div><div class="naf-sub">Data and system operations</div></div></div><div class="naf-appgrid"><button class="naf-app" onclick="nafNewRecord()"><span>＋</span><b>New Operation</b></button><button class="naf-app" onclick="nafShow('records')"><span>▤</span><b>Operations</b></button><button class="naf-app" onclick="nafShow('fleet')"><span>▦</span><b>Fleet Analysis</b></button><button class="naf-app" onclick="nafSync()"><span>↻</span><b>Synchronize</b></button></div><div class="naf-section"><div class="naf-section-title">Data Management</div><div class="naf-menu"><button onclick="nafImport()">⇧ Import Excel / CSV</button><button onclick="nafExport()">⇩ Export Backup</button><button onclick="nafOpenCloud()">☁ Cloud Connection</button></div></div></section>
+</main><nav class="naf-bottom"><button class="naf-nav active" data-screen="home" onclick="nafShow('home')"><span>⌂</span>Home</button><button class="naf-nav" data-screen="records" onclick="nafShow('records')"><span>▤</span>Operations</button><button class="naf-nav" data-screen="fleet" onclick="nafShow('fleet')"><span>▦</span>Fleet</button><button class="naf-nav" data-screen="apps" onclick="nafShow('apps')"><span>⋯</span>Tools</button></nav>
+<div id="naf-drawer" class="naf-drawer" onclick="if(event.target===this)nafDrawer(false)"><div class="naf-drawer-panel"><div class="naf-drawer-head"><b>AlNajjar ERP</b><button class="naf-close" onclick="nafDrawer(false)">×</button></div><div class="naf-sub" style="margin:5px 0 15px">Operations Management</div><div class="naf-appgrid"><button class="naf-app" onclick="nafDrawer(false);nafShow('home')"><span>⌂</span><b>Dashboard</b></button><button class="naf-app" onclick="nafDrawer(false);nafShow('records')"><span>▤</span><b>Operations</b></button><button class="naf-app" onclick="nafDrawer(false);nafShow('fleet')"><span>▦</span><b>Fleet</b></button><button class="naf-app" onclick="nafDrawer(false);nafNewRecord()"><span>＋</span><b>New Operation</b></button></div><div class="naf-section"><div class="naf-section-title">System</div><div class="naf-menu"><button onclick="nafDrawer(false);nafImport()">⇧ Import Excel / CSV</button><button onclick="nafDrawer(false);nafExport()">⇩ Export Backup</button><button onclick="nafDrawer(false);nafSync()">↻ Synchronize</button><button onclick="nafDrawer(false);nafOpenCloud()">☁ Cloud Connection</button></div></div></div></div></div>
 <script id="alnajjar-mobile-final-logic">
 (function(){
-  function esc(v){return String(v??'').replace(/[&<>"']/g,function(s){return({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[s]})}
-  function n(v){var x=Number(v);return Number.isFinite(x)?x:0}
-  function data(){return window.__ALNAJJAR_MOBILE__&&Array.isArray(window.__ALNAJJAR_MOBILE__.getRecords())?window.__ALNAJJAR_MOBILE__.getRecords():[]}
-  function km(r){var d=n(r.endKm)-n(r.startingKm);if(d>0)return d;return n(r.kmDay)>0?n(r.kmDay):n(r.trip1Km)+n(r.trip2Km)}
-  function eff(r){return n(r.avrgKm||r.avgKm)}
-  function setStatus(t,ok){var e=document.getElementById('naf-status');if(e)e.textContent=t;var dot=document.querySelector('.naf-status i');if(dot)dot.style.background=ok?'#18a66a':'#e59b22'}
-  window.nafDrawer=function(open){var e=document.getElementById('naf-drawer');if(e)e.classList.toggle('open',!!open)}
-  window.nafShow=function(screen){
-    document.querySelectorAll('#alnajjar-mobile-app .naf-screen').forEach(function(e){e.classList.remove('active')});
-    var s=document.getElementById('naf-'+screen);if(s)s.classList.add('active');
-    document.querySelectorAll('#alnajjar-mobile-app .naf-nav').forEach(function(e){e.classList.toggle('active',e.dataset.screen===screen)});
-    var main=document.querySelector('.naf-main');if(main)main.scrollTop=0;
-    if(screen==='home')nafRefresh();
-    if(screen==='records'){window.nafRecordsPage=1;nafRenderRecords();}
-    if(screen==='fleet')nafRenderFleet();
-  };
-  window.nafNewRecord=function(){
-    if(typeof window.openRecordModal==='function'){window.openRecordModal();setStatus('New record form ready',true)}
-    else setStatus('Record form unavailable',false);
-  };
-  window.nafRefreshAll=function(){nafRefresh();nafRenderRecords();nafRenderFleet()};
-  window.nafRefreshFromDesktop=function(){setTimeout(nafRefreshAll,80)}
-  window.nafClearSearch=function(){var e=document.getElementById('naf-search');if(e){e.value='';window.nafRecordsPage=1;nafRenderRecords();e.focus()}}
-  function mobileDateValue(v){
-    if(!v)return 0;
-    var s=String(v).trim(), d=0;
-    var m=s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})$/);
-    if(m){var y=Number(m[3]);if(y<100)y+=2000;d=new Date(y,Number(m[2])-1,Number(m[1])).getTime();if(Number.isFinite(d))return d}
-    d=Date.parse(s);return Number.isFinite(d)?d:0;
-  }
-  window.nafRecordsPage=1;
-  window.nafRecordsPrev=function(){if(window.nafRecordsPage>1){window.nafRecordsPage--;nafRenderRecords()}};
-  window.nafRecordsNext=function(){var list=data();var q=(document.getElementById('naf-search')?.value||'').trim().toLowerCase();var total=list.filter(function(x){return !q||JSON.stringify(x).toLowerCase().includes(q)}).length;var size=Number(document.getElementById('naf-page-size')?.value||30),pages=Math.max(1,Math.ceil(total/size));if(window.nafRecordsPage<pages){window.nafRecordsPage++;nafRenderRecords()}};
-  window.nafRenderRecords=function(){
-    var list=document.getElementById('naf-record-list');if(!list)return;
-    var q=(document.getElementById('naf-search')?.value||'').trim().toLowerCase();
-    var rows=data().map(function(x,i){return{x:x,i:i}}).filter(function(o){return !q||JSON.stringify(o.x).toLowerCase().includes(q)});
-    rows.sort(function(a,b){
-      var da=mobileDateValue(a.x.date),db=mobileDateValue(b.x.date);
-      if(db!==da)return db-da;
-      return b.i-a.i;
-    });
-    var size=Number(document.getElementById('naf-page-size')?.value||30),pages=Math.max(1,Math.ceil(rows.length/size));
-    if(window.nafRecordsPage>pages)window.nafRecordsPage=pages;
-    var start=(window.nafRecordsPage-1)*size;
-    var pageRows=rows.slice(start,start+size);
-    var info=document.getElementById('naf-page-info');if(info)info.textContent='Page '+window.nafRecordsPage+' of '+pages+' · '+rows.length+' records';
-    var prev=document.getElementById('naf-prev'),next=document.getElementById('naf-next');if(prev)prev.disabled=window.nafRecordsPage<=1;if(next)next.disabled=window.nafRecordsPage>=pages;
-    list.innerHTML=pageRows.map(function(o){
-      var r=o.x, date=r.date||'No date', vehicle=r.car||r.vehicle||'Vehicle';
-      return '<article class="naf-record" onclick="editRecord('+o.i+')"><div class="naf-row"><strong>'+esc(vehicle)+'</strong><span class="naf-num">#'+esc(r.sn||o.i+1)+'</span></div><div class="naf-row" style="margin-top:7px"><span class="naf-meta">'+esc(date)+' · '+esc(r.driver||'No driver')+'</span><span class="naf-eff">'+eff(r).toFixed(2)+' KM/L</span></div><div class="naf-meta">'+esc(r.site||'No site')+' · Invoice '+esc(r.invoiceNumber||'—')+'</div></article>';
-    }).join('')||'<div class="naf-empty">No matching records.</div>';
-  };
-  window.nafRenderFleet=function(){
-    var map={};data().forEach(function(r){var car=r.car||r.vehicle||'Unknown';if(!map[car])map[car]={n:0,e:0};var e=eff(r);if(e){map[car].e+=e;map[car].n++}});
-    var rows=Object.keys(map).map(function(car){return{car:car,n:map[car].n,avg:map[car].n?map[car].e/map[car].n:0}}).sort(function(a,b){return b.avg-a.avg});
-    var max=Math.max.apply(null,rows.map(function(r){return r.avg}).concat([1]));
-    var bars=document.getElementById('naf-fleet-bars'),list=document.getElementById('naf-fleet-list');
-    if(!rows.length){if(bars)bars.innerHTML='<div class="naf-empty">No fleet data.</div>';if(list)list.innerHTML='';return}
-    if(bars)bars.innerHTML=rows.slice(0,6).map(function(r){return '<div class="naf-barrow"><span>'+esc(String(r.car).slice(0,7))+'</span><div class="naf-bar"><i style="width:'+Math.min(100,r.avg/max*100)+'%"></i></div><b>'+r.avg.toFixed(1)+'</b></div>'}).join('');
-    if(list)list.innerHTML=rows.slice(0,40).map(function(r){return '<article class="naf-record"><div class="naf-row"><strong>'+esc(r.car)+'</strong><span class="naf-eff">'+r.avg.toFixed(2)+' KM/L</span></div><div class="naf-meta">Records: '+r.n+'</div></article>'}).join('');
-  };
-  window.nafRefresh=function(){
-    var r=data(), validEff=r.map(eff).filter(function(x){return x>0});
-    var count=r.length,avg=validEff.length?validEff.reduce(function(a,b){return a+b},0)/validEff.length:0;
-    var totalKm=r.reduce(function(a,x){return a+km(x)},0),fuel=r.reduce(function(a,x){return a+n(x.fuel)},0);
-    var avgKm=count?totalKm/count:0, fuelRows=r.filter(function(x){return n(x.fuel)>0}), avgFuel=fuelRows.length?fuel/fuelRows.length:0;
-    var merc=r.filter(function(x){return String(x.car||'').toUpperCase().includes('MERCEDES')}), volvo=r.filter(function(x){return String(x.car||'').toUpperCase().includes('VOLVO')});
-    var mercKm=merc.reduce(function(a,x){return a+km(x)},0),volvoKm=volvo.reduce(function(a,x){return a+km(x)},0);
-    var mercFuel=merc.reduce(function(a,x){return a+n(x.fuel)},0),volvoFuel=volvo.reduce(function(a,x){return a+n(x.fuel)},0);
-    var mercFuelRows=merc.filter(function(x){return n(x.fuel)>0}),volvoFuelRows=volvo.filter(function(x){return n(x.fuel)>0});
-    var vals={'naf-kpi-count':count,'naf-kpi-eff':avg.toFixed(2),'naf-kpi-km':Math.round(totalKm).toLocaleString(),'naf-kpi-fuel':fuel.toFixed(2),'naf-kpi-avg-km':avgKm.toFixed(2),'naf-kpi-avg-fuel':avgFuel.toFixed(2),'naf-kpi-mercedes-km':mercKm.toFixed(2),'naf-kpi-volvo-km':volvoKm.toFixed(2),'naf-kpi-mercedes-eff':(mercFuel?mercKm/mercFuel:0).toFixed(2),'naf-kpi-volvo-eff':(volvoFuel?volvoKm/volvoFuel:0).toFixed(2),'naf-kpi-mercedes-fuel':(mercFuelRows.length?mercFuel/mercFuelRows.length:0).toFixed(2),'naf-kpi-volvo-fuel':(volvoFuelRows.length?volvoFuel/volvoFuelRows.length:0).toFixed(2)};
-    Object.keys(vals).forEach(function(id){var e=document.getElementById(id);if(e)e.textContent=vals[id]});
-    var alert=document.getElementById('naf-dashboard-alert');if(alert){
-      var noFuel=r.filter(function(x){return n(x.fuel)<=0}).length, noKm=r.filter(function(x){return km(x)<=0}).length, noInvoice=r.filter(function(x){return !String(x.invoiceNumber||'').trim()}).length;
-      alert.innerHTML='<b>Data quality & operations</b><br>'+noFuel+' records without fuel · '+noKm+' records without distance · '+noInvoice+' records without invoice number';
-    }
-    var d=document.getElementById('naf-date');if(d)d.textContent=new Date().toLocaleDateString(undefined,{day:'2-digit',month:'short',year:'numeric'});
-
-    var rows=r.map(function(x,i){return{x:x,i:i}}).sort(function(a,b){
-      var da=mobileDateValue(a.x.date),db=mobileDateValue(b.x.date);return db!==da?db-da:b.i-a.i;
-    });
-    var recent=document.getElementById('naf-recent-list');
-    if(recent)recent.innerHTML=rows.slice(0,4).map(function(o){
-      var x=o.x;
-      return '<button class="naf-recent" onclick="editRecord('+o.i+')"><div class="naf-row"><strong>'+esc(x.car||x.vehicle||'Vehicle')+'</strong><span class="naf-num">'+esc(x.date||'No date')+'</span></div><div class="naf-meta">'+esc(x.driver||'No driver')+' · '+esc(x.site||'No site')+' · '+eff(x).toFixed(2)+' KM/L</div></button>';
-    }).join('')||'<div class="naf-empty">No operations recorded yet.</div>';
-
-    var trend=rows.slice(0,7).reverse(),mx=Math.max.apply(null,trend.map(eff).concat([1])),chart=document.getElementById('naf-chart');
-    if(chart)chart.innerHTML=trend.length?trend.map(function(x,i){var v=eff(x.x);return '<div class="naf-barrow"><span>'+esc(x.x.date||('#'+(i+1)))+'</span><div class="naf-bar"><i style="width:'+Math.min(100,v/mx*100)+'%"></i></div><b>'+v.toFixed(1)+'</b></div>'}).join(''):'<div class="naf-empty">No records.</div>';
-  };
-  window.nafExport=function(){var e=document.getElementById('cloudExport');if(e){e.click();setStatus('Backup downloaded',true)}else if(typeof window.exportData==='function'){window.exportData()}};
-  window.nafImport=function(){var e=document.getElementById('excelFileInput');if(e)e.click();else setStatus('Import control unavailable',false)};
-  window.nafOpenCloud=function(){
-    var panel=document.getElementById('cloudSyncPanel');
-    if(panel){
-      if(panel.parentElement!==document.body)document.body.appendChild(panel);
-      panel.classList.add('naf-cloud-mobile-open');
-      var e=document.getElementById('cloudSettings');if(e)e.open=true;
-      setStatus('Cloud connection settings opened',true);
-    }else setStatus('Cloud settings unavailable',false);
-  };
-  window.nafCloseCloud=function(){
-    var panel=document.getElementById('cloudSyncPanel');
-    if(panel)panel.classList.remove('naf-cloud-mobile-open');
-  };
-  window.nafSync=function(){
-    var e=document.getElementById('cloudSyncNow');
-    if(!e){setStatus('Sync control unavailable',false);return}
-    setStatus('Synchronizing...',true);
-    e.click();
-    var tries=0;
-    var timer=setInterval(function(){nafRefreshAll();tries++;if(tries>=12){clearInterval(timer);setStatus('Sync request sent',true)}},300);
-  };
-  function hookForm(){
-    var form=document.getElementById('fuelForm');if(!form||form.dataset.naHooked)return;
-    form.dataset.naHooked='1';
-    form.addEventListener('submit',function(){setTimeout(function(){nafRefreshAll();setStatus('Record saved',true)},350)});
-  }
-  window.addEventListener('load',function(){
-    var cp=document.getElementById('cloudSyncPanel');
-    if(cp && window.matchMedia && window.matchMedia('(max-width:767px)').matches){
-      document.body.appendChild(cp);
-      cp.classList.add('naf-cloud-mobile');
-    }
-    var closeCloud=document.getElementById('naf-cloud-close');if(closeCloud)closeCloud.addEventListener('click',nafCloseCloud);
-    var cp2=document.getElementById('cloudSyncPanel');if(cp2)cp2.classList.remove('naf-cloud-mobile-open');
-    hookForm();
-    setTimeout(function(){hookForm();nafRefreshAll()},300);
-    var modal=document.getElementById('recordModal');
-    if(modal)new MutationObserver(function(){if(!modal.classList.contains('active')){setTimeout(nafRefreshAll,120)}}).observe(modal,{attributes:true,attributeFilter:['class']});
-    var input=document.getElementById('excelFileInput');
-    if(input)input.addEventListener('change',function(){setTimeout(nafRefreshAll,700)});
-  });
+'use strict';
+function esc(v){return String(v==null?'':v).replace(/[&<>"']/g,function(s){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s]})}
+function n(v){var x=Number(v);return Number.isFinite(x)?x:0}
+function data(){var x=window.__ALNAJJAR_MOBILE__&&window.__ALNAJJAR_MOBILE__.getRecords?window.__ALNAJJAR_MOBILE__.getRecords():[];return Array.isArray(x)?x:[]}
+function dist(r){var d=n(r.endKm)-n(r.startingKm);return d>0?d:(n(r.kmDay)>0?n(r.kmDay):Math.max(0,n(r.trip1Km))+Math.max(0,n(r.trip2Km)))}
+function fuel(r){return Math.max(0,n(r.fuel))}
+function eff(r){var e=n(r.avrgKm||r.avgKm),d=dist(r),f=fuel(r);return e>0?e:(d>0&&f>0?d/f:0)}
+function dateVal(v){if(!v)return 0;var s=String(v).trim(),m=s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})$/);if(m){var y=n(m[3]);if(y<100)y+=2000;return new Date(y,n(m[2])-1,n(m[1])).getTime()||0}var d=Date.parse(s);return Number.isFinite(d)?d:0}
+function setText(id,v){var e=document.getElementById(id);if(e)e.textContent=v}
+function status(t,ok){setText('naf-status',t);var d=document.querySelector('.naf-status i');if(d)d.style.background=ok===false?'#d58a24':'#16a66a'}
+function rows(){return data().map(function(r,i){return{r:r,i:i}}).sort(function(a,b){return dateVal(b.r.date)-dateVal(a.r.date)||b.i-a.i})}
+function fillFilters(){var c=document.getElementById('naf-filter-car'),d=document.getElementById('naf-filter-driver'),cv=c?c.value:'',dv=d?d.value:'',cars={},drivers={};data().forEach(function(r){if(r.car)cars[String(r.car)]=1;if(r.driver)drivers[String(r.driver)]=1});if(c)c.innerHTML='<option value="">All vehicles</option>'+Object.keys(cars).sort().map(function(x){return '<option value="'+esc(x)+'">'+esc(x)+'</option>'}).join('');if(d)d.innerHTML='<option value="">All drivers</option>'+Object.keys(drivers).sort().map(function(x){return '<option value="'+esc(x)+'">'+esc(x)+'</option>'}).join('');if(c&&cars[cv])c.value=cv;if(d&&drivers[dv])d.value=dv}
+function filtered(){var q=(document.getElementById('naf-search')?.value||'').trim().toLowerCase(),c=document.getElementById('naf-filter-car')?.value||'',d=document.getElementById('naf-filter-driver')?.value||'';return rows().filter(function(o){var r=o.r,t=[r.car,r.driver,r.site,r.tnxAuth,r.invoiceNumber].join(' ').toLowerCase();return(!q||t.indexOf(q)>=0)&&(!c||String(r.car||'')===c)&&(!d||String(r.driver||'')===d)})}
+window.nafRecordsPage=1;
+window.nafDrawer=function(open){var e=document.getElementById('naf-drawer');if(e)e.classList.toggle('open',!!open)}
+window.nafShow=function(s){document.querySelectorAll('.naf-screen').forEach(function(e){e.classList.remove('active')});var e=document.getElementById('naf-'+s);if(e)e.classList.add('active');document.querySelectorAll('.naf-nav').forEach(function(x){x.classList.toggle('active',x.dataset.screen===s)});var m=document.querySelector('.naf-main');if(m)m.scrollTop=0;if(s==='home')nafRefresh();if(s==='records'){fillFilters();nafRecordsPage=1;nafRenderRecords()}if(s==='fleet')nafRenderFleet()}
+window.nafNewRecord=function(){if(typeof window.openRecordModal==='function'){window.openRecordModal();status('New operation form ready',true)}else status('Record form unavailable',false)}
+window.nafClearSearch=function(){var e=document.getElementById('naf-search');if(e)e.value='';nafRecordsPage=1;nafRenderRecords()}
+window.nafRecordsPrev=function(){if(nafRecordsPage>1){nafRecordsPage--;nafRenderRecords()}}
+window.nafRecordsNext=function(){var a=filtered(),size=n(document.getElementById('naf-page-size')?.value)||30,pages=Math.max(1,Math.ceil(a.length/size));if(nafRecordsPage<pages){nafRecordsPage++;nafRenderRecords()}}
+window.nafRenderRecords=function(){fillFilters();var a=filtered(),size=n(document.getElementById('naf-page-size')?.value)||30,pages=Math.max(1,Math.ceil(a.length/size));if(nafRecordsPage>pages)nafRecordsPage=pages;setText('naf-record-count',a.length.toLocaleString()+' records');setText('naf-page-info','Page '+nafRecordsPage+' of '+pages);var p=document.getElementById('naf-prev'),q=document.getElementById('naf-next');if(p)p.disabled=nafRecordsPage<=1;if(q)q.disabled=nafRecordsPage>=pages;var out=document.getElementById('naf-record-list'),view=a.slice((nafRecordsPage-1)*size,nafRecordsPage*size);if(!view.length){out.innerHTML='<div class="naf-empty">No operations match the current filters.</div>';return}out.innerHTML=view.map(function(o){var r=o.r;return '<article class="naf-record" onclick="editRecord('+o.i+')"><div class="naf-row"><div class="record-title">'+esc(r.car||r.vehicle||'Vehicle')+'</div><div class="record-id">#'+esc(r.sn||o.i+1)+'</div></div><div class="record-grid"><div><div class="naf-field-label">Date</div><div class="naf-field-value">'+esc(r.date||'—')+'</div></div><div><div class="naf-field-label">Driver</div><div class="naf-field-value">'+esc(r.driver||'—')+'</div></div><div><div class="naf-field-label">Distance</div><div class="naf-field-value">'+dist(r).toFixed(1)+' KM</div></div><div><div class="naf-field-label">Fuel / Efficiency</div><div class="naf-field-value">'+fuel(r).toFixed(1)+' L · '+eff(r).toFixed(2)+' KM/L</div></div><div><div class="naf-field-label">Site</div><div class="naf-field-value">'+esc(r.site||'—')+'</div></div><div><div class="naf-field-label">Reference</div><div class="naf-field-value">'+esc(r.invoiceNumber||r.tnxAuth||'—')+'</div></div></div></article>'}).join('')}
+window.nafRenderFleet=function(){var map={};data().forEach(function(r){var car=String(r.car||r.vehicle||'Unknown');if(!map[car])map[car]={records:0,km:0,fuel:0,es:0,ec:0};var x=map[car];x.records++;x.km+=dist(r);x.fuel+=fuel(r);var e=eff(r);if(e>0){x.es+=e;x.ec++}});var a=Object.keys(map).map(function(k){var x=map[k];return{car:k,records:x.records,km:x.km,fuel:x.fuel,eff:x.ec?x.es/x.ec:(x.fuel?x.km/x.fuel:0)}}).sort(function(x,y){return y.km-x.km}),tk=a.reduce(function(s,x){return s+x.km},0),tf=a.reduce(function(s,x){return s+x.fuel},0),avg=tf?tk/tf:0;setText('naf-fleet-avg',avg.toFixed(2)+' KM/L');setText('naf-fleet-count',a.length);setText('naf-fleet-km',Math.round(tk).toLocaleString());var max=Math.max.apply(null,a.map(function(x){return x.eff}).concat([1])),b=document.getElementById('naf-fleet-bars'),l=document.getElementById('naf-fleet-list');b.innerHTML=a.length?a.slice(0,10).map(function(x){return '<div class="naf-barrow"><span>'+esc(x.car)+'</span><div class="naf-bar"><i style="width:'+Math.min(100,x.eff/max*100)+'%"></i></div><b>'+x.eff.toFixed(1)+'</b></div>'}).join(''):'<div class="naf-empty">No fleet data.</div>';l.innerHTML=a.map(function(x){return '<article class="naf-record"><div class="naf-row"><div class="record-title">'+esc(x.car)+'</div><div class="naf-eff">'+x.eff.toFixed(2)+' KM/L</div></div><div class="record-grid"><div><div class="naf-field-label">Operations</div><div class="naf-field-value">'+x.records+'</div></div><div><div class="naf-field-label">Distance</div><div class="naf-field-value">'+x.km.toFixed(1)+' KM</div></div><div><div class="naf-field-label">Fuel</div><div class="naf-field-value">'+x.fuel.toFixed(1)+' L</div></div><div><div class="naf-field-label">Avg Fuel</div><div class="naf-field-value">'+(x.records?x.fuel/x.records:0).toFixed(2)+' L / record</div></div></div></article>'}).join('')}
+window.nafRefresh=function(){var a=data(),tk=a.reduce(function(s,r){return s+dist(r)},0),tf=a.reduce(function(s,r){return s+fuel(r)},0),fr=a.filter(function(r){return fuel(r)>0}),ee=a.map(eff).filter(function(x){return x>0}),ae=ee.length?ee.reduce(function(s,x){return s+x},0)/ee.length:(tf?tk/tf:0);setText('naf-kpi-count',a.length.toLocaleString());setText('naf-kpi-km',Math.round(tk).toLocaleString());setText('naf-kpi-fuel',tf.toFixed(2));setText('naf-kpi-avg-km',(a.length?tk/a.length:0).toFixed(2));setText('naf-kpi-avg-fuel',(fr.length?tf/fr.length:0).toFixed(2));setText('naf-kpi-eff',ae.toFixed(2));setText('naf-kpi-fuel-records',fr.length.toLocaleString());function g(q){var z=a.filter(q),k=z.reduce(function(s,r){return s+dist(r)},0),f=z.reduce(function(s,r){return s+fuel(r)},0),e=z.map(eff).filter(function(x){return x>0});return{k:k,f:f,e:e.length?e.reduce(function(s,x){return s+x},0)/e.length:(f?k/f:0),af:z.length?f/z.length:0}}var m=g(function(r){return String(r.car||'').toUpperCase().indexOf('MERCEDES')>=0}),v=g(function(r){return String(r.car||'').toUpperCase().indexOf('VOLVO')>=0});setText('naf-kpi-mercedes-km',Math.round(m.k).toLocaleString());setText('naf-kpi-mercedes-eff',m.e.toFixed(2));setText('naf-kpi-mercedes-fuel',m.af.toFixed(2));setText('naf-kpi-volvo-km',Math.round(v.k).toLocaleString());setText('naf-kpi-volvo-eff',v.e.toFixed(2));setText('naf-kpi-volvo-fuel',v.af.toFixed(2));var noF=a.filter(function(r){return fuel(r)<=0}).length,noK=a.filter(function(r){return dist(r)<=0}).length,noD=a.filter(function(r){return !String(r.driver||'').trim()}).length,al=document.getElementById('naf-dashboard-alert');al.innerHTML='<div class="naf-alert"><i class="dot" style="background:#d58a24"></i><div><strong>'+noF+' records without fuel</strong><span>Fuel KPI coverage</span></div></div><div class="naf-alert"><i class="dot" style="background:#d58a24"></i><div><strong>'+noK+' records without distance</strong><span>Distance analysis coverage</span></div></div><div class="naf-alert"><i class="dot" style="background:#4d86b1"></i><div><strong>'+noD+' records without driver</strong><span>Operator data completeness</span></div></div>';var latest=rows().slice(0,5),rl=document.getElementById('naf-recent-list');rl.innerHTML=latest.length?latest.map(function(o){return '<button class="naf-recent" onclick="editRecord('+o.i+')"><div class="naf-row"><strong>'+esc(o.r.car||'Vehicle')+'</strong><span class="naf-num">'+esc(o.r.date||'—')+'</span></div><div class="naf-meta">'+esc(o.r.driver||'No driver')+' · '+dist(o.r).toFixed(1)+' KM · '+fuel(o.r).toFixed(1)+' L · '+eff(o.r).toFixed(2)+' KM/L</div></button>'}).join(''):'<div class="naf-empty">No operations recorded yet.</div>';var tr=latest.slice().reverse(),mx=Math.max.apply(null,tr.map(function(o){return eff(o.r)}).concat([1])),ch=document.getElementById('naf-chart');ch.innerHTML=tr.length?tr.map(function(o){var e=eff(o.r);return '<div class="naf-barrow"><span>'+esc(o.r.date||'—')+'</span><div class="naf-bar"><i style="width:'+Math.min(100,e/mx*100)+'%"></i></div><b>'+e.toFixed(1)+'</b></div>'}).join(''):'<div class="naf-empty">No records.</div>';setText('naf-date',new Date().toLocaleDateString(undefined,{day:'2-digit',month:'short',year:'numeric'}))}
+window.nafRefreshAll=function(){nafRefresh();nafRenderRecords();nafRenderFleet()}
+window.nafExport=function(){var e=document.getElementById('cloudExport');if(e)e.click();else if(typeof window.exportData==='function')window.exportData();else status('Export unavailable',false)}
+window.nafImport=function(){var e=document.getElementById('excelFileInput');if(e)e.click();else status('Import unavailable',false)}
+window.nafOpenCloud=function(){var p=document.getElementById('cloudSyncPanel');if(!p){status('Cloud settings unavailable',false);return}if(p.parentElement!==document.body)document.body.appendChild(p);p.classList.add('naf-cloud-mobile','naf-cloud-mobile-open');var s=document.getElementById('cloudSettings');if(s)s.open=true}
+window.nafCloseCloud=function(){var p=document.getElementById('cloudSyncPanel');if(p)p.classList.remove('naf-cloud-mobile-open')}
+window.nafSync=function(){var e=document.getElementById('cloudSyncNow');if(!e){status('Sync control unavailable',false);return}status('Synchronizing…',true);e.click();var t=0,id=setInterval(function(){nafRefreshAll();if(++t>=10){clearInterval(id);status('Sync request sent',true)}},350)}
+function hook(){var f=document.getElementById('fuelForm');if(f&&!f.dataset.nafMobileHook){f.dataset.nafMobileHook='1';f.addEventListener('submit',function(){setTimeout(function(){nafRefreshAll();status('Operation saved',true)},450)})}}
+window.addEventListener('load',function(){var p=document.getElementById('cloudSyncPanel');if(p&&window.matchMedia&&window.matchMedia('(max-width:767px)').matches){document.body.appendChild(p);p.classList.add('naf-cloud-mobile');p.classList.remove('naf-cloud-mobile-open')}var c=document.getElementById('naf-cloud-close');if(c)c.addEventListener('click',nafCloseCloud);hook();setTimeout(function(){hook();nafRefreshAll()},300);var modal=document.getElementById('recordModal');if(modal)new MutationObserver(function(){if(!modal.classList.contains('active'))setTimeout(nafRefreshAll,150)}).observe(modal,{attributes:true,attributeFilter:['class']});var inp=document.getElementById('excelFileInput');if(inp)inp.addEventListener('change',function(){setTimeout(nafRefreshAll,700)})});
 })();
+</script>
 </script>
 </body></html>
