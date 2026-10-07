@@ -1632,7 +1632,20 @@
         .invoice-warning-cell span { color: #dc2626 !important; }
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-</head>
+<style id="requiredCloudLoginGateStyles">
+html.cloud-login-locked,html.cloud-login-locked body{overflow:hidden!important}
+#requiredCloudLoginGate{position:fixed;inset:0;z-index:2147483647;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(3,7,18,.97);backdrop-filter:blur(8px)}
+#requiredCloudLoginGate .gate-card{width:min(460px,100%);background:#111827;color:#f9fafb;border:1px solid #334155;border-radius:16px;padding:28px;box-shadow:0 24px 80px #0009;font-family:Inter,"Segoe UI",Arial,sans-serif}
+#requiredCloudLoginGate h2{margin:0 0 8px;font-size:22px}
+#requiredCloudLoginGate p{margin:0 0 18px;color:#cbd5e1;line-height:1.55;font-size:13px}
+#requiredCloudLoginGate label{display:block;margin:11px 0 5px;color:#cbd5e1;font-size:12px;font-weight:600}
+#requiredCloudLoginGate input{width:100%;box-sizing:border-box;padding:11px 12px;border-radius:8px;border:1px solid #475569;background:#0f172a;color:#fff;outline:none}
+#requiredCloudLoginGate button{width:100%;margin-top:16px;padding:11px 14px;border:0;border-radius:8px;background:#2563eb;color:#fff;font-weight:700;cursor:pointer}
+#requiredCloudLoginGate button:disabled{opacity:.65;cursor:wait}
+#requiredCloudLoginStatus{min-height:20px;margin-top:12px;font-size:12px;line-height:1.5}
+#requiredCloudConnectionDetails{margin-top:14px;border-top:1px solid #334155;padding-top:12px}
+#requiredCloudConnectionDetails summary{cursor:pointer;color:#94a3b8;font-size:12px}
+</style></head>
 <body class="">
 
 <div class="container">
@@ -13292,20 +13305,7 @@ window.toggleFleetAnalysisPanel=function(){
             mimeType = 'text/csv;charset=utf-8;';
         } else {
             let htmlTable = '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/1999/html">';
-            htmlTable += '<head><meta charset="UTF-8"><!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>Fuel Report</x:Name><x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]--><style id="requiredCloudLoginGateStyles">
-html.cloud-login-locked,html.cloud-login-locked body{overflow:hidden!important}
-#requiredCloudLoginGate{position:fixed;inset:0;z-index:2147483647;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(3,7,18,.97);backdrop-filter:blur(8px)}
-#requiredCloudLoginGate .gate-card{width:min(460px,100%);background:#111827;color:#f9fafb;border:1px solid #334155;border-radius:16px;padding:28px;box-shadow:0 24px 80px #0009;font-family:Inter,"Segoe UI",Arial,sans-serif}
-#requiredCloudLoginGate h2{margin:0 0 8px;font-size:22px}
-#requiredCloudLoginGate p{margin:0 0 18px;color:#cbd5e1;line-height:1.55;font-size:13px}
-#requiredCloudLoginGate label{display:block;margin:11px 0 5px;color:#cbd5e1;font-size:12px;font-weight:600}
-#requiredCloudLoginGate input{width:100%;box-sizing:border-box;padding:11px 12px;border-radius:8px;border:1px solid #475569;background:#0f172a;color:#fff;outline:none}
-#requiredCloudLoginGate button{width:100%;margin-top:16px;padding:11px 14px;border:0;border-radius:8px;background:#2563eb;color:#fff;font-weight:700;cursor:pointer}
-#requiredCloudLoginGate button:disabled{opacity:.65;cursor:wait}
-#requiredCloudLoginStatus{min-height:20px;margin-top:12px;font-size:12px;line-height:1.5}
-#requiredCloudConnectionDetails{margin-top:14px;border-top:1px solid #334155;padding-top:12px}
-#requiredCloudConnectionDetails summary{cursor:pointer;color:#94a3b8;font-size:12px}
-</style></head>';
+            htmlTable += '<head><meta charset="UTF-8"><!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>Fuel Report</x:Name><x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]--></head>';
             htmlTable += '<body><table border="1">';
             
             htmlTable += '<tr style="background-color:#1f2937; color:#ffffff; font-weight:bold;">';
@@ -14293,9 +14293,6 @@ key.value=localStorage.getItem("fuel_cloud_key")||"";
 if(!key.value)details.open=true;
 const wait=()=>new Promise((resolve,reject)=>{const started=Date.now();const timer=setInterval(()=>{const s=String(document.getElementById("cloudStatus")?.textContent||"");const m=String(document.getElementById("cloudMessage")?.textContent||"");if(/Connected & Synced/i.test(s)){clearInterval(timer);resolve()}else if(/Save failed|Connection lost|غير متصل/i.test(s)){clearInterval(timer);reject(new Error(m||"تعذر الاتصال بقاعدة البيانات المشتركة."))}else if(Date.now()-started>30000){clearInterval(timer);reject(new Error("انتهت مهلة الاتصال بالسحابة. تحقق من بيانات الاتصال ثم حاول مرة أخرى."))}},200)});
 const login=async()=>{const e=email.value.trim(),p=pass.value,u=url.value.trim(),k=key.value.trim();if(!e||!p||!u||!k){status("أكمل البريد الإلكتروني وكلمة المرور وإعدادات الاتصال.","#f87171");if(!u||!k)details.open=true;return}btn.disabled=true;status("جارٍ تسجيل الدخول وتحميل البيانات المشتركة...");try{document.getElementById("cloudUrl").value=u;document.getElementById("cloudKey").value=k;document.getElementById("cloudEmail").value=e;document.getElementById("cloudPassword").value=p;document.getElementById("cloudConnect").click();await wait();unlock()}catch(err){status(err?.message||String(err),"#f87171");pass.value="";btn.disabled=false;pass.focus()}};
-btn.addEventListener("click",login);
-[email,pass,url,key].forEach(el=>el.addEventListener("keydown",e=>{if(e.key==="Enter")login()}));
-document.getElementById("cloudSignOut")?.addEventListener("click",()=>setTimeout(()=>{btn.disabled=false;pass.value="";lock()},100));
-lock();
+btn.addEventListener("click",login);[email,pass,url,key].forEach(el=>el.addEventListener("keydown",e=>{if(e.key==="Enter")login()}));document.getElementById("cloudSignOut")?.addEventListener("click",()=>setTimeout(()=>{btn.disabled=false;pass.value="";lock()},100));lock();
 })();
 </script></body></html>
