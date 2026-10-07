@@ -1,0 +1,257 @@
+name: Integrate required cloud login safely
+
+on:
+  push:
+    branches:
+      - fix-auth-required-before-offline-entry-2026-10-07
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Replace broken external gate with in-app gate
+        shell: python
+        run: |
+          from pathlib import Path
+          import re
+
+          path = Path("index.html")
+          s = path.read_text(encoding="utf-8")
+
+          # Remove the previous gate implementation that created a second
+          # Supabase client and tried to merge local/cloud records outside
+          # the app's established sync lifecycle.
+          s = s.replace('<script src="required-cloud-login-gate.js"></script>\\n', '')
+          s = re.sub(
+              r'\\n<style id="requiredCloudLoginGateStyles">.*?</style>\\n',
+              '\\n',
+              s,
+              flags=re.S,
+          )
+
+          css = r'''
+<style id="requiredCloudLoginGateStyles">
+html.cloud-login-locked,html.cloud-login-locked body{overflow:hidden!important}
+#requiredCloudLoginGate{position:fixed;inset:0;z-index:2147483647;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(3,7,18,.97);backdrop-filter:blur(8px)}
+#requiredCloudLoginGate .gate-card{width:min(460px,100%);background:#111827;color:#f9fafb;border:1px solid #334155;border-radius:16px;padding:28px;box-shadow:0 24px 80px #0009;font-family:Inter,"Segoe UI",Arial,sans-serif}
+#requiredCloudLoginGate h2{margin:0 0 8px;font-size:22px}
+#requiredCloudLoginGate p{margin:0 0 18px;color:#cbd5e1;line-height:1.55;font-size:13px}
+#requiredCloudLoginGate label{display:block;margin:11px 0 5px;color:#cbd5e1;font-size:12px;font-weight:600}
+#requiredCloudLoginGate input{width:100%;box-sizing:border-box;padding:11px 12px;border-radius:8px;border:1px solid #475569;background:#0f172a;color:#fff;outline:none}
+#requiredCloudLoginGate button{width:100%;margin-top:16px;padding:11px 14px;border:0;border-radius:8px;background:#2563eb;color:#fff;font-weight:700;cursor:pointer}
+#requiredCloudLoginGate button:disabled{opacity:.65;cursor:wait}
+#requiredCloudLoginStatus{min-height:20px;margin-top:12px;font-size:12px;line-height:1.5}
+#requiredCloudConnectionDetails{margin-top:14px;border-top:1px solid #334155;padding-top:12px}
+#requiredCloudConnectionDetails summary{cursor:pointer;color:#94a3b8;font-size:12px}
+</style>
+'''
+
+          marker = '</head>'
+          if 'id="requiredCloudLoginGateStyles"' not in s:
+              pos = s.rfind(marker)
+              if pos < 0:
+                  raise SystemExit("Could not find closing head tag")
+              s = s[:pos] + css + s[pos:]
+
+          gate = r'''
+<div id="requiredCloudLoginGate" role="dialog" aria-modal="true" aria-labelledby="requiredCloudLoginTitle">
+  <div class="gate-card">
+    <h2 id="requiredCloudLoginTitle">☁️ تسجيل الدخول مطلوب</h2>
+    <p>يجب تسجيل الدخول إلى قاعدة البيانات المشتركة قبل استخدام النظام. هذا يمنع إنشاء سجلات محليًا دون اتصال ثم فقدانها عند اتصال جهاز آخر.</p>
+
+    <label for="requiredCloudEmail">اسم المستخدم / البريد الإلكتروني</label>
+    <input id="requiredCloudEmail" type="email" autocomplete="username" placeholder="name@company.com">
+
+    <label for="requiredCloudPassword">كلمة المرور</label>
+    <input id="requiredCloudPassword" type="password" autocomplete="current-password" placeholder="كلمة مرور حساب Supabase">
+
+    <button id="requiredCloudLoginButton" type="button">تسجيل الدخول وفتح النظام</button>
+    <div id="requiredCloudLoginStatus" aria-live="polite"></div>
+
+    <details id="requiredCloudConnectionDetails">
+      <summary>إعداد الاتصال لأول مرة على هذا الجهاز</summary>
+      <label for="requiredCloudUrl">Supabase Project URL</label>
+      <input id="requiredCloudUrl" type="url" autocomplete="off" placeholder="https://xxxx.supabase.co">
+      <label for="requiredCloudKey">Supabase Public / Anon Key</label>
+      <input id="requiredCloudKey" type="password" autocomplete="off" placeholder="Public anon key">
+    </details>
+  </div>
+</div>
+
+<script>
+(() => {
+  const gate = document.getElementById("requiredCloudLoginGate");
+  const loginButton = document.getElementById("requiredCloudLoginButton");
+  const statusEl = document.getElementById("requiredCloudLoginStatus");
+  const emailEl = document.getElementById("requiredCloudEmail");
+  const passwordEl = document.getElementById("requiredCloudPassword");
+  const urlEl = document.getElementById("requiredCloudUrl");
+  const keyEl = document.getElementById("requiredCloudKey");
+  const connectionDetails = document.getElementById("requiredCloudConnectionDetails");
+  const app = document.querySelector(".container");
+
+  const setStatus = (text, color = "#fbbf24") => {
+    statusEl.textContent = text;
+    statusEl.style.color = color;
+  };
+
+  const lock = () => {
+    document.documentElement.classList.add("cloud-login-locked");
+    app?.setAttribute("inert", "");
+    gate.style.display = "flex";
+    setStatus("أدخل بيانات الحساب للمتابعة.");
+    setTimeout(() => emailEl.focus(), 0);
+  };
+
+  const unlock = () => {
+    document.documentElement.classList.remove("cloud-login-locked");
+    app?.removeAttribute("inert");
+    gate.style.display = "none";
+    passwordEl.value = "";
+  };
+
+  const loadSavedConnection = () => {
+    urlEl.value = localStorage.getItem("fuel_cloud_url") || "https://mykwxfifrjohhjhomegf.supabase.co";
+    keyEl.value = localStorage.getItem("fuel_cloud_key") || "";
+    if (!keyEl.value) {
+      connectionDetails.open = true;
+      setStatus("أدخل إعدادات الاتصال لأول مرة ثم سجّل الدخول.");
+    }
+  };
+
+  const waitForCloudConnection = () => new Promise((resolve, reject) => {
+    const started = Date.now();
+    const timer = setInterval(() => {
+      const status = String(document.getElementById("cloudStatus")?.textContent || "");
+      const message = String(document.getElementById("cloudMessage")?.textContent || "");
+
+      if (/Connected & Synced/i.test(status)) {
+        clearInterval(timer);
+        resolve();
+        return;
+      }
+
+      if (/Save failed|Connection lost|غير متصل/i.test(status)) {
+        clearInterval(timer);
+        reject(new Error(message || "تعذر الاتصال بقاعدة البيانات المشتركة."));
+        return;
+      }
+
+      if (Date.now() - started > 30000) {
+        clearInterval(timer);
+        reject(new Error("انتهت مهلة الاتصال بالسحابة. تحقق من بيانات الاتصال ثم حاول مرة أخرى."));
+      }
+    }, 200);
+  });
+
+  const login = async () => {
+    const email = emailEl.value.trim();
+    const password = passwordEl.value;
+    const url = urlEl.value.trim();
+    const key = keyEl.value.trim();
+
+    if (!email || !password || !url || !key) {
+      setStatus("أكمل البريد الإلكتروني وكلمة المرور وإعدادات الاتصال.", "#f87171");
+      if (!url || !key) connectionDetails.open = true;
+      return;
+    }
+
+    loginButton.disabled = true;
+    setStatus("جارٍ تسجيل الدخول وتحميل البيانات المشتركة...");
+
+    try {
+      // Use the application's existing cloud connection button and sync
+      // lifecycle. Do not create a second Supabase client here and do not
+      // merge records independently of the established conflict safeguards.
+      document.getElementById("cloudUrl").value = url;
+      document.getElementById("cloudKey").value = key;
+      document.getElementById("cloudEmail").value = email;
+      document.getElementById("cloudPassword").value = password;
+
+      document.getElementById("cloudConnect").click();
+      await waitForCloudConnection();
+
+      unlock();
+    } catch (err) {
+      setStatus(err?.message || String(err), "#f87171");
+      passwordEl.value = "";
+      loginButton.disabled = false;
+      passwordEl.focus();
+    }
+  };
+
+  loginButton.addEventListener("click", login);
+  [emailEl, passwordEl, urlEl, keyEl].forEach(el => {
+    el.addEventListener("keydown", e => {
+      if (e.key === "Enter") login();
+    });
+  });
+
+  document.getElementById("cloudSignOut")?.addEventListener("click", () => {
+    setTimeout(() => {
+      loginButton.disabled = false;
+      passwordEl.value = "";
+      lock();
+    }, 100);
+  });
+
+  loadSavedConnection();
+  lock();
+})();
+</script>
+'''
+
+          marker = '</body>'
+          if 'id="requiredCloudLoginGate"' not in s:
+              pos = s.rfind(marker)
+              if pos < 0:
+                  raise SystemExit("Could not find closing body tag")
+              s = s[:pos] + gate + s[pos:]
+
+          path.write_text(s, encoding="utf-8")
+
+      - name: Validate patched HTML
+        shell: python
+        run: |
+          from pathlib import Path
+          s = Path("index.html").read_text(encoding="utf-8")
+          checks = [
+              'id="requiredCloudLoginGate"',
+              'id="requiredCloudLoginButton"',
+              'document.getElementById("cloudConnect").click()',
+              'id="requiredCloudLoginGateStyles"',
+              '<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>',
+              'async function connect()',
+              'async function pullCloud(options = {})',
+              'function queueCloudWrite(snapshot)',
+              'function filterAndRender()',
+              'function renderDashboard(',
+          ]
+          missing = [x for x in checks if x not in s]
+          if missing:
+              raise SystemExit("Missing expected code: " + repr(missing))
+          if 'required-cloud-login-gate.js' in s:
+              raise SystemExit("Old external gate reference still exists")
+          if s.count('id="requiredCloudLoginGate"') != 1:
+              raise SystemExit("Gate markup count is not exactly 1")
+          print("HTML validation passed:", len(s), "bytes", len(s.splitlines()), "lines")
+
+      - name: Commit integrated gate and remove obsolete gate
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          rm -f required-cloud-login-gate.js .github/workflows/apply-required-cloud-login-gate.yml
+          git add index.html
+          git add -u
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+            exit 0
+          fi
+          git commit -m "fix: require cloud login without breaking app initialization [skip ci]"
+          git push
