@@ -1632,16 +1632,6 @@
         .invoice-warning-cell span { color: #dc2626 !important; }
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<style id="requiredCloudLoginGateStyles">
-html.cloud-login-locked,html.cloud-login-locked body{overflow:hidden!important}
-#requiredCloudLoginGate{position:fixed;inset:0;z-index:2147483647;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(3,7,18,.97);backdrop-filter:blur(8px)}
-#requiredCloudLoginGate .gate-card{width:min(460px,100%);background:#111827;color:#f9fafb;border:1px solid #334155;border-radius:16px;padding:28px;box-shadow:0 24px 80px #0009;font-family:Inter,"Segoe UI",Arial,sans-serif}
-#requiredCloudLoginGate h2{margin:0 0 8px;font-size:22px}#requiredCloudLoginGate p{margin:0 0 18px;color:#cbd5e1;line-height:1.55;font-size:13px}
-#requiredCloudLoginGate label{display:block;margin:11px 0 5px;color:#cbd5e1;font-size:12px;font-weight:600}
-#requiredCloudLoginGate input{width:100%;box-sizing:border-box;padding:11px 12px;border-radius:8px;border:1px solid #475569;background:#0f172a;color:#fff;outline:none}
-#requiredCloudLoginGate button{width:100%;margin-top:16px;padding:11px 14px;border:0;border-radius:8px;background:#2563eb;color:#fff;font-weight:700;cursor:pointer}
-#requiredCloudLoginGate button:disabled{opacity:.65;cursor:wait}#requiredCloudLoginStatus{min-height:20px;margin-top:12px;font-size:12px;line-height:1.5}
-</style>
 </head>
 <body class="">
 
@@ -3507,8 +3497,7 @@ window.toggleFleetAnalysisPanel=function(){
                 "trip2Km": 0,
                 "kmDay": 347.5,
                 "difference": 0,
-                "tnxAuth": "105384521",
-                "site": "Salaha SS",
+                "tnxAuth": "105384521",                "site": "Salaha SS",
                 "fuel": 200,
                 "lastKm": 1680785,
                 "currentKm": 1681525
@@ -7007,8 +6996,7 @@ window.toggleFleetAnalysisPanel=function(){
                 "driverPhone": "+96892289617",
                 "startingKm": 1657769.4,
                 "endKm": 1657918.2,
-                "dayVal": "148.80000000004657",
-                "trip1": "Barka To Rustaq",
+                "dayVal": "148.80000000004657",                "trip1": "Barka To Rustaq",
                 "trip1Km": 1657769.4,
                 "trip2": "",
                 "trip2Km": 0,
@@ -10507,8 +10495,7 @@ window.toggleFleetAnalysisPanel=function(){
                 "currentKm": 0
         },
         {
-                "sn": 85,
-                "date": "Dec-01-2025",
+                "sn": 85,                "date": "Dec-01-2025",
                 "car": "Volvo - 8797 AK",
                 "driver": "RAHIM",
                 "driverPhone": "+96892289617",
@@ -13309,13 +13296,16 @@ window.toggleFleetAnalysisPanel=function(){
 html.cloud-login-locked,html.cloud-login-locked body{overflow:hidden!important}
 #requiredCloudLoginGate{position:fixed;inset:0;z-index:2147483647;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(3,7,18,.97);backdrop-filter:blur(8px)}
 #requiredCloudLoginGate .gate-card{width:min(460px,100%);background:#111827;color:#f9fafb;border:1px solid #334155;border-radius:16px;padding:28px;box-shadow:0 24px 80px #0009;font-family:Inter,"Segoe UI",Arial,sans-serif}
-#requiredCloudLoginGate h2{margin:0 0 8px;font-size:22px}#requiredCloudLoginGate p{margin:0 0 18px;color:#cbd5e1;line-height:1.55;font-size:13px}
+#requiredCloudLoginGate h2{margin:0 0 8px;font-size:22px}
+#requiredCloudLoginGate p{margin:0 0 18px;color:#cbd5e1;line-height:1.55;font-size:13px}
 #requiredCloudLoginGate label{display:block;margin:11px 0 5px;color:#cbd5e1;font-size:12px;font-weight:600}
 #requiredCloudLoginGate input{width:100%;box-sizing:border-box;padding:11px 12px;border-radius:8px;border:1px solid #475569;background:#0f172a;color:#fff;outline:none}
 #requiredCloudLoginGate button{width:100%;margin-top:16px;padding:11px 14px;border:0;border-radius:8px;background:#2563eb;color:#fff;font-weight:700;cursor:pointer}
-#requiredCloudLoginGate button:disabled{opacity:.65;cursor:wait}#requiredCloudLoginStatus{min-height:20px;margin-top:12px;font-size:12px;line-height:1.5}
-</style>
-</head>';
+#requiredCloudLoginGate button:disabled{opacity:.65;cursor:wait}
+#requiredCloudLoginStatus{min-height:20px;margin-top:12px;font-size:12px;line-height:1.5}
+#requiredCloudConnectionDetails{margin-top:14px;border-top:1px solid #334155;padding-top:12px}
+#requiredCloudConnectionDetails summary{cursor:pointer;color:#94a3b8;font-size:12px}
+</style></head>';
             htmlTable += '<body><table border="1">';
             
             htmlTable += '<tr style="background-color:#1f2937; color:#ffffff; font-weight:bold;">';
@@ -13333,8 +13323,7 @@ html.cloud-login-locked,html.cloud-login-locked body{overflow:hidden!important}
                 htmlTable += '</tr>';
             });
 
-            htmlTable += '</table><script src="required-cloud-login-gate.js"></script>
-</body></html>';
+            htmlTable += '</table></body></html>';
             contentString = htmlTable;
             mimeType = 'application/vnd.ms-excel;charset=utf-8;';
         }
@@ -14275,5 +14264,38 @@ html.cloud-login-locked,html.cloud-login-locked body{overflow:hidden!important}
 </script>
 
 
-<script src="required-cloud-login-gate.js"></script>
-</body></html>
+<div id="requiredCloudLoginGate" role="dialog" aria-modal="true" aria-labelledby="requiredCloudLoginTitle">
+<div class="gate-card">
+<h2 id="requiredCloudLoginTitle">☁️ تسجيل الدخول مطلوب</h2>
+<p>يجب تسجيل الدخول إلى قاعدة البيانات المشتركة قبل استخدام النظام. هذا يمنع إنشاء سجلات محليًا دون اتصال ثم فقدانها عند اتصال جهاز آخر.</p>
+<label for="requiredCloudEmail">اسم المستخدم / البريد الإلكتروني</label>
+<input id="requiredCloudEmail" type="email" autocomplete="username" placeholder="name@company.com">
+<label for="requiredCloudPassword">كلمة المرور</label>
+<input id="requiredCloudPassword" type="password" autocomplete="current-password" placeholder="كلمة مرور حساب Supabase">
+<button id="requiredCloudLoginButton" type="button">تسجيل الدخول وفتح النظام</button>
+<div id="requiredCloudLoginStatus" aria-live="polite"></div>
+<details id="requiredCloudConnectionDetails">
+<summary>إعداد الاتصال لأول مرة على هذا الجهاز</summary>
+<label for="requiredCloudUrl">Supabase Project URL</label>
+<input id="requiredCloudUrl" type="url" autocomplete="off" placeholder="https://xxxx.supabase.co">
+<label for="requiredCloudKey">Supabase Public / Anon Key</label>
+<input id="requiredCloudKey" type="password" autocomplete="off" placeholder="Public anon key">
+</details>
+</div></div>
+<script>
+(() => {
+const gate=document.getElementById("requiredCloudLoginGate"),btn=document.getElementById("requiredCloudLoginButton"),st=document.getElementById("requiredCloudLoginStatus"),email=document.getElementById("requiredCloudEmail"),pass=document.getElementById("requiredCloudPassword"),url=document.getElementById("requiredCloudUrl"),key=document.getElementById("requiredCloudKey"),details=document.getElementById("requiredCloudConnectionDetails"),app=document.querySelector(".container");
+const status=(t,c="#fbbf24")=>{st.textContent=t;st.style.color=c};
+const lock=()=>{document.documentElement.classList.add("cloud-login-locked");app?.setAttribute("inert","");gate.style.display="flex";status("أدخل بيانات الحساب للمتابعة.");setTimeout(()=>email.focus(),0)};
+const unlock=()=>{document.documentElement.classList.remove("cloud-login-locked");app?.removeAttribute("inert");gate.style.display="none";pass.value=""};
+url.value=localStorage.getItem("fuel_cloud_url")||"https://mykwxfifrjohhjhomegf.supabase.co";
+key.value=localStorage.getItem("fuel_cloud_key")||"";
+if(!key.value)details.open=true;
+const wait=()=>new Promise((resolve,reject)=>{const started=Date.now();const timer=setInterval(()=>{const s=String(document.getElementById("cloudStatus")?.textContent||"");const m=String(document.getElementById("cloudMessage")?.textContent||"");if(/Connected & Synced/i.test(s)){clearInterval(timer);resolve()}else if(/Save failed|Connection lost|غير متصل/i.test(s)){clearInterval(timer);reject(new Error(m||"تعذر الاتصال بقاعدة البيانات المشتركة."))}else if(Date.now()-started>30000){clearInterval(timer);reject(new Error("انتهت مهلة الاتصال بالسحابة. تحقق من بيانات الاتصال ثم حاول مرة أخرى."))}},200)});
+const login=async()=>{const e=email.value.trim(),p=pass.value,u=url.value.trim(),k=key.value.trim();if(!e||!p||!u||!k){status("أكمل البريد الإلكتروني وكلمة المرور وإعدادات الاتصال.","#f87171");if(!u||!k)details.open=true;return}btn.disabled=true;status("جارٍ تسجيل الدخول وتحميل البيانات المشتركة...");try{document.getElementById("cloudUrl").value=u;document.getElementById("cloudKey").value=k;document.getElementById("cloudEmail").value=e;document.getElementById("cloudPassword").value=p;document.getElementById("cloudConnect").click();await wait();unlock()}catch(err){status(err?.message||String(err),"#f87171");pass.value="";btn.disabled=false;pass.focus()}};
+btn.addEventListener("click",login);
+[email,pass,url,key].forEach(el=>el.addEventListener("keydown",e=>{if(e.key==="Enter")login()}));
+document.getElementById("cloudSignOut")?.addEventListener("click",()=>setTimeout(()=>{btn.disabled=false;pass.value="";lock()},100));
+lock();
+})();
+</script></body></html>
