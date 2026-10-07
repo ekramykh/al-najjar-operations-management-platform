@@ -1656,6 +1656,7 @@ html.cloud-login-locked,html.cloud-login-locked body{overflow:hidden!important}
 #requiredCloudLoginGate .gate-brand-sub{font-size:10px;color:#64748b;margin-top:3px}
 #requiredCloudLoginGate h2{margin:0 0 7px;font-size:24px;line-height:1.2;letter-spacing:-.02em}
 #requiredCloudLoginGate .gate-subtitle{margin:0 0 18px;color:#94a3b8;line-height:1.55;font-size:12px}
+#requiredCloudLoginGate .gate-migration-note{margin:-3px 0 12px;padding:9px 11px;border:1px solid rgba(148,163,184,.14);background:rgba(15,23,42,.32);border-radius:9px;color:#94a3b8;font-size:10px;line-height:1.45}
 #requiredCloudLoginGate .gate-security{display:flex;align-items:center;gap:8px;margin:0 0 17px;padding:8px 10px;border:1px solid rgba(52,211,153,.15);background:rgba(16,185,129,.055);border-radius:8px;color:#a7f3d0;font-size:10px}
 #requiredCloudLoginGate .gate-security-dot{width:6px;height:6px;border-radius:50%;background:#34d399;box-shadow:0 0 8px rgba(52,211,153,.55);flex:0 0 auto}
 #requiredCloudLoginGate .gate-field{margin-top:12px}
@@ -14075,6 +14076,151 @@ window.toggleFleetAnalysisPanel=function(){
     } catch(e) {}
   };
 
+  const CLOUD_LEGACY_MIGRATION_KEY = "fuel_cloud_legacy_migration_v1";
+  let legacyMigrationPending = !localStorage.getItem(CLOUD_LEGACY_MIGRATION_KEY)
+    && localStorage.getItem("fuel_system_records") !== null;
+
+  const markLegacyMigrationComplete = () => {
+    legacyMigrationPending = false;
+    try { localStorage.setItem(CLOUD_LEGACY_MIGRATION_KEY, new Date().toISOString()); } catch(e) {}
+  };
+
+  const stableRecordKey = record => {
+    const sn = Number(record?.sn);
+    return Number.isFinite(sn) && sn > 0
+      ? "sn:" + String(sn)
+      : "raw:" + JSON.stringify(record);
+  };
+
+  async function migrateLegacyLocalData() {
+    if (!legacyMigrationPending) return;
+
+    const localSnapshot = JSON.stringify(fuelRecords);
+    const localRecords = Array.isArray(fuelRecords) ? JSON.parse(localSnapshot) : [];
+
+    // First read the cloud. Never let a pre-login local copy blindly replace
+    // the current shared snapshot.
+    const remote = await client
+      .from("fuel_shared_state")
+      .select("records,updated_at")
+      .eq("id","shared")
+      .maybeSingle();
+
+    if (remote.error) throw remote.error;
+
+    if (!remote.data) {
+      const writeTimestamp = new Date().toISOString();
+      const {data, error} = await client
+        .from("fuel_shared_state")
+        .insert({
+          id: "shared",
+          records: localRecords,
+          updated_at: writeTimestamp
+        })
+        .select("updated_at")
+        .maybeSingle();
+
+      if (error) throw error;
+
+      const savedUpdatedAt = data?.updated_at || writeTimestamp;
+      lastSaved = localSnapshot;
+      setRemoteBaseline(savedUpdatedAt);
+      setCloudDirty(false);
+      localStorage.setItem("fuel_system_records", localSnapshot);
+      markLegacyMigrationComplete();
+      message("Your legacy local data was safely migrated to the shared cloud database.");
+      return;
+    }
+
+    const remoteRecords = Array.isArray(remote.data.records) ? remote.data.records : [];
+    const remoteSnapshot = JSON.stringify(remoteRecords);
+
+    if (localSnapshot === remoteSnapshot) {
+      lastSaved = remoteSnapshot;
+      setRemoteBaseline(remote.data.updated_at || "");
+      setCloudDirty(false);
+      markLegacyMigrationComplete();
+      message("Your previous local data already matches the shared cloud data.");
+      return;
+    }
+
+    // Always preserve the complete old local copy before reconciliation.
+    saveConflictBackup(localSnapshot);
+
+    // Safe migration rule:
+    // 1. Keep all current cloud records.
+    // 2. Add legacy local records whose serial number is not in cloud.
+    // 3. If the same serial number contains different data, keep cloud data
+    //    authoritative and retain the complete local copy in the backup.
+    const merged = [...remoteRecords];
+    const remoteByKey = new Map(remoteRecords.map(record => [stableRecordKey(record), record]));
+    let added = 0;
+    let conflicts = 0;
+
+    for (const localRecord of localRecords) {
+      const key = stableRecordKey(localRecord);
+      if (remoteByKey.has(key)) {
+        const cloudRecord = remoteByKey.get(key);
+        if (JSON.stringify(cloudRecord) !== JSON.stringify(localRecord)) conflicts++;
+        continue;
+      }
+      merged.push(localRecord);
+      remoteByKey.set(key, localRecord);
+      added++;
+    }
+
+    if (added === 0) {
+      fuelRecords = remoteRecords;
+      localStorage.setItem("fuel_system_records", remoteSnapshot);
+      lastSaved = remoteSnapshot;
+      setRemoteBaseline(remote.data.updated_at || "");
+      setCloudDirty(false);
+      markLegacyMigrationComplete();
+      message(
+        conflicts > 0
+          ? "Your old local data was backed up. Cloud data was kept authoritative for conflicting records."
+          : "Your old local data was backed up and the current cloud data was loaded."
+      );
+      return;
+    }
+
+    const writeTimestamp = new Date().toISOString();
+    const {data, error} = await client
+      .from("fuel_shared_state")
+      .update({
+        records: merged,
+        updated_at: writeTimestamp
+      })
+      .eq("id","shared")
+      .eq("updated_at", remote.data.updated_at || "")
+      .select("updated_at")
+      .maybeSingle();
+
+    if (error) throw error;
+    if (!data) {
+      throw new Error("Legacy migration conflict: another device changed the shared data during migration. No cloud data was overwritten.");
+    }
+
+    const mergedSnapshot = JSON.stringify(merged);
+    fuelRecords = merged;
+    localStorage.setItem("fuel_system_records", mergedSnapshot);
+    lastSaved = mergedSnapshot;
+    setRemoteBaseline(data.updated_at || writeTimestamp);
+    setCloudDirty(false);
+    markLegacyMigrationComplete();
+
+    if (typeof sortRecordsArray === "function") {
+      sortRecordsArray(fuelRecords, currentSortColumn, currentSortDirection);
+    }
+    if (typeof filterAndRender === "function") filterAndRender();
+    if (typeof renderDashboard === "function") renderDashboard();
+
+    message(
+      "Legacy local data migrated safely: " + added + " local record(s) added to the shared cloud data."
+      + (conflicts ? " " + conflicts + " conflicting record(s) were kept from the cloud and the old local copy was backed up." : "")
+    );
+  };
+
   const localUrl = localStorage.getItem("fuel_cloud_url") || "https://mykwxfifrjohhjhomegf.supabase.co";
   const localKey = localStorage.getItem("fuel_cloud_key") || "";
   $("cloudUrl").value = localUrl;
@@ -14231,6 +14377,8 @@ window.toggleFleetAnalysisPanel=function(){
     // instead of blindly replacing it with the server snapshot.
     if (cloudDirty) {
       await queueCloudWrite(currentSnapshot());
+    } else if (legacyMigrationPending) {
+      await migrateLegacyLocalData();
     } else {
       await pullCloud();
     }
@@ -14425,6 +14573,7 @@ window.toggleFleetAnalysisPanel=function(){
     <h2 id="requiredCloudLoginTitle">Welcome back</h2>
     <p class="gate-subtitle">Sign in to your shared workspace to access the system and keep your records synchronized across devices.</p>
     <div class="gate-security"><span class="gate-security-dot"></span><span>Secure cloud connection required before continuing</span></div>
+    <div class="gate-migration-note">If this device contains records from an older version, they are backed up and reconciled with the cloud before access is granted.</div>
     <div class="gate-field"><label for="requiredCloudEmail"><span>Email address</span><span class="gate-field-hint">Work account</span></label><input id="requiredCloudEmail" type="email" autocomplete="username" placeholder="you@company.com" spellcheck="false"></div>
     <div class="gate-field"><label for="requiredCloudPassword"><span>Password</span></label><input id="requiredCloudPassword" type="password" autocomplete="current-password" placeholder="Enter your password"></div>
     <button id="requiredCloudLoginButton" type="button"><span class="gate-button-content"><span class="gate-spinner"></span><span class="gate-button-label">Sign in &amp; continue</span></span></button>
