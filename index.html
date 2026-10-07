@@ -1635,15 +1635,15 @@
 <style id="requiredCloudLoginGateStyles">
 html.cloud-login-locked,html.cloud-login-locked body{overflow:hidden!important}
 #requiredCloudLoginGate{
-  position:fixed;inset:0;z-index:2147483647;display:flex;align-items:center;justify-content:center;
-  padding:24px;background:
+  position:fixed;inset:0;width:100vw;height:100dvh;box-sizing:border-box;z-index:2147483647;display:flex;align-items:center;justify-content:center;
+  padding:clamp(16px,3vw,32px);background:
     radial-gradient(circle at 50% 15%,rgba(59,130,246,.14),transparent 38%),
     linear-gradient(135deg,#070b14 0%,#0b1120 55%,#0a0f1b 100%);
   backdrop-filter:blur(12px);
   font-family:Inter,"Segoe UI",Arial,sans-serif;
 }
 #requiredCloudLoginGate .gate-card{
-  position:relative;width:min(440px,100%);padding:34px 34px 28px;color:#f8fafc;
+  position:relative;width:min(440px,calc(100vw - 32px));max-height:calc(100dvh - 32px);overflow:auto;box-sizing:border-box;padding:clamp(24px,4vw,34px) clamp(22px,4vw,34px) 26px;color:#f8fafc;
   background:linear-gradient(180deg,rgba(17,24,39,.98),rgba(15,23,42,.98));
   border:1px solid rgba(148,163,184,.20);border-radius:20px;
   box-shadow:0 30px 90px rgba(0,0,0,.55),0 0 0 1px rgba(59,130,246,.04);
@@ -1701,6 +1701,12 @@ html.cloud-login-locked,html.cloud-login-locked body{overflow:hidden!important}
 #requiredCloudLoginGate .gate-advanced input{height:40px;font-size:11px}
 #requiredCloudLoginGate .gate-advanced-note{margin:9px 0 0;color:#64748b;font-size:10px;line-height:1.5}
 @keyframes gateSpin{to{transform:rotate(360deg)}}
+.system-designer-credit{
+  position:fixed;left:50%;bottom:10px;transform:translateX(-50%);z-index:2147483646;
+  color:rgba(148,163,184,.72);font:600 10px/1.4 Inter,"Segoe UI",Arial,sans-serif;
+  letter-spacing:.02em;text-align:center;white-space:nowrap;pointer-events:none;
+}
+@media print{.system-designer-credit{display:none}}
 @media(max-width:520px){
   #requiredCloudLoginGate{padding:14px}
   #requiredCloudLoginGate .gate-card{padding:27px 22px 22px;border-radius:16px}
@@ -14383,6 +14389,8 @@ window.toggleFleetAnalysisPanel=function(){
     <div class="gate-footer">Al-Najjar Operations Management Platform · Authorized access only</div>
   </div>
 </div>
+
+<div class="system-designer-credit" aria-label="System designer credit">Designed and Programmed by: Ekramy Kholosy</div>
 
 <script>
 (() => {
