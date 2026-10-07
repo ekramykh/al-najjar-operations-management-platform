@@ -14385,17 +14385,19 @@ window.toggleFleetAnalysisPanel=function(){
   });
 
   $("cloudSignOut").addEventListener("click", async () => {
-    if (client) await client.auth.signOut();
-    client = null;
-    if (channel) {
-      channel = null;
-    }
-    // Do not clear the persistent dirty marker on logout. Unsynced local data
-    // must survive sign-out and browser restarts until it is confirmed in the cloud.
-    if (channel && client) {
-      try { await client.removeChannel(channel); } catch(e) {}
+    const activeClient = client;
+    const activeChannel = channel;
+    // Close Realtime before discarding the client/channel references.
+    if (activeClient && activeChannel) {
+      try { await activeClient.removeChannel(activeChannel); } catch(e) {}
     }
     channel = null;
+    if (activeClient) {
+      try { await activeClient.auth.signOut(); } catch(e) {}
+    }
+    client = null;
+    // Do not clear the persistent dirty marker on logout. Unsynced local data
+    // must survive sign-out and browser restarts until it is confirmed in the cloud.
     setCloudDirty(cloudDirty);
     setRemoteBaseline(lastRemoteUpdatedAt);
     status("Signed out");
