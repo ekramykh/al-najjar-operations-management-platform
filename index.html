@@ -1634,17 +1634,78 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style id="requiredCloudLoginGateStyles">
 html.cloud-login-locked,html.cloud-login-locked body{overflow:hidden!important}
-#requiredCloudLoginGate{position:fixed;inset:0;z-index:2147483647;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(3,7,18,.97);backdrop-filter:blur(8px)}
-#requiredCloudLoginGate .gate-card{width:min(460px,100%);background:#111827;color:#f9fafb;border:1px solid #334155;border-radius:16px;padding:28px;box-shadow:0 24px 80px #0009;font-family:Inter,"Segoe UI",Arial,sans-serif}
-#requiredCloudLoginGate h2{margin:0 0 8px;font-size:22px}
-#requiredCloudLoginGate p{margin:0 0 18px;color:#cbd5e1;line-height:1.55;font-size:13px}
-#requiredCloudLoginGate label{display:block;margin:11px 0 5px;color:#cbd5e1;font-size:12px;font-weight:600}
-#requiredCloudLoginGate input{width:100%;box-sizing:border-box;padding:11px 12px;border-radius:8px;border:1px solid #475569;background:#0f172a;color:#fff;outline:none}
-#requiredCloudLoginGate button{width:100%;margin-top:16px;padding:11px 14px;border:0;border-radius:8px;background:#2563eb;color:#fff;font-weight:700;cursor:pointer}
-#requiredCloudLoginGate button:disabled{opacity:.65;cursor:wait}
-#requiredCloudLoginStatus{min-height:20px;margin-top:12px;font-size:12px;line-height:1.5}
-#requiredCloudConnectionDetails{margin-top:14px;border-top:1px solid #334155;padding-top:12px}
-#requiredCloudConnectionDetails summary{cursor:pointer;color:#94a3b8;font-size:12px}
+#requiredCloudLoginGate{
+  position:fixed;inset:0;z-index:2147483647;display:flex;align-items:center;justify-content:center;
+  padding:24px;background:
+    radial-gradient(circle at 50% 15%,rgba(59,130,246,.14),transparent 38%),
+    linear-gradient(135deg,#070b14 0%,#0b1120 55%,#0a0f1b 100%);
+  backdrop-filter:blur(12px);
+  font-family:Inter,"Segoe UI",Arial,sans-serif;
+}
+#requiredCloudLoginGate .gate-card{
+  position:relative;width:min(440px,100%);padding:34px 34px 28px;color:#f8fafc;
+  background:linear-gradient(180deg,rgba(17,24,39,.98),rgba(15,23,42,.98));
+  border:1px solid rgba(148,163,184,.20);border-radius:20px;
+  box-shadow:0 30px 90px rgba(0,0,0,.55),0 0 0 1px rgba(59,130,246,.04);
+}
+#requiredCloudLoginGate .gate-brand{display:flex;align-items:center;gap:12px;margin-bottom:26px}
+#requiredCloudLoginGate .gate-logo{
+  width:46px;height:46px;display:flex;align-items:center;justify-content:center;
+  border-radius:13px;background:linear-gradient(135deg,#2563eb,#1d4ed8);
+  box-shadow:0 10px 25px rgba(37,99,235,.28);font-size:22px;
+}
+#requiredCloudLoginGate .gate-brand-name{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#93c5fd;font-weight:700}
+#requiredCloudLoginGate .gate-brand-sub{font-size:11px;color:#64748b;margin-top:3px}
+#requiredCloudLoginGate h2{margin:0 0 8px;font-size:25px;line-height:1.2;letter-spacing:-.02em}
+#requiredCloudLoginGate .gate-subtitle{margin:0 0 24px;color:#94a3b8;line-height:1.6;font-size:13px}
+#requiredCloudLoginGate .gate-security{
+  display:flex;align-items:center;gap:8px;margin:0 0 20px;padding:9px 11px;
+  border:1px solid rgba(52,211,153,.16);background:rgba(16,185,129,.06);
+  border-radius:9px;color:#a7f3d0;font-size:11px;
+}
+#requiredCloudLoginGate .gate-security-dot{width:7px;height:7px;border-radius:50%;background:#34d399;box-shadow:0 0 10px rgba(52,211,153,.55);flex:0 0 auto}
+#requiredCloudLoginGate .gate-field{margin-top:14px}
+#requiredCloudLoginGate label{display:flex;align-items:center;justify-content:space-between;margin:0 0 7px;color:#cbd5e1;font-size:12px;font-weight:600}
+#requiredCloudLoginGate .gate-field-hint{font-size:10px;color:#64748b;font-weight:400}
+#requiredCloudLoginGate .gate-input-wrap{position:relative}
+#requiredCloudLoginGate input{
+  width:100%;height:46px;box-sizing:border-box;padding:0 13px;border-radius:10px;
+  border:1px solid #334155;background:#0b1220;color:#f8fafc;outline:none;
+  font:inherit;font-size:13px;transition:border-color .18s,box-shadow .18s,background .18s;
+}
+#requiredCloudLoginGate input::placeholder{color:#475569}
+#requiredCloudLoginGate input:focus{border-color:#3b82f6;background:#0d1627;box-shadow:0 0 0 3px rgba(59,130,246,.12)}
+#requiredCloudLoginGate button{
+  width:100%;height:46px;margin-top:20px;border:0;border-radius:10px;
+  background:linear-gradient(135deg,#3b82f6,#2563eb);color:#fff;font:inherit;font-size:13px;font-weight:700;
+  cursor:pointer;box-shadow:0 10px 24px rgba(37,99,235,.20);transition:transform .15s,filter .15s,box-shadow .15s;
+}
+#requiredCloudLoginGate button:hover:not(:disabled){filter:brightness(1.08);transform:translateY(-1px);box-shadow:0 14px 28px rgba(37,99,235,.26)}
+#requiredCloudLoginGate button:active:not(:disabled){transform:translateY(0)}
+#requiredCloudLoginGate button:disabled{opacity:.65;cursor:wait;transform:none}
+#requiredCloudLoginGate .gate-button-content{display:inline-flex;align-items:center;justify-content:center;gap:9px}
+#requiredCloudLoginGate .gate-spinner{
+  width:14px;height:14px;border:2px solid rgba(255,255,255,.35);border-top-color:#fff;border-radius:50%;
+  animation:gateSpin .7s linear infinite;display:none;
+}
+#requiredCloudLoginGate.is-loading .gate-spinner{display:block}
+#requiredCloudLoginGate .gate-status{min-height:19px;margin-top:12px;text-align:center;font-size:11px;line-height:1.55}
+#requiredCloudLoginGate .gate-footer{margin-top:20px;padding-top:17px;border-top:1px solid rgba(51,65,85,.65);text-align:center;color:#64748b;font-size:10px;line-height:1.5}
+#requiredCloudLoginGate details{margin-top:16px;border-top:1px solid rgba(51,65,85,.65);padding-top:14px}
+#requiredCloudLoginGate summary{cursor:pointer;color:#64748b;font-size:10px;list-style:none}
+#requiredCloudLoginGate summary::-webkit-details-marker{display:none}
+#requiredCloudLoginGate summary:before{content:"▸";margin-right:6px;color:#475569}
+#requiredCloudLoginGate details[open] summary:before{content:"▾"}
+#requiredCloudLoginGate .gate-advanced{padding-top:8px}
+#requiredCloudLoginGate .gate-advanced label{margin-top:10px}
+#requiredCloudLoginGate .gate-advanced input{height:40px;font-size:11px}
+#requiredCloudLoginGate .gate-advanced-note{margin:9px 0 0;color:#64748b;font-size:10px;line-height:1.5}
+@keyframes gateSpin{to{transform:rotate(360deg)}}
+@media(max-width:520px){
+  #requiredCloudLoginGate{padding:14px}
+  #requiredCloudLoginGate .gate-card{padding:27px 22px 22px;border-radius:16px}
+  #requiredCloudLoginGate h2{font-size:22px}
+}
 </style></head>
 <body class="">
 
@@ -14265,34 +14326,173 @@ window.toggleFleetAnalysisPanel=function(){
 
 
 <div id="requiredCloudLoginGate" role="dialog" aria-modal="true" aria-labelledby="requiredCloudLoginTitle">
-<div class="gate-card">
-<h2 id="requiredCloudLoginTitle">☁️ تسجيل الدخول مطلوب</h2>
-<p>يجب تسجيل الدخول إلى قاعدة البيانات المشتركة قبل استخدام النظام. هذا يمنع إنشاء سجلات محليًا دون اتصال ثم فقدانها عند اتصال جهاز آخر.</p>
-<label for="requiredCloudEmail">اسم المستخدم / البريد الإلكتروني</label>
-<input id="requiredCloudEmail" type="email" autocomplete="username" placeholder="name@company.com">
-<label for="requiredCloudPassword">كلمة المرور</label>
-<input id="requiredCloudPassword" type="password" autocomplete="current-password" placeholder="كلمة مرور حساب Supabase">
-<button id="requiredCloudLoginButton" type="button">تسجيل الدخول وفتح النظام</button>
-<div id="requiredCloudLoginStatus" aria-live="polite"></div>
-<details id="requiredCloudConnectionDetails">
-<summary>إعداد الاتصال لأول مرة على هذا الجهاز</summary>
-<label for="requiredCloudUrl">Supabase Project URL</label>
-<input id="requiredCloudUrl" type="url" autocomplete="off" placeholder="https://xxxx.supabase.co">
-<label for="requiredCloudKey">Supabase Public / Anon Key</label>
-<input id="requiredCloudKey" type="password" autocomplete="off" placeholder="Public anon key">
-</details>
-</div></div>
+  <div class="gate-card">
+    <div class="gate-brand">
+      <div class="gate-logo" aria-hidden="true">☁</div>
+      <div>
+        <div class="gate-brand-name">ALNAJJAR</div>
+        <div class="gate-brand-sub">Operations Management Platform</div>
+      </div>
+    </div>
+
+    <h2 id="requiredCloudLoginTitle">Welcome back</h2>
+    <p class="gate-subtitle">Sign in to your shared workspace to access the system and keep your records synchronized across devices.</p>
+
+    <div class="gate-security">
+      <span class="gate-security-dot" aria-hidden="true"></span>
+      <span>Secure cloud connection required before continuing</span>
+    </div>
+
+    <div class="gate-field">
+      <label for="requiredCloudEmail">
+        <span>Email address</span>
+        <span class="gate-field-hint">Work account</span>
+      </label>
+      <div class="gate-input-wrap">
+        <input id="requiredCloudEmail" type="email" autocomplete="username" placeholder="you@company.com" spellcheck="false">
+      </div>
+    </div>
+
+    <div class="gate-field">
+      <label for="requiredCloudPassword"><span>Password</span></label>
+      <div class="gate-input-wrap">
+        <input id="requiredCloudPassword" type="password" autocomplete="current-password" placeholder="Enter your password">
+      </div>
+    </div>
+
+    <button id="requiredCloudLoginButton" type="button">
+      <span class="gate-button-content">
+        <span class="gate-spinner" aria-hidden="true"></span>
+        <span class="gate-button-label">Sign in &amp; continue</span>
+      </span>
+    </button>
+
+    <div id="requiredCloudLoginStatus" class="gate-status" aria-live="polite"></div>
+
+    <details id="requiredCloudConnectionDetails">
+      <summary>First-time connection settings</summary>
+      <div class="gate-advanced">
+        <label for="requiredCloudUrl"><span>Supabase Project URL</span></label>
+        <input id="requiredCloudUrl" type="url" autocomplete="off" placeholder="https://xxxx.supabase.co">
+        <label for="requiredCloudKey"><span>Supabase public key</span></label>
+        <input id="requiredCloudKey" type="password" autocomplete="off" placeholder="Public / anon key">
+        <p class="gate-advanced-note">These settings are only needed when configuring a new device. Your password is never stored locally.</p>
+      </div>
+    </details>
+
+    <div class="gate-footer">Al-Najjar Operations Management Platform · Authorized access only</div>
+  </div>
+</div>
+
 <script>
 (() => {
-const gate=document.getElementById("requiredCloudLoginGate"),btn=document.getElementById("requiredCloudLoginButton"),st=document.getElementById("requiredCloudLoginStatus"),email=document.getElementById("requiredCloudEmail"),pass=document.getElementById("requiredCloudPassword"),url=document.getElementById("requiredCloudUrl"),key=document.getElementById("requiredCloudKey"),details=document.getElementById("requiredCloudConnectionDetails"),app=document.querySelector(".container");
-const status=(t,c="#fbbf24")=>{st.textContent=t;st.style.color=c};
-const lock=()=>{document.documentElement.classList.add("cloud-login-locked");app?.setAttribute("inert","");gate.style.display="flex";status("أدخل بيانات الحساب للمتابعة.");setTimeout(()=>email.focus(),0)};
-const unlock=()=>{document.documentElement.classList.remove("cloud-login-locked");app?.removeAttribute("inert");gate.style.display="none";pass.value=""};
-url.value=localStorage.getItem("fuel_cloud_url")||"https://mykwxfifrjohhjhomegf.supabase.co";
-key.value=localStorage.getItem("fuel_cloud_key")||"";
-if(!key.value)details.open=true;
-const wait=()=>new Promise((resolve,reject)=>{const started=Date.now();const timer=setInterval(()=>{const s=String(document.getElementById("cloudStatus")?.textContent||"");const m=String(document.getElementById("cloudMessage")?.textContent||"");if(/Connected & Synced/i.test(s)){clearInterval(timer);resolve()}else if(/Save failed|Connection lost|غير متصل/i.test(s)){clearInterval(timer);reject(new Error(m||"تعذر الاتصال بقاعدة البيانات المشتركة."))}else if(Date.now()-started>30000){clearInterval(timer);reject(new Error("انتهت مهلة الاتصال بالسحابة. تحقق من بيانات الاتصال ثم حاول مرة أخرى."))}},200)});
-const login=async()=>{const e=email.value.trim(),p=pass.value,u=url.value.trim(),k=key.value.trim();if(!e||!p||!u||!k){status("أكمل البريد الإلكتروني وكلمة المرور وإعدادات الاتصال.","#f87171");if(!u||!k)details.open=true;return}btn.disabled=true;status("جارٍ تسجيل الدخول وتحميل البيانات المشتركة...");try{document.getElementById("cloudUrl").value=u;document.getElementById("cloudKey").value=k;document.getElementById("cloudEmail").value=e;document.getElementById("cloudPassword").value=p;document.getElementById("cloudConnect").click();await wait();unlock()}catch(err){status(err?.message||String(err),"#f87171");pass.value="";btn.disabled=false;pass.focus()}};
-btn.addEventListener("click",login);[email,pass,url,key].forEach(el=>el.addEventListener("keydown",e=>{if(e.key==="Enter")login()}));document.getElementById("cloudSignOut")?.addEventListener("click",()=>setTimeout(()=>{btn.disabled=false;pass.value="";lock()},100));lock();
+  const gate = document.getElementById("requiredCloudLoginGate");
+  const btn = document.getElementById("requiredCloudLoginButton");
+  const st = document.getElementById("requiredCloudLoginStatus");
+  const email = document.getElementById("requiredCloudEmail");
+  const pass = document.getElementById("requiredCloudPassword");
+  const url = document.getElementById("requiredCloudUrl");
+  const key = document.getElementById("requiredCloudKey");
+  const details = document.getElementById("requiredCloudConnectionDetails");
+  const app = document.querySelector(".container");
+  const buttonLabel = btn?.querySelector(".gate-button-label");
+
+  const status = (text, color = "#fbbf24") => {
+    if (st) {
+      st.textContent = text;
+      st.style.color = color;
+    }
+  };
+
+  const setLoading = loading => {
+    if (!btn) return;
+    btn.disabled = loading;
+    gate?.classList.toggle("is-loading", loading);
+    if (buttonLabel) buttonLabel.textContent = loading ? "Signing in..." : "Sign in & continue";
+  };
+
+  const lock = () => {
+    document.documentElement.classList.add("cloud-login-locked");
+    app?.setAttribute("inert", "");
+    if (gate) gate.style.display = "flex";
+    setLoading(false);
+    status("Enter your account details to continue.", "#94a3b8");
+    setTimeout(() => email?.focus(), 0);
+  };
+
+  const unlock = () => {
+    document.documentElement.classList.remove("cloud-login-locked");
+    app?.removeAttribute("inert");
+    if (gate) gate.style.display = "none";
+    if (pass) pass.value = "";
+  };
+
+  url.value = localStorage.getItem("fuel_cloud_url") || "https://mykwxfifrjohhjhomegf.supabase.co";
+  key.value = localStorage.getItem("fuel_cloud_key") || "";
+  if (!key.value) details.open = true;
+
+  const waitForConnection = () => new Promise((resolve, reject) => {
+    const started = Date.now();
+    const timer = setInterval(() => {
+      const cloudStatus = String(document.getElementById("cloudStatus")?.textContent || "");
+      const cloudMessage = String(document.getElementById("cloudMessage")?.textContent || "");
+
+      if (/Connected & Synced/i.test(cloudStatus)) {
+        clearInterval(timer);
+        resolve();
+      } else if (/Save failed|Connection lost|Disconnected|غير متصل/i.test(cloudStatus)) {
+        clearInterval(timer);
+        reject(new Error(cloudMessage || "Unable to connect to the shared database."));
+      } else if (Date.now() - started > 30000) {
+        clearInterval(timer);
+        reject(new Error("The connection timed out. Check the connection settings and try again."));
+      }
+    }, 200);
+  });
+
+  const login = async () => {
+    const e = email.value.trim();
+    const p = pass.value;
+    const u = url.value.trim();
+    const k = key.value.trim();
+
+    if (!e || !p || !u || !k) {
+      status("Please complete the email, password, and connection settings.", "#f87171");
+      if (!u || !k) details.open = true;
+      return;
+    }
+
+    setLoading(true);
+    status("Authenticating and loading shared data...", "#93c5fd");
+
+    try {
+      document.getElementById("cloudUrl").value = u;
+      document.getElementById("cloudKey").value = k;
+      document.getElementById("cloudEmail").value = e;
+      document.getElementById("cloudPassword").value = p;
+      document.getElementById("cloudConnect").click();
+
+      await waitForConnection();
+      unlock();
+    } catch (err) {
+      status(err?.message || String(err), "#f87171");
+      pass.value = "";
+      setLoading(false);
+      pass.focus();
+    }
+  };
+
+  btn.addEventListener("click", login);
+  [email, pass, url, key].forEach(el => el?.addEventListener("keydown", e => {
+    if (e.key === "Enter") login();
+  }));
+
+  document.getElementById("cloudSignOut")?.addEventListener("click", () => {
+    setTimeout(() => {
+      lock();
+    }, 100);
+  });
+
+  lock();
 })();
 </script></body></html>
