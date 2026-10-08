@@ -14051,9 +14051,11 @@ let adminPassword = (!storedAdminPassword || storedAdminPassword === "1234")
   let client = null;
   let channel = null;
   let busy = false;
-  let lastSaved = "";
   const CLOUD_DIRTY_KEY = "fuel_cloud_dirty";
   const CLOUD_REMOTE_UPDATED_KEY = "fuel_cloud_remote_updated_at";
+  const CLOUD_LAST_SAVED_KEY = "fuel_cloud_last_saved_snapshot";
+  const storedLastSaved = localStorage.getItem(CLOUD_LAST_SAVED_KEY) || "";
+  let lastSaved = storedLastSaved;
   let cloudDirty = localStorage.getItem(CLOUD_DIRTY_KEY) === "1";
   let lastRemoteUpdatedAt = localStorage.getItem(CLOUD_REMOTE_UPDATED_KEY) || "";
   let cloudWriteQueue = Promise.resolve();
@@ -14096,6 +14098,16 @@ let adminPassword = (!storedAdminPassword || storedAdminPassword === "1234")
       ? "sn:" + String(sn)
       : "raw:" + JSON.stringify(record);
   };
+  const canonicalizeRecords = records => {
+    const list = Array.isArray(records) ? JSON.parse(JSON.stringify(records)) : [];
+    list.sort((a, b) => {
+      const ak = stableRecordKey(a);
+      const bk = stableRecordKey(b);
+      return ak < bk ? -1 : ak > bk ? 1 : 0;
+    });
+    return list;
+  };
+  const canonicalSnapshot = records => JSON.stringify(canonicalizeRecords(records));
 
   async function migrateLegacyLocalData() {
     if (!legacyMigrationPending) return;
@@ -14128,7 +14140,8 @@ let adminPassword = (!storedAdminPassword || storedAdminPassword === "1234")
       if (error) throw error;
 
       const savedUpdatedAt = data?.updated_at || writeTimestamp;
-      lastSaved = localSnapshot;
+      lastSaved = canonicalSnapshot(localRecords);
+      try { localStorage.setItem(CLOUD_LAST_SAVED_KEY, lastSaved); } catch(e) {}
       setRemoteBaseline(savedUpdatedAt);
       setCloudDirty(false);
       localStorage.setItem("fuel_system_records", localSnapshot);
@@ -14141,7 +14154,8 @@ let adminPassword = (!storedAdminPassword || storedAdminPassword === "1234")
     const remoteSnapshot = JSON.stringify(remoteRecords);
 
     if (localSnapshot === remoteSnapshot) {
-      lastSaved = remoteSnapshot;
+      lastSaved = canonicalSnapshot(remoteRecords);
+      try { localStorage.setItem(CLOUD_LAST_SAVED_KEY, lastSaved); } catch(e) {}
       setRemoteBaseline(remote.data.updated_at || "");
       setCloudDirty(false);
       markLegacyMigrationComplete();
@@ -14235,11 +14249,12 @@ let adminPassword = (!storedAdminPassword || storedAdminPassword === "1234")
     try { isDataDirty = true; } catch(e) {}
   };
 
-  const currentSnapshot = () => JSON.stringify(fuelRecords);
+  const currentSnapshot = () => canonicalSnapshot(fuelRecords);
 
   function queueCloudWrite(snapshot) {
     if (!client) return Promise.resolve();
 
+    snapshot = canonicalSnapshot(JSON.parse(snapshot));
     setCloudDirty(true);
 
     cloudWriteQueue = cloudWriteQueue
@@ -14328,11 +14343,12 @@ let adminPassword = (!storedAdminPassword || storedAdminPassword === "1234")
           }
 
           lastSaved = snapshot;
+          try { localStorage.setItem(CLOUD_LAST_SAVED_KEY, snapshot); } catch(e) {}
           setRemoteBaseline(savedUpdatedAt);
           localStorage.setItem("fuel_system_records", snapshot);
 
-          // Only clear the dirty state if no newer local change happened
-          // while this write was in progress.
+          // Compare logical record content, not the table's display order.
+          // Sorting/filtering must never create a false dirty state.
           setCloudDirty(currentSnapshot() !== snapshot);
 
           status(cloudDirty ? "Connected" : "Connected & Synced", "#34d399");
@@ -14415,7 +14431,8 @@ let adminPassword = (!storedAdminPassword || storedAdminPassword === "1234")
     if (data && Array.isArray(data.records)) {
       fuelRecords = data.records;
       localStorage.setItem("fuel_system_records", JSON.stringify(fuelRecords));
-      lastSaved = JSON.stringify(fuelRecords);
+      lastSaved = canonicalSnapshot(fuelRecords);
+      try { localStorage.setItem(CLOUD_LAST_SAVED_KEY, lastSaved); } catch(e) {}
       setRemoteBaseline(data.updated_at || "");
       setCloudDirty(false);
 
@@ -14449,9 +14466,11 @@ let adminPassword = (!storedAdminPassword || storedAdminPassword === "1234")
         payload => {
           if (!payload.new?.records) return;
 
-          const incoming = JSON.stringify(payload.new.records);
+          const incomingRaw = JSON.stringify(payload.new.records);
+          const incoming = canonicalSnapshot(payload.new.records);
 
-          // Ignore the exact snapshot already confirmed by this device.
+          // Ignore the exact logical snapshot already confirmed by this device.
+          // Record ordering in the UI is not data.
           if (incoming === lastSaved) return;
 
           // If this device has a local change waiting to be written, do not
@@ -14462,8 +14481,11 @@ let adminPassword = (!storedAdminPassword || storedAdminPassword === "1234")
           }
 
           fuelRecords = payload.new.records;
-          localStorage.setItem("fuel_system_records", incoming);
+          localStorage.setItem("fuel_system_records", incomingRaw);
           lastSaved = incoming;
+          try { localStorage.setItem(CLOUD_LAST_SAVED_KEY, incoming); } catch(e) {}
+          setRemoteBaseline(payload.new.updated_at || lastRemoteUpdatedAt);
+          setCloudDirty(false);
 
           if (typeof sortRecordsArray === "function") {
             sortRecordsArray(fuelRecords, currentSortColumn, currentSortDirection);
