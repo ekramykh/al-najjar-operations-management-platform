@@ -13570,6 +13570,7 @@ let adminPassword = (!storedAdminPassword || storedAdminPassword === "1234")
         const assignedSn = (mode === 'update' && index !== -1) ? fuelRecords[index].sn : (maxSn + 1);
 
         const recordData = {
+            record_id: (mode === 'update' && index !== -1 && fuelRecords[index].record_id) ? fuelRecords[index].record_id : newRecordId(),
             sn: assignedSn,
             date: formattedDate,
             car: formatTitleCase(document.getElementById('inputCar').value),
@@ -13626,6 +13627,7 @@ let adminPassword = (!storedAdminPassword || storedAdminPassword === "1234")
         const newSn = maxSn + 1;
 
         const recordData = {
+            record_id: newRecordId(),
             sn: newSn,
             date: formattedDate,
             car: formatTitleCase(document.getElementById('inputCar').value),
@@ -14236,122 +14238,54 @@ let adminPassword = (!storedAdminPassword || storedAdminPassword === "1234")
   };
 
   const currentSnapshot = () => JSON.stringify(fuelRecords);
+  // SAFE RECORD-LEVEL SYNC v3
+  const CLOUD_BASELINE_SNAPSHOT_KEY = "fuel_cloud_baseline_snapshot_v3";
+  let lastSyncedSnapshot = localStorage.getItem(CLOUD_BASELINE_SNAPSHOT_KEY) || "";
+  const cloneRecords = records => Array.isArray(records) ? JSON.parse(JSON.stringify(records)) : [];
+  const makeLegacyRecordId = record => {
+    const sn=Number(record?.sn); if(Number.isFinite(sn)&&sn>0)return "legacy-sn:"+String(sn);
+    const raw=JSON.stringify(record||{}); let hash=2166136261;
+    for(let i=0;i<raw.length;i++){hash^=raw.charCodeAt(i);hash=Math.imul(hash,16777619);}
+    return "legacy-hash:"+(hash>>>0).toString(16);
+  };
+  const newRecordId=()=>window.crypto?.randomUUID?"record:"+window.crypto.randomUUID():"record:"+Date.now().toString(36)+"-"+Math.random().toString(36).slice(2);
+  const normalizeRecordIds=records=>cloneRecords(records).map(r=>r&&typeof r==="object"&&!r.record_id?{...r,record_id:makeLegacyRecordId(r)}:r);
+  const recordComparable=r=>{if(!r||typeof r!=="object")return r;const c={...r};delete c.record_id;return c;};
+  const sameRecord=(a,b)=>JSON.stringify(recordComparable(a))===JSON.stringify(recordComparable(b));
+  const recordsById=records=>{const m=new Map();normalizeRecordIds(records).forEach(r=>{if(r?.record_id)m.set(r.record_id,r)});return m;};
+  const setSyncedBaseline=records=>{const n=normalizeRecordIds(records);lastSyncedSnapshot=JSON.stringify(n);try{localStorage.setItem(CLOUD_BASELINE_SNAPSHOT_KEY,lastSyncedSnapshot)}catch(e){}return n;};
+  function mergeLocalChanges(baseRecords,localRecords,remoteRecords){
+    const base=recordsById(baseRecords),local=recordsById(localRecords),remote=recordsById(remoteRecords),merged=new Map(remote),conflicts=[],newLocal=[];
+    for(const [id,lr] of local){const br=base.get(id),rr=remote.get(id);
+      if(!br){if(!rr)newLocal.push(lr);else if(!sameRecord(rr,lr))conflicts.push({local:lr,remote:rr});continue;}
+      if(sameRecord(lr,br))continue;
+      if(rr&&!sameRecord(rr,br)&&!sameRecord(rr,lr)){conflicts.push({local:lr,remote:rr});continue;}
+      merged.set(id,lr);
+    }
+    for(const [id,br] of base){if(local.has(id))continue;const rr=remote.get(id);if(!rr)continue;if(sameRecord(rr,br))merged.delete(id);else conflicts.push({local:null,remote:rr});}
+    const used=new Set([...merged.values()].map(r=>Number(r?.sn)).filter(n=>Number.isFinite(n)&&n>0));let maxSn=used.size?Math.max(...used):0;
+    for(const r of newLocal){let sn=Number(r?.sn);if(!Number.isFinite(sn)||sn<=0||used.has(sn))sn=++maxSn;else maxSn=Math.max(maxSn,sn);merged.set(r.record_id,{...r,sn});used.add(sn);}
+    return {records:[...merged.values()],conflicts};
+  }
+  const persistNormalizedLocalRecords=()=>{const n=normalizeRecordIds(fuelRecords);if(JSON.stringify(n)!==JSON.stringify(fuelRecords)){fuelRecords=n;localStorage.setItem("fuel_system_records",JSON.stringify(n));}};
+  persistNormalizedLocalRecords();
 
-  function queueCloudWrite(snapshot) {
-    if (!client) return Promise.resolve();
-
-    setCloudDirty(true);
-
-    cloudWriteQueue = cloudWriteQueue
-      .catch(() => {})
-      .then(async () => {
-        if (!client) return;
-
-        busy = true;
-        try {
-          // Optimistic concurrency: never overwrite a newer cloud snapshot
-          // that this device has not previously seen.
-          const remote = await client
-            .from("fuel_shared_state")
-            .select("records,updated_at")
-            .eq("id","shared")
-            .maybeSingle();
-
-          if (remote.error) throw remote.error;
-
-          const remoteExists = !!remote.data;
-          const remoteUpdatedAt = remote.data?.updated_at || "";
-
-          if (remoteExists && lastRemoteUpdatedAt && remoteUpdatedAt !== lastRemoteUpdatedAt) {
-            saveConflictBackup(snapshot);
-            setCloudDirty(true);
-            status("Sync conflict", "#f59e0b");
-            message("Cloud data changed on another device before this save. Your local changes were kept and a recovery backup was created. No cloud data was overwritten.");
-            throw new Error("Sync conflict: another device changed the shared data. Your local changes were preserved.");
-          }
-
-          if (remoteExists && !lastRemoteUpdatedAt) {
-            saveConflictBackup(snapshot);
-            setCloudDirty(true);
-            status("Sync conflict", "#f59e0b");
-            message("A local change has no trusted cloud baseline. Your local changes were kept and the cloud was not overwritten.");
-            throw new Error("Sync conflict: this device has no trusted cloud baseline for the existing shared data.");
-          }
-
-          const writeTimestamp = new Date().toISOString();
-          let savedUpdatedAt = writeTimestamp;
-
-          if (remoteExists) {
-            const {data, error} = await client
-              .from("fuel_shared_state")
-              .update({
-                records: JSON.parse(snapshot),
-                updated_at: writeTimestamp
-              })
-              .eq("id","shared")
-              .eq("updated_at", remoteUpdatedAt)
-              .select("updated_at")
-              .maybeSingle();
-
-            if (error) throw error;
-
-            if (!data) {
-              saveConflictBackup(snapshot);
-              setCloudDirty(true);
-              status("Sync conflict", "#f59e0b");
-              message("Another device changed the shared data during this save. Your local changes were preserved.");
-              throw new Error("Sync conflict: the shared data changed during the save.");
-            }
-
-            savedUpdatedAt = data.updated_at || writeTimestamp;
-          } else {
-            const {data, error} = await client
-              .from("fuel_shared_state")
-              .insert({
-                id: "shared",
-                records: JSON.parse(snapshot),
-                updated_at: writeTimestamp
-              })
-              .select("updated_at")
-              .maybeSingle();
-
-            if (error) {
-              // A concurrent first writer may have created the row.
-              saveConflictBackup(snapshot);
-              setCloudDirty(true);
-              status("Sync conflict", "#f59e0b");
-              message("Another device created the shared data before this save. Your local changes were preserved.");
-              throw new Error("Sync conflict: shared data was created by another device.");
-            }
-
-            savedUpdatedAt = data?.updated_at || writeTimestamp;
-          }
-
-          lastSaved = snapshot;
-          setRemoteBaseline(savedUpdatedAt);
-          localStorage.setItem("fuel_system_records", snapshot);
-
-          // Only clear the dirty state if no newer local change happened
-          // while this write was in progress.
-          setCloudDirty(currentSnapshot() !== snapshot);
-
-          status(cloudDirty ? "Connected" : "Connected & Synced", "#34d399");
-          message(cloudDirty
-            ? "A newer local change is waiting to be saved."
-            : "Latest data saved to the shared database.");
-        } catch(err) {
-          setCloudDirty(true);
-          if (!/Sync conflict/i.test(err?.message || "")) {
-            status("Save failed", "#f87171");
-            message("Sync failed: " + (err.message || err));
-          }
-          throw err;
-        } finally {
-          busy = false;
-        }
-      });
-
-    return cloudWriteQueue;
+  function queueCloudWrite(snapshot=currentSnapshot()){
+    if(!client)return Promise.resolve();setCloudDirty(true);
+    cloudWriteQueue=cloudWriteQueue.catch(()=>{}).then(async()=>{
+      if(!client)return;busy=true;
+      try{
+        const local=normalizeRecordIds(JSON.parse(snapshot)),base=lastSyncedSnapshot?normalizeRecordIds(JSON.parse(lastSyncedSnapshot)):[],remote=await client.from("fuel_shared_state").select("records,updated_at").eq("id","shared").maybeSingle();
+        if(remote.error)throw remote.error;const exists=!!remote.data,remoteAt=remote.data?.updated_at||"",remoteRecords=exists&&Array.isArray(remote.data?.records)?normalizeRecordIds(remote.data.records):[];
+        if(exists&&!lastRemoteUpdatedAt&&!lastSyncedSnapshot){fuelRecords=remoteRecords;const s=JSON.stringify(remoteRecords);localStorage.setItem("fuel_system_records",s);lastSaved=s;setSyncedBaseline(remoteRecords);setRemoteBaseline(remoteAt);setCloudDirty(false);status("Connected & Synced","#34d399");message("Cloud baseline restored safely. No existing cloud records were overwritten.");return;}
+        const m=mergeLocalChanges(base,local,remoteRecords);if(m.conflicts.length){saveConflictBackup(JSON.stringify(local));status("Sync conflict","#f59e0b");message(m.conflicts.length+" record conflict(s) detected. Cloud versions were kept and local copies were backed up.");}
+        const merged=normalizeRecordIds(m.records),ts=new Date().toISOString();let result;
+        if(exists){result=await client.from("fuel_shared_state").update({records:merged,updated_at:ts}).eq("id","shared").eq("updated_at",remoteAt).select("records,updated_at").maybeSingle();if(result.error)throw result.error;if(!result.data)throw new Error("SYNC_RETRY");}
+        else{result=await client.from("fuel_shared_state").insert({id:"shared",records:merged,updated_at:ts}).select("records,updated_at").maybeSingle();if(result.error)throw result.error;}
+        fuelRecords=merged;const saved=JSON.stringify(merged);lastSaved=saved;localStorage.setItem("fuel_system_records",saved);setSyncedBaseline(merged);setRemoteBaseline(result.data?.updated_at||ts);setCloudDirty(false);
+        if(typeof sortRecordsArray==="function")sortRecordsArray(fuelRecords,currentSortColumn,currentSortDirection);if(typeof filterAndRender==="function")filterAndRender();if(typeof renderDashboard==="function")renderDashboard();status("Connected & Synced","#34d399");if(!m.conflicts.length)message("Latest changes saved and merged safely.");
+      }catch(err){setCloudDirty(true);if(!/Sync conflict/i.test(err?.message||"")){status("Save failed","#f87171");message("Sync failed: "+(err.message||err));}throw err;}finally{busy=false;}
+    });return cloudWriteQueue;
   }
 
   async function connect() {
@@ -14393,42 +14327,10 @@ let adminPassword = (!storedAdminPassword || storedAdminPassword === "1234")
     message("Connected. Changes are saved to the shared database and appear on connected devices.");
   }
 
-  async function pullCloud(options = {}) {
-    if (!client) return;
-
-    const force = options.force === true;
-
-    // Never overwrite a local change that has not been confirmed in the cloud.
-    if (cloudDirty && !force) {
-      await queueCloudWrite(currentSnapshot());
-      return;
-    }
-
-    const {data, error} = await client
-      .from("fuel_shared_state")
-      .select("records,updated_at")
-      .eq("id","shared")
-      .maybeSingle();
-
-    if (error) throw error;
-
-    if (data && Array.isArray(data.records)) {
-      fuelRecords = data.records;
-      localStorage.setItem("fuel_system_records", JSON.stringify(fuelRecords));
-      lastSaved = JSON.stringify(fuelRecords);
-      setRemoteBaseline(data.updated_at || "");
-      setCloudDirty(false);
-
-      if (typeof sortRecordsArray === "function") {
-        sortRecordsArray(fuelRecords, currentSortColumn, currentSortDirection);
-      }
-      if (typeof filterAndRender === "function") filterAndRender();
-      if (typeof renderDashboard === "function") renderDashboard();
-
-      message("Shared data loaded from the cloud.");
-    } else {
-      await queueCloudWrite(currentSnapshot());
-    }
+  async function pullCloud(options={}){
+    if(!client)return;if(cloudDirty&&!options.force){await queueCloudWrite(currentSnapshot());return;}
+    const {data,error}=await client.from("fuel_shared_state").select("records,updated_at").eq("id","shared").maybeSingle();if(error)throw error;
+    if(data&&Array.isArray(data.records)){fuelRecords=normalizeRecordIds(data.records);const s=JSON.stringify(fuelRecords);localStorage.setItem("fuel_system_records",s);lastSaved=s;setSyncedBaseline(fuelRecords);setRemoteBaseline(data.updated_at||"");setCloudDirty(false);if(typeof sortRecordsArray==="function")sortRecordsArray(fuelRecords,currentSortColumn,currentSortDirection);if(typeof filterAndRender==="function")filterAndRender();if(typeof renderDashboard==="function")renderDashboard();message("Shared data loaded from the cloud.");}else await queueCloudWrite(currentSnapshot());
   }
 
   async function pushCloud(snapshot = currentSnapshot()) {
