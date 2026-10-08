@@ -14060,6 +14060,15 @@ let adminPassword = (!storedAdminPassword || storedAdminPassword === "1234")
   let lastRemoteUpdatedAt = localStorage.getItem(CLOUD_REMOTE_UPDATED_KEY) || "";
   let cloudWriteQueue = Promise.resolve();
 
+  // Heal a false dirty flag left by the pre-canonicalization build when the
+  // local data is already identical to the persisted last-saved snapshot.
+  if (cloudDirty && storedLastSaved && localStorage.getItem("fuel_system_records")) {
+    try {
+      const localStored = JSON.parse(localStorage.getItem("fuel_system_records"));
+      if (canonicalSnapshot(localStored) === storedLastSaved) cloudDirty = false;
+    } catch(e) {}
+  }
+
   const setCloudDirty = value => {
     cloudDirty = !!value;
     try {
