@@ -13512,6 +13512,9 @@ window.toggleFleetAnalysisPanel=function(){
         const assignedSn = (mode === 'update' && index !== -1) ? fuelRecords[index].sn : (maxSn + 1);
 
         const recordData = {
+            recordId: (mode === 'update' && index !== -1 && fuelRecords[index]?.recordId)
+                ? fuelRecords[index].recordId
+                : createFuelRecordId(),
             sn: assignedSn,
             date: formattedDate,
             car: formatTitleCase(document.getElementById('inputCar').value),
@@ -13568,6 +13571,7 @@ window.toggleFleetAnalysisPanel=function(){
         const newSn = maxSn + 1;
 
         const recordData = {
+            recordId: createFuelRecordId(),
             sn: newSn,
             date: formattedDate,
             car: formatTitleCase(document.getElementById('inputCar').value),
@@ -13997,6 +14001,11 @@ window.toggleFleetAnalysisPanel=function(){
   let cloudDirty = false;
   let cloudWriteQueue = Promise.resolve();
 
+  const CLOUD_DIRTY_KEY = "fuel_cloud_dirty_v2";
+  const CLOUD_BASE_KEY = "fuel_cloud_base_snapshot_v2";
+  const CLOUD_REMOTE_UPDATED_KEY = "fuel_cloud_remote_updated_at_v2";
+  const CLOUD_CONFLICT_BACKUP_PREFIX = "fuel_conflict_backup_v2_";
+
   const localUrl = localStorage.getItem("fuel_cloud_url") || "https://mykwxfifrjohhjhomegf.supabase.co";
   const localKey = localStorage.getItem("fuel_cloud_key") || "";
   $("cloudUrl").value = localUrl;
@@ -14006,12 +14015,305 @@ window.toggleFleetAnalysisPanel=function(){
     try { isDataDirty = true; } catch(e) {}
   };
 
-  const currentSnapshot = () => JSON.stringify(fuelRecords);
+  const safeParse = (value, fallback = null) => {
+    try { return JSON.parse(value); } catch(e) { return fallback; }
+  };
 
-  function queueCloudWrite(snapshot) {
+  const snapshot = records => JSON.stringify(Array.isArray(records) ? records : []);
+  const currentSnapshot = () => snapshot(fuelRecords);
+
+  const stableKey = record => {
+    const id = String(record?.recordId || "").trim();
+    if (id) return "id:" + id;
+    const sn = Number(record?.sn);
+    if (Number.isFinite(sn) && sn > 0) return "sn:" + String(sn);
+    return "raw:" + JSON.stringify(record || {});
+  };
+
+  const comparableRecord = record => {
+    if (!record) return null;
+    const copy = {...record};
+    delete copy.recordId;
+    return copy;
+  };
+
+  const sameRecord = (a, b) => JSON.stringify(comparableRecord(a)) === JSON.stringify(comparableRecord(b));
+
+  const canonicalRecords = records => {
+    return (Array.isArray(records) ? records : [])
+      .map(record => record ? JSON.parse(JSON.stringify(record)) : record)
+      .sort((a, b) => {
+        const ak = stableKey(a), bk = stableKey(b);
+        return ak < bk ? -1 : ak > bk ? 1 : 0;
+      });
+  };
+
+  const canonicalSnapshot = records => JSON.stringify(canonicalRecords(records));
+
+  function createFuelRecordId() {
+    if (window.crypto?.randomUUID) return window.crypto.randomUUID();
+    return "rec-" + Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 10);
+  }
+
+  function ensureNewRecordIds(records) {
+    if (!Array.isArray(records)) return;
+    records.forEach(record => {
+      if (record && !String(record.recordId || "").trim()) {
+        record.recordId = createFuelRecordId();
+      }
+    });
+  }
+
+  const saveConflictBackup = (localRecords, remoteRecords, reason) => {
+    try {
+      const stamp = new Date().toISOString().replace(/[:.]/g, "-");
+      localStorage.setItem(
+        CLOUD_CONFLICT_BACKUP_PREFIX + stamp,
+        JSON.stringify({
+          reason,
+          createdAt: new Date().toISOString(),
+          localRecords,
+          remoteRecords
+        })
+      );
+    } catch(e) {}
+  };
+
+  const setCloudDirty = value => {
+    cloudDirty = !!value;
+    try {
+      if (cloudDirty) localStorage.setItem(CLOUD_DIRTY_KEY, "1");
+      else localStorage.removeItem(CLOUD_DIRTY_KEY);
+    } catch(e) {}
+  };
+
+  const setRemoteBaseline = value => {
+    try {
+      if (value) localStorage.setItem(CLOUD_REMOTE_UPDATED_KEY, value);
+      else localStorage.removeItem(CLOUD_REMOTE_UPDATED_KEY);
+    } catch(e) {}
+  };
+
+  const getRemoteBaseline = () => localStorage.getItem(CLOUD_REMOTE_UPDATED_KEY) || "";
+
+  const setBaseSnapshot = records => {
+    try {
+      localStorage.setItem(CLOUD_BASE_KEY, canonicalSnapshot(records));
+    } catch(e) {}
+  };
+
+  const getBaseRecords = () => {
+    const raw = localStorage.getItem(CLOUD_BASE_KEY);
+    const parsed = safeParse(raw, null);
+    return Array.isArray(parsed) ? parsed : null;
+  };
+
+  const allocateUniqueSerialNumbers = (records, localAddedKeys) => {
+    const result = Array.isArray(records) ? records : [];
+    let maxSn = result.reduce((max, record) => Math.max(max, Number(record?.sn) || 0), 0);
+    const used = new Set();
+
+    result.forEach(record => {
+      const key = stableKey(record);
+      let sn = Number(record?.sn);
+      if (!Number.isFinite(sn) || sn <= 0) {
+        sn = ++maxSn;
+        record.sn = sn;
+      }
+
+      if (!used.has(sn)) {
+        used.add(sn);
+        return;
+      }
+
+      // A new local record may have been created on a stale device with the
+      // same next serial number as another device. Keep both records and give
+      // the local addition a new serial number.
+      if (localAddedKeys?.has(key)) {
+        do { sn = ++maxSn; } while (used.has(sn));
+        record.sn = sn;
+        used.add(sn);
+      }
+    });
+
+    return result;
+  };
+
+  function mergeThreeWay(baseRecords, localRecords, remoteRecords) {
+    const base = Array.isArray(baseRecords) ? baseRecords : [];
+    const local = Array.isArray(localRecords) ? localRecords : [];
+    const remote = Array.isArray(remoteRecords) ? remoteRecords : [];
+
+    const baseMap = new Map(base.map(record => [stableKey(record), record]));
+    const localMap = new Map(local.map(record => [stableKey(record), record]));
+    const remoteMap = new Map(remote.map(record => [stableKey(record), record]));
+
+    const orderedKeys = [];
+    const seen = new Set();
+    const addKeys = records => records.forEach(record => {
+      const key = stableKey(record);
+      if (!seen.has(key)) {
+        seen.add(key);
+        orderedKeys.push(key);
+      }
+    });
+
+    // Keep the cloud ordering as the primary order, then append local-only records.
+    addKeys(remote);
+    addKeys(local);
+    addKeys(base);
+
+    const merged = [];
+    const localAddedKeys = new Set();
+    const conflicts = [];
+
+    for (const key of orderedKeys) {
+      const b = baseMap.get(key);
+      const l = localMap.get(key);
+      const r = remoteMap.get(key);
+
+      if (!b) {
+        if (l && !r) {
+          merged.push(l);
+          localAddedKeys.add(key);
+        } else if (!l && r) {
+          merged.push(r);
+        } else if (l && r) {
+          if (sameRecord(l, r)) {
+            merged.push(r);
+          } else {
+            // Same legacy serial number but different data: cloud remains
+            // authoritative; the local version is retained in a backup.
+            merged.push(r);
+            conflicts.push({key, local:l, remote:r, type:"concurrent-add"});
+          }
+        }
+        continue;
+      }
+
+      const localChanged = !sameRecord(l, b);
+      const remoteChanged = !sameRecord(r, b);
+
+      if (localChanged && !remoteChanged) {
+        if (l) merged.push(l);
+        // local deletion wins when the cloud did not change.
+        continue;
+      }
+
+      if (!localChanged && remoteChanged) {
+        if (r) merged.push(r);
+        continue;
+      }
+
+      if (localChanged && remoteChanged) {
+        if (sameRecord(l, r)) {
+          if (l) merged.push(l);
+        } else {
+          // Never silently destroy another user's newer edit.
+          if (r) merged.push(r);
+          conflicts.push({key, local:l, remote:r, type:"concurrent-edit"});
+        }
+        continue;
+      }
+
+      if (r) merged.push(r);
+      else if (l) merged.push(l);
+    }
+
+    return {
+      records: allocateUniqueSerialNumbers(merged, localAddedKeys),
+      localAddedKeys,
+      conflicts
+    };
+  }
+
+  async function readCloudState() {
+    const {data, error} = await client
+      .from("fuel_shared_state")
+      .select("records,updated_at")
+      .eq("id","shared")
+      .maybeSingle();
+
+    if (error) throw error;
+    return {
+      exists: !!data,
+      records: Array.isArray(data?.records) ? data.records : [],
+      updatedAt: data?.updated_at || ""
+    };
+  }
+
+  async function writeCloudState(records, expectedUpdatedAt = null) {
+    const writeTimestamp = new Date().toISOString();
+
+    if (!expectedUpdatedAt) {
+      const {data, error} = await client
+        .from("fuel_shared_state")
+        .insert({
+          id: "shared",
+          records,
+          updated_at: writeTimestamp
+        })
+        .select("updated_at")
+        .maybeSingle();
+
+      if (error) {
+        // The row may have been created by another device between our read
+        // and insert. The caller will re-read and merge instead of overwriting.
+        return {created:false, conflict:true, updatedAt:""};
+      }
+
+      return {created:true, conflict:false, updatedAt:data?.updated_at || writeTimestamp};
+    }
+
+    const {data, error} = await client
+      .from("fuel_shared_state")
+      .update({
+        records,
+        updated_at: writeTimestamp
+      })
+      .eq("id","shared")
+      .eq("updated_at",expectedUpdatedAt)
+      .select("updated_at")
+      .maybeSingle();
+
+    if (error) throw error;
+
+    return {
+      created:false,
+      conflict:!data,
+      updatedAt:data?.updated_at || ""
+    };
+  }
+
+  async function commitMergedRecords(mergedRecords, remoteUpdatedAt, localRecords, remoteRecords, conflictReason) {
+    const write = await writeCloudState(mergedRecords, remoteUpdatedAt || null);
+
+    if (write.conflict) {
+      saveConflictBackup(localRecords, remoteRecords, conflictReason || "Cloud changed during save");
+      throw new Error("The shared data changed during this save. Your local data was preserved and will be retried.");
+    }
+
+    fuelRecords = mergedRecords;
+    const mergedSnapshot = snapshot(mergedRecords);
+    localStorage.setItem("fuel_system_records", mergedSnapshot);
+    lastSaved = mergedSnapshot;
+    setBaseSnapshot(mergedRecords);
+    setRemoteBaseline(write.updatedAt);
+    setCloudDirty(false);
+
+    if (typeof sortRecordsArray === "function") {
+      sortRecordsArray(fuelRecords, currentSortColumn, currentSortDirection);
+    }
+    if (typeof filterAndRender === "function") filterAndRender();
+    if (typeof renderDashboard === "function") renderDashboard();
+
+    return write;
+  }
+
+  async function queueCloudWrite(requestedSnapshot = currentSnapshot()) {
     if (!client) return Promise.resolve();
 
-    cloudDirty = true;
+    setCloudDirty(true);
 
     cloudWriteQueue = cloudWriteQueue
       .catch(() => {})
@@ -14020,29 +14322,80 @@ window.toggleFleetAnalysisPanel=function(){
 
         busy = true;
         try {
-          const {error} = await client.from("fuel_shared_state").upsert({
-            id: "shared",
-            records: JSON.parse(snapshot),
-            updated_at: new Date().toISOString()
-          }, {onConflict:"id"});
+          ensureNewRecordIds(fuelRecords);
 
-          if (error) throw error;
+          // Re-read the cloud immediately before writing. This is the critical
+          // part: a stale device never blindly replaces the shared dataset.
+          let remote = await readCloudState();
 
-          lastSaved = snapshot;
-          localStorage.setItem("fuel_system_records", snapshot);
+          if (!remote.exists) {
+            const write = await writeCloudState(fuelRecords, null);
+            if (write.conflict) {
+              remote = await readCloudState();
+            } else {
+              const savedSnapshot = currentSnapshot();
+              lastSaved = savedSnapshot;
+              setBaseSnapshot(fuelRecords);
+              setRemoteBaseline(write.updatedAt);
+              localStorage.setItem("fuel_system_records", savedSnapshot);
+              setCloudDirty(currentSnapshot() !== requestedSnapshot);
+              status("Connected & Synced", "#34d399");
+              message("Latest data saved to the shared database.");
+              return;
+            }
+          }
 
-          // Only clear the dirty state if no newer local change happened
-          // while this write was in progress.
-          cloudDirty = (currentSnapshot() !== snapshot);
+          const localRecords = safeParse(requestedSnapshot, fuelRecords) || [];
+          const baseRecords = getBaseRecords();
+
+          // If the device has no trusted base yet, treat its local records as
+          // legacy data: preserve cloud records and add only local-only records.
+          const mergeBase = baseRecords || [];
+          const mergedResult = mergeThreeWay(mergeBase, localRecords, remote.records);
+
+          if (mergedResult.conflicts.length) {
+            saveConflictBackup(
+              localRecords,
+              remote.records,
+              "Concurrent changes were detected. Cloud versions remained authoritative for conflicting records."
+            );
+          }
+
+          const mergedSnapshot = canonicalSnapshot(mergedResult.records);
+          const remoteCanonical = canonicalSnapshot(remote.records);
+
+          if (mergedSnapshot === remoteCanonical) {
+            fuelRecords = mergedResult.records;
+            const localCurrentSnapshot = currentSnapshot();
+            localStorage.setItem("fuel_system_records", localCurrentSnapshot);
+            lastSaved = localCurrentSnapshot;
+            setBaseSnapshot(mergedResult.records);
+            setRemoteBaseline(remote.updatedAt);
+            setCloudDirty(localCurrentSnapshot !== currentSnapshot());
+            status("Connected & Synced", "#34d399");
+            message(mergedResult.conflicts.length
+              ? "Cloud data is current. Conflicting local changes were preserved in a recovery backup."
+              : "Shared data is already up to date.");
+            return;
+          }
+
+          await commitMergedRecords(
+            mergedResult.records,
+            remote.updatedAt,
+            localRecords,
+            remote.records,
+            "Concurrent cloud/local changes"
+          );
 
           status("Connected & Synced", "#34d399");
-          message(cloudDirty
-            ? "A newer local change is waiting to be saved."
+          message(mergedResult.conflicts.length
+            ? "Saved safely. Conflicting remote data was kept and a recovery backup was created."
             : "Latest data saved to the shared database.");
         } catch(err) {
-          cloudDirty = true;
+          setCloudDirty(true);
           status("Save failed", "#f87171");
           message("Sync failed: " + (err.message || err));
+          throw err;
         } finally {
           busy = false;
         }
@@ -14075,10 +14428,27 @@ window.toggleFleetAnalysisPanel=function(){
 
     await startRealtime();
 
-    // On a fresh connection, preserve any local cloud-connected change
-    // instead of blindly replacing it with the server snapshot.
-    if (cloudDirty) {
-      await queueCloudWrite(currentSnapshot());
+    const remote = await readCloudState();
+    const localRecords = Array.isArray(fuelRecords) ? fuelRecords : [];
+    const localSnapshot = currentSnapshot();
+    const baseRecords = getBaseRecords();
+
+    if (!remote.exists) {
+      setCloudDirty(true);
+      await queueCloudWrite(localSnapshot);
+    } else if (!baseRecords) {
+      // First connection from an older build: reconcile local and cloud data
+      // instead of replacing either side.
+      setCloudDirty(true);
+      await queueCloudWrite(localSnapshot);
+    } else if (localStorage.getItem(CLOUD_DIRTY_KEY) === "1") {
+      setCloudDirty(true);
+      await queueCloudWrite(localSnapshot);
+    } else if (canonicalSnapshot(localRecords) !== canonicalSnapshot(baseRecords)) {
+      // A change happened while this device was offline and the dirty flag was
+      // lost/reset. The snapshot itself is enough to recover it safely.
+      setCloudDirty(true);
+      await queueCloudWrite(localSnapshot);
     } else {
       await pullCloud();
     }
@@ -14088,45 +14458,40 @@ window.toggleFleetAnalysisPanel=function(){
     message("Connected. Changes are saved to the shared database and appear on connected devices.");
   }
 
-  async function pullCloud(options = {}) {
+  async function pullCloud() {
     if (!client) return;
 
-    const force = options.force === true;
-
-    // Never overwrite a local change that has not been confirmed in the cloud.
-    if (cloudDirty && !force) {
+    const remote = await readCloudState();
+    if (!remote.exists) {
       await queueCloudWrite(currentSnapshot());
       return;
     }
 
-    const {data, error} = await client
-      .from("fuel_shared_state")
-      .select("records,updated_at")
-      .eq("id","shared")
-      .maybeSingle();
-
-    if (error) throw error;
-
-    if (data && Array.isArray(data.records)) {
-      fuelRecords = data.records;
-      localStorage.setItem("fuel_system_records", JSON.stringify(fuelRecords));
-      lastSaved = JSON.stringify(fuelRecords);
-      cloudDirty = false;
-
-      if (typeof sortRecordsArray === "function") {
-        sortRecordsArray(fuelRecords, currentSortColumn, currentSortDirection);
-      }
-      if (typeof filterAndRender === "function") filterAndRender();
-      if (typeof renderDashboard === "function") renderDashboard();
-
-      message("Shared data loaded from the cloud.");
-    } else {
+    if (cloudDirty) {
       await queueCloudWrite(currentSnapshot());
+      return;
     }
+
+    fuelRecords = remote.records;
+    ensureNewRecordIds(fuelRecords);
+    const remoteSnapshot = currentSnapshot();
+    localStorage.setItem("fuel_system_records", remoteSnapshot);
+    lastSaved = remoteSnapshot;
+    setBaseSnapshot(fuelRecords);
+    setRemoteBaseline(remote.updatedAt);
+    setCloudDirty(false);
+
+    if (typeof sortRecordsArray === "function") {
+      sortRecordsArray(fuelRecords, currentSortColumn, currentSortDirection);
+    }
+    if (typeof filterAndRender === "function") filterAndRender();
+    if (typeof renderDashboard === "function") renderDashboard();
+
+    message("Shared data loaded from the cloud.");
   }
 
-  async function pushCloud(snapshot = currentSnapshot()) {
-    return queueCloudWrite(snapshot);
+  async function pushCloud(snapshotToPush = currentSnapshot()) {
+    return queueCloudWrite(snapshotToPush);
   }
 
   async function startRealtime() {
@@ -14143,21 +14508,30 @@ window.toggleFleetAnalysisPanel=function(){
         payload => {
           if (!payload.new?.records) return;
 
-          const incoming = JSON.stringify(payload.new.records);
+          const incomingRecords = Array.isArray(payload.new.records) ? payload.new.records : [];
+          const incomingCanonical = canonicalSnapshot(incomingRecords);
 
-          // Ignore the exact snapshot already confirmed by this device.
-          if (incoming === lastSaved) return;
+          if (incomingCanonical === canonicalSnapshot(fuelRecords)) {
+            setRemoteBaseline(payload.new.updated_at || getRemoteBaseline());
+            setBaseSnapshot(incomingRecords);
+            lastSaved = currentSnapshot();
+            return;
+          }
 
-          // If this device has a local change waiting to be written, do not
-          // let an older remote event overwrite that local change.
           if (cloudDirty) {
+            // Do not overwrite a local edit. The queued write will re-read the
+            // cloud and merge the two versions.
             message("A remote update was received while a local change is waiting to be saved.");
             return;
           }
 
-          fuelRecords = payload.new.records;
-          localStorage.setItem("fuel_system_records", incoming);
-          lastSaved = incoming;
+          fuelRecords = incomingRecords;
+          ensureNewRecordIds(fuelRecords);
+          const incomingSnapshot = currentSnapshot();
+          localStorage.setItem("fuel_system_records", incomingSnapshot);
+          lastSaved = incomingSnapshot;
+          setBaseSnapshot(fuelRecords);
+          setRemoteBaseline(payload.new.updated_at || "");
 
           if (typeof sortRecordsArray === "function") {
             sortRecordsArray(fuelRecords, currentSortColumn, currentSortDirection);
@@ -14177,15 +14551,17 @@ window.toggleFleetAnalysisPanel=function(){
       });
   }
 
-  // Preserve the system's local backup while reliably queueing every cloud
-  // write. The previous version silently discarded writes whenever busy=true.
+  // Keep local persistence and cloud persistence as one transaction boundary:
+  // every save is queued, and no save is silently dropped because another
+  // write is already in progress.
   const originalSave = window.saveToLocalStorage;
   window.saveToLocalStorage = function() {
     if (originalSave) originalSave();
+    ensureNewRecordIds(fuelRecords);
     setDirtyFlag();
     if (client) {
-      cloudDirty = true;
-      queueCloudWrite(currentSnapshot());
+      setCloudDirty(true);
+      queueCloudWrite(currentSnapshot()).catch(() => {});
     }
   };
 
@@ -14203,7 +14579,7 @@ window.toggleFleetAnalysisPanel=function(){
     try {
       await connect();
     } catch(err) {
-      status("غير متصل", "#f87171");
+      status("Not connected", "#f87171");
       message(err.message || String(err));
     } finally {
       $("cloudConnect").disabled = false;
@@ -14218,9 +14594,6 @@ window.toggleFleetAnalysisPanel=function(){
     }
 
     try {
-      // Sync now means:
-      // 1) save an unsynced local edit, or
-      // 2) pull the current shared state when there is no local edit.
       if (cloudDirty) {
         await queueCloudWrite(currentSnapshot());
       } else {
@@ -14235,9 +14608,9 @@ window.toggleFleetAnalysisPanel=function(){
     if (client) await client.auth.signOut();
     client = null;
     if (channel) {
+      try { await window.supabase.removeChannel(channel); } catch(e) {}
       channel = null;
     }
-    cloudDirty = false;
     status("Signed out");
     message("You can sign in again from Connection Settings.");
   });
