@@ -16385,8 +16385,11 @@ let adminPassword = (!storedAdminPassword || storedAdminPassword === "1234")
     const iconWhatsApp = `<svg viewBox="0 0 24 24"><path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.45.79 3.08 1.21 4.74 1.21 5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.84 9.84 0 0 0 12.04 2zm0 17.96c-1.48 0-2.93-.4-4.2-1.15l-.3-.18-3.12.82.83-3.04-.2-.32a8.19 8.19 0 0 1-1.26-4.38c0-4.54 3.7-8.24 8.24-8.24 2.2 0 4.27.86 5.82 2.42a8.18 8.18 0 0 1 2.41 5.83c0 4.54-3.7 8.24-8.24 8.24z"/></svg>`;
 
     function saveToLocalStorage() {
-        localStorage.setItem('fuel_system_records', JSON.stringify(fuelRecords));
-        localStorage.setItem(ADMIN_PASSWORD_KEY, adminPassword);
+        // LocalStorage is only a convenience cache. It must never block saving or cloud sync.
+        try { localStorage.setItem('fuel_system_records', JSON.stringify(fuelRecords)); }
+        catch (e) { console.warn('LocalStorage quota reached; continuing with cloud sync.', e); }
+        try { localStorage.setItem(ADMIN_PASSWORD_KEY, adminPassword); }
+        catch (e) { console.warn('Unable to persist local admin cache.', e); }
     }
 
     function onDriverSelectionChange() {
@@ -18191,7 +18194,8 @@ let adminPassword = (!storedAdminPassword || storedAdminPassword === "1234")
   const persistMergedRecords = records => {
     fuelRecords = normalizeRecordsForSync(records);
     const snapshot = JSON.stringify(fuelRecords);
-    localStorage.setItem("fuel_system_records", snapshot);
+    try { localStorage.setItem("fuel_system_records", snapshot); }
+    catch (e) { console.warn("LocalStorage quota reached; keeping records in memory and cloud sync.", e); }
     lastSaved = snapshot;
     if (typeof sortRecordsArray === "function") sortRecordsArray(fuelRecords, currentSortColumn, currentSortDirection);
     if (typeof filterAndRender === "function") filterAndRender();
@@ -18402,14 +18406,16 @@ let adminPassword = (!storedAdminPassword || storedAdminPassword === "1234")
             const merged = mergeRecordSets(fuelRecords, incomingRecords);
             const mergedSnapshot = JSON.stringify(merged);
             fuelRecords = merged;
-            localStorage.setItem("fuel_system_records", mergedSnapshot);
+            try { localStorage.setItem("fuel_system_records", mergedSnapshot); }
+            catch (e) { console.warn("LocalStorage quota reached during realtime merge; cloud sync continues.", e); }
             setCloudDirty(true);
             queueCloudWrite(mergedSnapshot).catch(() => {});
             return;
           }
 
           fuelRecords = incomingRecords;
-          localStorage.setItem("fuel_system_records", incoming);
+          try { localStorage.setItem("fuel_system_records", incoming); }
+          catch (e) { console.warn("LocalStorage quota reached during realtime update; cloud sync continues.", e); }
           lastSaved = incoming;
           setRemoteBaseline(payload.new.updated_at || lastRemoteUpdatedAt || "");
 
