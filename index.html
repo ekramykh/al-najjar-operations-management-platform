@@ -13574,7 +13574,13 @@ let adminPassword = (!storedAdminPassword || storedAdminPassword === "1234")
         checkInvoiceAmountWarning();
         if (!confirmInvoiceAmountMinimum()) return;
 
-        const index = parseInt(document.getElementById('editIndex').value);
+        const editEl = document.getElementById('editIndex');
+        const storedRecordId = editEl?.dataset?.recordId || '';
+        let index = parseInt(editEl.value);
+        if (storedRecordId) {
+            const liveIndex = fuelRecords.findIndex(r => r?.record_id === storedRecordId);
+            if (liveIndex !== -1) index = liveIndex;
+        }
         let rawDate = document.getElementById('inputDateDisplay').value.trim();
         let formattedDate = formatDateDisplay(rawDate);
         let driverNameVal = document.getElementById('inputDriver').value;
@@ -13678,6 +13684,7 @@ let adminPassword = (!storedAdminPassword || storedAdminPassword === "1234")
     function editRecord(index) {
         const item = fuelRecords[index];
         document.getElementById('editIndex').value = index;
+        document.getElementById('editIndex').dataset.recordId = item.record_id || '';
         
         const formatted = item.date ? formatDateDisplay(item.date) : '';
         document.getElementById('inputDateDisplay').value = formatted;
@@ -13726,12 +13733,15 @@ let adminPassword = (!storedAdminPassword || storedAdminPassword === "1234")
     }
 
     function deleteRecord(index) {
-        if (confirm('Are you sure you want to delete this record?')) {
-            fuelRecords.splice(index, 1);
-            isDataDirty = true;
-            saveToLocalStorage();
-            filterAndRender();
-        }
+        const target = fuelRecords[index];
+        const targetId = target?.record_id || '';
+        if (!confirm('Are you sure you want to delete this record?')) return;
+        const liveIndex = targetId ? fuelRecords.findIndex(r => r?.record_id === targetId) : index;
+        if (liveIndex < 0 || !fuelRecords[liveIndex]) return;
+        fuelRecords.splice(liveIndex, 1);
+        isDataDirty = true;
+        saveToLocalStorage();
+        filterAndRender();
     }
 
     function resetForm() {
@@ -13741,6 +13751,7 @@ let adminPassword = (!storedAdminPassword || storedAdminPassword === "1234")
         document.getElementById('inputSite').value = '';
         document.getElementById('inputSiteDisplay').value = '-- Select or Search Station --';
         document.getElementById('editIndex').value = '-1';
+        delete document.getElementById('editIndex').dataset.recordId;
         updateFormAndFilterDatalists();
         onDriverSelectionChange();
     }
