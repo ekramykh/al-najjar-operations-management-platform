@@ -14039,6 +14039,36 @@ window.toggleFleetAnalysisPanel=function(){
 
   const sameRecord = (a, b) => JSON.stringify(comparableRecord(a)) === JSON.stringify(comparableRecord(b));
 
+  // Older installations do not have recordId. Before merging, map legacy
+  // records with the same serial number to one durable identity.
+  function alignRecordIds(...recordLists) {
+    const idBySn = new Map();
+    for (const list of recordLists) {
+      if (!Array.isArray(list)) continue;
+      for (const record of list) {
+        const sn = Number(record?.sn);
+        const id = String(record?.recordId || "").trim();
+        if (Number.isFinite(sn) && sn > 0 && id) idBySn.set(sn, id);
+      }
+    }
+
+    for (const list of recordLists) {
+      if (!Array.isArray(list)) continue;
+      for (const record of list) {
+        if (!record) continue;
+        const existingId = String(record.recordId || "").trim();
+        if (existingId) continue;
+        const sn = Number(record.sn);
+        if (Number.isFinite(sn) && sn > 0 && idBySn.has(sn)) {
+          record.recordId = idBySn.get(sn);
+        } else {
+          record.recordId = createFuelRecordId();
+          if (Number.isFinite(sn) && sn > 0) idBySn.set(sn, record.recordId);
+        }
+      }
+    }
+  }
+
   const canonicalRecords = records => {
     return (Array.isArray(records) ? records : [])
       .map(record => record ? JSON.parse(JSON.stringify(record)) : record)
@@ -14143,6 +14173,8 @@ window.toggleFleetAnalysisPanel=function(){
     const base = Array.isArray(baseRecords) ? baseRecords : [];
     const local = Array.isArray(localRecords) ? localRecords : [];
     const remote = Array.isArray(remoteRecords) ? remoteRecords : [];
+
+    alignRecordIds(base, local, remote);
 
     const baseMap = new Map(base.map(record => [stableKey(record), record]));
     const localMap = new Map(local.map(record => [stableKey(record), record]));
@@ -14338,7 +14370,7 @@ window.toggleFleetAnalysisPanel=function(){
               setBaseSnapshot(fuelRecords);
               setRemoteBaseline(write.updatedAt);
               localStorage.setItem("fuel_system_records", savedSnapshot);
-              setCloudDirty(currentSnapshot() !== requestedSnapshot);
+              setCloudDirty(false);
               status("Connected & Synced", "#34d399");
               message("Latest data saved to the shared database.");
               return;
