@@ -14363,9 +14363,12 @@ let adminPassword = (!storedAdminPassword || storedAdminPassword === "1234")
             return;
           }
 
-          fuelRecords = payload.new.records;
-          localStorage.setItem("fuel_system_records", incoming);
-          lastSaved = incoming;
+          fuelRecords = normalizeRecordIds(payload.new.records);
+          const syncedIncoming = JSON.stringify(fuelRecords);
+          localStorage.setItem("fuel_system_records", syncedIncoming);
+          lastSaved = syncedIncoming;
+          setSyncedBaseline(fuelRecords);
+          setRemoteBaseline(payload.new.updated_at || "");
 
           if (typeof sortRecordsArray === "function") {
             sortRecordsArray(fuelRecords, currentSortColumn, currentSortDirection);
