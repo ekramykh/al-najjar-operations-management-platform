@@ -18138,7 +18138,8 @@ window.applySyncedAdminPassword = function(value) {
     try {
       const stamp = new Date().toISOString().replace(/[:.]/g, "-");
       localStorage.setItem("fuel_conflict_backup_" + stamp, snapshot);
-    } catch(e) {}
+      return true;
+    } catch(e) { return false; }
   };
 
   const CLOUD_LEGACY_MIGRATION_KEY = "fuel_cloud_legacy_migration_v1";
@@ -18321,6 +18322,26 @@ window.applySyncedAdminPassword = function(value) {
     return false;
   }
 
+  async function loadCloudReadOnly() {
+    const response = await invokeFuelSync("read");
+    if (!response.data) {
+      throw new Error("The shared cloud dataset is not initialized. Ask the administrator to initialize it; this account cannot create the shared dataset.");
+    }
+    if (legacyMigrationPending || cloudDirty) {
+      const backup = JSON.stringify(currentSnapshotRecords());
+      if (!saveConflictBackup(backup)) {
+        throw new Error("This device has unsynced local data, but a safe local backup could not be saved. Export a backup or free browser storage before continuing; no cloud data was changed.");
+      }
+    }
+    const records = normalizeRecordsForSync(response.data.records || []);
+    const snapshot = persistMergedRecords(records);
+    lastSaved = snapshot;
+    setRemoteBaseline(response.data.updated_at || "");
+    setCloudDirty(false);
+    if (legacyMigrationPending) markLegacyMigrationComplete();
+    message("Read-only access: shared cloud records loaded. Any unsynced local data was backed up locally and was not uploaded.");
+  }
+
   async function migrateLegacyLocalData() {
     // Reconcile legacy local records through the same permission-checked API as
     // every other save. The server remains authoritative and may reject a local
@@ -18429,7 +18450,13 @@ window.applySyncedAdminPassword = function(value) {
     currentPermissions = remoteCheck.permissions || null;
     const permissionPanel = $("permissionAdminPanel");
     if (permissionPanel) permissionPanel.hidden = currentPermissions?.can_manage_users !== true;
-    if (await performOneTimeRecovery(remoteCheck.data)) {
+    const canWriteRecords = currentPermissions?.can_add === true
+      || currentPermissions?.can_edit === true
+      || currentPermissions?.can_delete === true;
+    if (!canWriteRecords && (legacyMigrationPending || cloudDirty)) {
+      // Never try to upload an old or dirty local snapshot as a read-only user.
+      await loadCloudReadOnly();
+    } else if (await performOneTimeRecovery(remoteCheck.data)) {
       // Recovery is complete; do not run a second write in this connection.
     } else if (legacyMigrationPending) {
       await migrateLegacyLocalData();
