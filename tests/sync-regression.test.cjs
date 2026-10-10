@@ -49,3 +49,18 @@ test('deleted marker is retained across later merges', () => {
   assert.equal(result.length,1);
   assert.equal(result[0]._deleted,true);
 });
+
+test('offline-created then deleted record does not upload an unknown tombstone', () => {
+  const {merge,deletedSyncIds} = makeMerge();
+  deletedSyncIds.set('offline', late);
+  const result = merge([], [row('cloud',1,early)]);
+  assert.equal(result.length,1);
+  assert.equal(result[0]._syncId,'cloud');
+});
+test('cloud deletion retains its tombstone and excludes old active copy', () => {
+  const {merge} = makeMerge();
+  const result = merge([row('a',1,late)], [row('a',1,early,{_deleted:true}),row('b',2,early)]);
+  assert.equal(result.length,2);
+  assert.equal(result.find(r=>r._syncId==='a')._deleted,true);
+  assert.equal(result.find(r=>r._syncId==='b').sn,2);
+});
