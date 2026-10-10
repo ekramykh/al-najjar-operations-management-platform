@@ -17642,7 +17642,8 @@ let adminPassword = (!storedAdminPassword || storedAdminPassword === "1234")
 
         fuelRecords.unshift(recordData);
         isDataDirty = true;
-        saveToLocalStorage();
+        // Call the public hook so Save as New also triggers cloud synchronization.
+        window.saveToLocalStorage();
         sortRecordsArray(fuelRecords, currentSortColumn, currentSortDirection);
         filterAndRender();
         closeRecordModal();
