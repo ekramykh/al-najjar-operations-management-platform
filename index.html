@@ -18341,10 +18341,12 @@ window.applySyncedAdminPassword = function(value) {
   let sharedAdminPassword = localStorage.getItem("fuel_admin_password") || "1001";
   let sharedAdminPasswordUpdatedAt = localStorage.getItem("fuel_admin_password_updated_at") || new Date(0).toISOString();
   const ADMIN_PASSWORD_SYNC_ID = "app-settings:admin-password";
+  // Only business records and deletion markers are synchronized. The legacy
+  // application password remains untouched on this device but is never sent to
+  // the shared database or used by the server as an authorization credential.
   const currentSnapshotRecords = () => [
     ...fuelRecords,
-    ...Array.from(deletedSyncIds, ([id, timestamp]) => ({_syncId:id, _deleted:true, _syncUpdatedAt:timestamp})),
-    {_syncId:ADMIN_PASSWORD_SYNC_ID, _appSetting:"adminPassword", value:sharedAdminPassword, _syncUpdatedAt:sharedAdminPasswordUpdatedAt}
+    ...Array.from(deletedSyncIds, ([id, timestamp]) => ({_syncId:id, _deleted:true, _syncUpdatedAt:timestamp}))
   ];
   const currentSnapshot = () => JSON.stringify(currentSnapshotRecords());
 
