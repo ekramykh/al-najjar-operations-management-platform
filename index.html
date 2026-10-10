@@ -18398,7 +18398,15 @@ window.applySyncedAdminPassword = function(value) {
         // compare-and-swap retries. Retry transient conflicts without bypassing it.
         for (let attempt = 1; attempt <= 3; attempt++) {
           try {
-            const result = await invokeFuelSync("sync", localRecords);
+            // Merge against the latest authorized snapshot before each attempt.
+            // This preserves the existing duplicate-SN conflict handling when
+            // two devices create records at nearly the same time.
+            const latest = await invokeFuelSync("read");
+            const latestRecords = normalizeRecordsForSync(latest?.data?.records || []);
+            const outgoing = latest?.data
+              ? mergeRecordSets(localRecords, latestRecords)
+              : localRecords;
+            const result = await invokeFuelSync("sync", outgoing);
             const savedRecords = normalizeRecordsForSync(result?.data?.records || []);
             const savedSnapshot = persistMergedRecords(savedRecords);
             lastSaved = savedSnapshot;
