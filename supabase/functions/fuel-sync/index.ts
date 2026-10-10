@@ -257,8 +257,17 @@ Deno.serve(async (req: Request) => {
         return reply(409, { error: "A deleted record ID cannot be reused. Create a new record with a new sync ID." });
       } else if (!old) {
         if (!permissions.can_add) return reply(403, { error: "Add permission is required." });
-        if (typeof row.sn !== "number" || !Number.isFinite(row.sn)) {
+        const recordNumber = Number(row.sn);
+        if (!Number.isFinite(recordNumber) || !Number.isInteger(recordNumber) || recordNumber <= 0) {
           return reply(400, { error: "New records must contain a valid record number." });
+        }
+        const duplicateNumber = remoteRecords.some(existing =>
+          existing._deleted !== true
+          && String(existing._syncId) !== id
+          && Number(existing.sn) === recordNumber
+        );
+        if (duplicateNumber) {
+          return reply(409, { error: "Record number conflict. Read the latest snapshot and retry." });
         }
         merged.set(id, row);
       } else {
