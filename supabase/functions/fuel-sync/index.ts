@@ -134,7 +134,7 @@ Deno.serve(async (req: Request) => {
       const { data: rows, error } = await admin.from("app_user_permissions")
         .select("user_id,can_read,can_add,can_edit,can_delete,can_manage_users");
       if (error) return reply(500, { error: "Unable to load user permissions." });
-      const byUser = new Map((rows || []).map(row => [row.user_id, row]));
+      const byUser = new Map((rows || []).map(row => [row.user_id, row] as const));
       return reply(200, {
         users: allUsers.map(user => ({
           ...user,
