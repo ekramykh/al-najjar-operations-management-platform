@@ -17555,7 +17555,7 @@ let adminPassword = (!storedAdminPassword || storedAdminPassword === "1234")
 
         const recordData = {
             sn: assignedSn,
-            _syncId: (mode === "update" && index !== -1 && fuelRecords[index]?._syncId) || generateSyncId(),
+            _syncId: (mode === "update" && index !== -1 && fuelRecords[index]?._syncId) || window.generateSyncId(),
             _syncUpdatedAt: new Date().toISOString(),
             date: formattedDate,
             car: formatTitleCase(document.getElementById('inputCar').value),
@@ -17614,7 +17614,7 @@ let adminPassword = (!storedAdminPassword || storedAdminPassword === "1234")
 
         const recordData = {
             sn: newSn,
-            _syncId: generateSyncId(),
+            _syncId: window.generateSyncId(),
             _syncUpdatedAt: new Date().toISOString(),
             date: formattedDate,
             car: formatTitleCase(document.getElementById('inputCar').value),
@@ -18098,6 +18098,8 @@ let adminPassword = (!storedAdminPassword || storedAdminPassword === "1234")
     if (window.crypto?.randomUUID) return window.crypto.randomUUID();
     return "sync-" + Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 12);
   };
+  // Expose the ID generator to the record-form handlers defined in the main script.
+  window.generateSyncId = generateSyncId;
 
   const legacySyncId = record => {
     const sn = Number(record?.sn);
