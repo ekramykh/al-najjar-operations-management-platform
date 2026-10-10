@@ -18079,6 +18079,27 @@ window.applySyncedAdminPassword = function(value) {
 
   let client = null;
   let channel = null;
+  // All protected reads and writes must go through the server-side permission
+  // boundary; the browser never writes fuel_shared_state directly.
+  async function invokeFuelSync(action, records) {
+    if (!client) throw new Error("Sign in to the cloud before accessing shared records.");
+    const body = { action };
+    if (records !== undefined) body.records = records;
+    const { data, error } = await client.functions.invoke("fuel-sync", { body });
+    if (error) {
+      let detail = error.message || "Secure server request failed.";
+      try {
+        const response = error.context;
+        if (response && typeof response.clone === "function") {
+          const payload = await response.clone().json();
+          if (payload?.error) detail = payload.error;
+        }
+      } catch (_) {}
+      throw new Error(detail);
+    }
+    if (!data || data.error) throw new Error(data?.error || "Secure server returned an empty response.");
+    return data;
+  }
   let busy = false;
   let lastSaved = "";
   const CLOUD_DIRTY_KEY = "fuel_cloud_dirty";
@@ -18283,61 +18304,29 @@ window.applySyncedAdminPassword = function(value) {
 
   const recoveryBaselineRecords = normalizeRecordsForSync(defaultInitialRecords);
 
-  async function performOneTimeRecovery(remoteData) {
-    if (localStorage.getItem(RECOVERY_BASELINE_KEY)) return false;
-    const remoteRecords = Array.isArray(remoteData?.records) ? remoteData.records : [];
-    const baseline = recoveryBaselineRecords;
-    // This branch is intentionally tied to the confirmed 7-10 export: 520 rows,
-    // unique SN 3..522. Do not silently recover a different dataset.
-    const baselineValid = baseline.length === 520
-      && new Set(baseline.map(r => Number(r.sn))).size === 520
-      && Math.min(...baseline.map(r => Number(r.sn))) === 3
-      && Math.max(...baseline.map(r => Number(r.sn))) === 522;
-    if (!baselineValid) throw new Error("Recovery baseline validation failed. No cloud data was changed.");
-
-    saveConflictBackup(JSON.stringify(remoteRecords));
-    const writeTimestamp = new Date().toISOString();
-    const {data, error} = await client
-      .from("fuel_shared_state")
-      .update({records: baseline, updated_at: writeTimestamp})
-      .eq("id", "shared")
-      .eq("updated_at", remoteData?.updated_at || "")
-      .select("updated_at")
-      .maybeSingle();
-    if (error) throw error;
-    if (!data) throw new Error("Recovery stopped: cloud data changed during recovery. Nothing was overwritten.");
-
-    localStorage.setItem(RECOVERY_BASELINE_KEY, new Date().toISOString());
-    localStorage.setItem(CLOUD_SYNC_SCHEMA_KEY, String(SYNC_SCHEMA_VERSION));
-    persistMergedRecords(baseline);
-    setRemoteBaseline(data.updated_at || writeTimestamp);
-    setCloudDirty(false);
-    message("Recovery completed: the confirmed 7-10 baseline (520 records) is now the shared cloud baseline.");
-    return true;
+  // The old recovery routine replaced the complete cloud snapshot directly.
+  // Until an explicit, server-authorized recovery workflow is implemented, never
+  // auto-overwrite shared data with a baked-in baseline during sign-in.
+  async function performOneTimeRecovery() {
+    return false;
   }
 
   async function migrateLegacyLocalData() {
-    // Migration is intentionally conservative. It never generates random IDs
-    // for legacy records and never replaces an existing cloud snapshot blindly.
+    // Reconcile legacy local records through the same permission-checked API as
+    // every other save. The server remains authoritative and may reject a local
+    // change that this account is not allowed to make.
     if (!legacyMigrationPending) return;
-    const localRecords = normalizeRecordsForSync(fuelRecords);
-    const remote = await client.from("fuel_shared_state").select("records,updated_at").eq("id","shared").maybeSingle();
-    if (remote.error) throw remote.error;
-    if (!remote.data) {
-      const ts = new Date().toISOString();
-      const {data,error} = await client.from("fuel_shared_state").insert({id:"shared",records:localRecords,updated_at:ts}).select("updated_at").maybeSingle();
-      if (error) throw error;
-      persistMergedRecords(localRecords);
-      setRemoteBaseline(data?.updated_at || ts); setCloudDirty(false); markLegacyMigrationComplete();
-      return;
-    }
-    const merged = mergeRecordSets(localRecords, remote.data.records || []);
-    const ts = new Date().toISOString();
-    const {data,error} = await client.from("fuel_shared_state").update({records:merged,updated_at:ts}).eq("id","shared").eq("updated_at",remote.data.updated_at || "").select("updated_at").maybeSingle();
-    if (error) throw error;
-    if (!data) throw new Error("Migration stopped: shared data changed during migration. No cloud data was overwritten.");
-    const snapshot = persistMergedRecords(merged);
-    lastSaved = snapshot; setRemoteBaseline(data.updated_at || ts); setCloudDirty(false); markLegacyMigrationComplete();
+    const localRecords = normalizeRecordsForSync(currentSnapshotRecords());
+    const remote = await invokeFuelSync("read");
+    const merged = remote?.data
+      ? mergeRecordSets(localRecords, remote.data.records || [])
+      : localRecords;
+    const result = await invokeFuelSync("sync", merged);
+    const saved = persistMergedRecords(result?.data?.records || merged);
+    lastSaved = saved;
+    setRemoteBaseline(result?.data?.updated_at || "");
+    setCloudDirty(false);
+    markLegacyMigrationComplete();
   };
 
   const localUrl = localStorage.getItem("fuel_cloud_url") || "https://mykwxfifrjohhjhomegf.supabase.co";
@@ -18376,61 +18365,29 @@ window.applySyncedAdminPassword = function(value) {
     if (!client) return Promise.resolve();
     setCloudDirty(true);
     cloudWriteQueue = cloudWriteQueue.catch(() => {}).then(async () => {
-      if (!client) return;
+      if (!client) throw new Error("Cloud connection was closed before the save completed.");
       busy = true;
       try {
         const localRecords = normalizeRecordsForSync(JSON.parse(snapshot));
-        // Retry optimistic-concurrency conflicts by fetching the newest cloud
-        // state and merging again. A conflict must not silently drop a new save.
-        const maxAttempts = 6;
-        for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-          if (!client) throw new Error("Cloud connection was closed before the save completed.");
-          const remote = await client.from("fuel_shared_state")
-            .select("records,updated_at").eq("id","shared").maybeSingle();
-          if (remote.error) throw remote.error;
-
-          if (!remote.data) {
-            const ts = new Date().toISOString();
-            const {data,error} = await client.from("fuel_shared_state")
-              .insert({id:"shared",records:localRecords,updated_at:ts})
-              .select("updated_at").maybeSingle();
-            if (error) {
-              // Another device may have created the shared row at the same time.
-              if (attempt < maxAttempts && /duplicate|unique|already exists/i.test(error.message || "")) continue;
-              throw error;
-            }
-            const saved = JSON.stringify(localRecords);
-            persistMergedRecords(localRecords);
-            lastSaved = saved;
-            setRemoteBaseline(data?.updated_at || ts);
-            setCloudDirty(currentSnapshot() !== saved);
+        let lastError;
+        // The Edge Function performs server-side permission checks and its own
+        // compare-and-swap retries. Retry transient conflicts without bypassing it.
+        for (let attempt = 1; attempt <= 3; attempt++) {
+          try {
+            const result = await invokeFuelSync("sync", localRecords);
+            const savedRecords = normalizeRecordsForSync(result?.data?.records || []);
+            const savedSnapshot = persistMergedRecords(savedRecords);
+            lastSaved = savedSnapshot;
+            setRemoteBaseline(result?.data?.updated_at || "");
+            setCloudDirty(currentSnapshot() !== savedSnapshot);
             status(cloudDirty ? "Connected" : "Connected & Synced", "#34d399");
             return;
+          } catch (err) {
+            lastError = err;
+            if (attempt === 3 || !/409|changed repeatedly|conflict/i.test(String(err?.message || err))) throw err;
           }
-
-          const merged = mergeRecordSets(localRecords, remote.data.records || []);
-          const mergedSnapshot = JSON.stringify(merged);
-          const ts = new Date().toISOString();
-          const {data,error} = await client.from("fuel_shared_state")
-            .update({records:merged,updated_at:ts})
-            .eq("id","shared")
-            .eq("updated_at",remote.data.updated_at || "")
-            .select("updated_at")
-            .maybeSingle();
-          if (error) throw error;
-          if (!data) {
-            if (attempt < maxAttempts) continue;
-            throw new Error("Cloud data kept changing during this save. The record is still queued locally; use Sync Now to retry.");
-          }
-
-          persistMergedRecords(merged);
-          lastSaved = mergedSnapshot;
-          setRemoteBaseline(data.updated_at || ts);
-          setCloudDirty(currentSnapshot() !== mergedSnapshot);
-          status(cloudDirty ? "Connected" : "Connected & Synced", "#34d399");
-          return;
         }
-        throw new Error("Could not save after several cloud-sync retries. The record remains queued for another attempt.");
+        throw lastError || new Error("Secure sync failed.");
       } catch(err) {
         setCloudDirty(true);
         status("Save failed", "#f87171");
@@ -18465,8 +18422,7 @@ window.applySyncedAdminPassword = function(value) {
 
     await startRealtime();
 
-    const remoteCheck = await client.from("fuel_shared_state").select("records,updated_at").eq("id","shared").maybeSingle();
-    if (remoteCheck.error) throw remoteCheck.error;
+    const remoteCheck = await invokeFuelSync("read");
     if (await performOneTimeRecovery(remoteCheck.data)) {
       // Recovery is complete; do not run a second write in this connection.
     } else if (legacyMigrationPending) {
@@ -18484,8 +18440,8 @@ window.applySyncedAdminPassword = function(value) {
 
   async function pullCloud(options = {}) {
     if (!client) return;
-    const {data,error} = await client.from("fuel_shared_state").select("records,updated_at").eq("id","shared").maybeSingle();
-    if (error) throw error;
+    const response = await invokeFuelSync("read");
+    const data = response.data;
     if (!data) { await queueCloudWrite(currentSnapshot()); return; }
 
     const remoteRecords = normalizeRecordsForSync(data.records || []);
