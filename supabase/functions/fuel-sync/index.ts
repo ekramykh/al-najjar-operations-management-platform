@@ -132,43 +132,34 @@ Deno.serve(async (req: Request) => {
     const remoteRecords = normalizeRecords(remote?.records ?? []);
     if (!remoteRecords) return reply(500, { error: "The current shared snapshot is invalid; no data was changed." });
 
-    if (permissions.can_manage_users !== true) {
-      const violation = validateAddOnly(incoming, remoteRecords);
-      // Edit-capable users can update existing records, but deletion/settings still
-      // require their specific capability. Full snapshot replacement is not accepted.
-      if (violation) {
-        if (!permissions.can_edit && !permissions.can_delete) return reply(403, { error: violation });
-        if (incoming.some(row => row._appSetting) && !permissions.can_manage_users) {
-          return reply(403, { error: "Only administrators may change application settings." });
-        }
-        if (incoming.some(row => row._deleted === true) && !permissions.can_delete) {
-          return reply(403, { error: "Delete permission is required." });
-        }
-        if (incoming.some(row => {
-          const old = mapById(remoteRecords).get(String(row._syncId));
-          return old && stableJson(old) !== stableJson(row);
-        }) && !permissions.can_edit) {
-          return reply(403, { error: "Edit permission is required." });
-        }
-      }
+    // The legacy adminPassword setting is local-only during this migration. It
+    // must never be written through the record-sync API, even by an administrator.
+    if (incoming.some(row => row._appSetting === "adminPassword" || row._appSetting)) {
+      return reply(403, { error: "Application settings cannot be changed through record synchronization." });
     }
 
     // Never replace the remote snapshot with a stale client snapshot. Merge by
-    // sync ID, retain remote-only rows, and apply allowed client changes.
+    // sync ID, retain remote-only rows, and enforce the precise operation on every
+    // changed item. Omitted rows are not deletions; explicit tombstones are.
     const merged = new Map(remoteRecords.map(row => [String(row._syncId), row]));
     for (const row of incoming) {
       const id = String(row._syncId);
       const old = merged.get(id);
-      // Ignore identical entries from the current snapshot, including historical
-      // tombstones/settings; they are not new requests to mutate server state.
       if (old && stableJson(old) === stableJson(row)) continue;
+
       if (row._deleted === true) {
         if (!permissions.can_delete) return reply(403, { error: "Delete permission is required." });
         merged.delete(id);
-      } else if (!old) {
-        if (!permissions.can_add) return reply(403, { error: "Add permission is required." });
+        // Keep a tombstone in the shared snapshot so stale devices cannot
+        // reintroduce the deleted record on their next sync.
         merged.set(id, row);
-      } else if (stableJson(old) !== stableJson(row)) {
+      } else if (!old || old._deleted === true) {
+        if (!permissions.can_add) return reply(403, { error: "Add permission is required." });
+        if (typeof row.sn !== "number" || !Number.isFinite(row.sn)) {
+          return reply(400, { error: "New records must contain a valid record number." });
+        }
+        merged.set(id, row);
+      } else {
         if (!permissions.can_edit) return reply(403, { error: "Edit permission is required." });
         merged.set(id, row);
       }
