@@ -64,3 +64,12 @@ test('cloud deletion retains its tombstone and excludes old active copy', () => 
   assert.equal(result.find(r=>r._syncId==='a')._deleted,true);
   assert.equal(result.find(r=>r._syncId==='b').sn,2);
 });
+
+test('a cloud-confirmed deletion remains authoritative if a later read omits it', () => {
+  const {merge,deletedSyncIds} = makeMerge();
+  merge([], [row('a',1,early)]);
+  deletedSyncIds.set('a',late);
+  const result = merge([row('a',1,early)], []);
+  assert.equal(result.length,1);
+  assert.equal(result[0]._deleted,true);
+});
