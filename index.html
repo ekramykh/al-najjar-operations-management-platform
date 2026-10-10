@@ -17703,8 +17703,11 @@ let adminPassword = (!storedAdminPassword || storedAdminPassword === "1234")
         if (!confirm('Are you sure you want to delete this record?')) return;
         const record = fuelRecords[index];
         if (!record) return;
-        const syncId = stableRecordKey(record);
-        deletedSyncIds.set(syncId, new Date().toISOString());
+        if (typeof window.markFuelRecordDeleted !== "function") {
+            alert("Cloud sync is not ready to record this deletion. Please reconnect and try again.");
+            return;
+        }
+        window.markFuelRecordDeleted(record);
         fuelRecords.splice(index, 1);
         isDataDirty = true;
         window.saveToLocalStorage();
@@ -18125,6 +18128,14 @@ let adminPassword = (!storedAdminPassword || storedAdminPassword === "1234")
   const stableRecordKey = record => {
     const r = cloneRecord(record);
     return r._syncId || legacySyncId(r) || "raw:" + JSON.stringify(r);
+  };
+  // Public bridge for the main record UI, which runs in a separate script scope.
+  window.markFuelRecordDeleted = record => {
+    const id = stableRecordKey(record);
+    deletedSyncIds.set(id, new Date().toISOString());
+    try { localStorage.setItem(DELETED_SYNC_IDS_KEY, JSON.stringify(Object.fromEntries(deletedSyncIds))); }
+    catch (e) { console.warn("Unable to persist deletion marker locally; cloud sync continues.", e); }
+    return id;
   };
 
   const recordPayload = record => {
