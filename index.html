@@ -17700,12 +17700,15 @@ let adminPassword = (!storedAdminPassword || storedAdminPassword === "1234")
     }
 
     function deleteRecord(index) {
-        if (confirm('Are you sure you want to delete this record?')) {
-            fuelRecords.splice(index, 1);
-            isDataDirty = true;
-            saveToLocalStorage();
-            filterAndRender();
-        }
+        if (!confirm('Are you sure you want to delete this record?')) return;
+        const record = fuelRecords[index];
+        if (!record) return;
+        const syncId = stableRecordKey(record);
+        deletedSyncIds.set(syncId, new Date().toISOString());
+        fuelRecords.splice(index, 1);
+        isDataDirty = true;
+        window.saveToLocalStorage();
+        filterAndRender();
     }
 
     function resetForm() {
@@ -18093,6 +18096,8 @@ let adminPassword = (!storedAdminPassword || storedAdminPassword === "1234")
   const SYNC_SCHEMA_VERSION = 3;
   const RECOVERY_BASELINE_KEY = "fuel_sync_recovery_2026_10_08_v1";
   const CLOUD_SYNC_SCHEMA_KEY = "fuel_sync_schema_version";
+  const DELETED_SYNC_IDS_KEY = "fuel_deleted_sync_ids_v1";
+  const deletedSyncIds = new Map(Object.entries(JSON.parse(localStorage.getItem(DELETED_SYNC_IDS_KEY) || "{}")));
 
   const generateSyncId = () => {
     if (window.crypto?.randomUUID) return window.crypto.randomUUID();
@@ -18143,6 +18148,9 @@ let adminPassword = (!storedAdminPassword || storedAdminPassword === "1234")
   const mergeRecordSets = (localInput, remoteInput) => {
     const local = normalizeRecordsForSync(localInput);
     const remote = normalizeRecordsForSync(remoteInput);
+    for (const record of [...local, ...remote]) {
+      if (record?._deleted && record._syncId) deletedSyncIds.set(record._syncId, record._syncUpdatedAt || new Date().toISOString());
+    }
     const byId = new Map();
     const usedSn = new Set();
 
@@ -18176,6 +18184,11 @@ let adminPassword = (!storedAdminPassword || storedAdminPassword === "1234")
       }
     }
 
+    // Tombstones suppress old copies and remain in the shared snapshot so every device learns deletions.
+    for (const [id, timestamp] of deletedSyncIds) {
+      byId.delete(id);
+      byId.set("deleted-marker:" + id, {_syncId:id, _deleted:true, _syncUpdatedAt:timestamp});
+    }
     // A new record created on two devices can have the same human SN. Never
     // overwrite either record: keep the remote SN and assign a free SN locally.
     const out = Array.from(byId.values());
@@ -18196,10 +18209,17 @@ let adminPassword = (!storedAdminPassword || storedAdminPassword === "1234")
   };
 
   const persistMergedRecords = records => {
-    fuelRecords = normalizeRecordsForSync(records);
-    const snapshot = JSON.stringify(fuelRecords);
-    try { localStorage.setItem("fuel_system_records", snapshot); }
+    const normalized = normalizeRecordsForSync(records);
+    for (const record of normalized) {
+      if (record?._deleted && record._syncId) deletedSyncIds.set(record._syncId, record._syncUpdatedAt || new Date().toISOString());
+    }
+    const tombstones = Array.from(deletedSyncIds, ([id, timestamp]) => ({_syncId:id, _deleted:true, _syncUpdatedAt:timestamp}));
+    fuelRecords = normalized.filter(record => !record?._deleted && !deletedSyncIds.has(stableRecordKey(record)));
+    const snapshot = JSON.stringify([...fuelRecords, ...tombstones]);
+    try { localStorage.setItem("fuel_system_records", JSON.stringify(fuelRecords)); }
     catch (e) { console.warn("LocalStorage quota reached; keeping records in memory and cloud sync.", e); }
+    try { localStorage.setItem(DELETED_SYNC_IDS_KEY, JSON.stringify(Object.fromEntries(deletedSyncIds))); }
+    catch (e) { console.warn("Unable to persist deletion markers locally; cloud sync continues.", e); }
     lastSaved = snapshot;
     if (typeof sortRecordsArray === "function") sortRecordsArray(fuelRecords, currentSortColumn, currentSortDirection);
     if (typeof filterAndRender === "function") filterAndRender();
@@ -18275,7 +18295,8 @@ let adminPassword = (!storedAdminPassword || storedAdminPassword === "1234")
     try { isDataDirty = true; } catch(e) {}
   };
 
-  const currentSnapshot = () => JSON.stringify(fuelRecords);
+  const currentSnapshotRecords = () => [...fuelRecords, ...Array.from(deletedSyncIds, ([id, timestamp]) => ({_syncId:id, _deleted:true, _syncUpdatedAt:timestamp}))];
+  const currentSnapshot = () => JSON.stringify(currentSnapshotRecords());
 
   function queueCloudWrite(snapshot) {
     if (!client) return Promise.resolve();
@@ -18426,20 +18447,16 @@ let adminPassword = (!storedAdminPassword || storedAdminPassword === "1234")
           if (incoming === lastSaved) return;
 
           if (cloudDirty) {
-            // Merge remote changes into local changes; never discard either side.
-            const merged = mergeRecordSets(fuelRecords, incomingRecords);
+            // Merge remote changes into local changes, preserving tombstones.
+            const merged = mergeRecordSets(currentSnapshotRecords(), incomingRecords);
             const mergedSnapshot = JSON.stringify(merged);
-            fuelRecords = merged;
-            try { localStorage.setItem("fuel_system_records", mergedSnapshot); }
-            catch (e) { console.warn("LocalStorage quota reached during realtime merge; cloud sync continues.", e); }
+            persistMergedRecords(merged);
             setCloudDirty(true);
             queueCloudWrite(mergedSnapshot).catch(() => {});
             return;
           }
 
-          fuelRecords = incomingRecords;
-          try { localStorage.setItem("fuel_system_records", incoming); }
-          catch (e) { console.warn("LocalStorage quota reached during realtime update; cloud sync continues.", e); }
+          persistMergedRecords(incomingRecords);
           lastSaved = incoming;
           setRemoteBaseline(payload.new.updated_at || lastRemoteUpdatedAt || "");
 
