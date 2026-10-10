@@ -18242,6 +18242,9 @@ window.applySyncedAdminPassword = function(value) {
       let id = stableRecordKey(localRecord);
       const remoteRecord = byId.get(id);
       if (!remoteRecord) {
+        // A remote tombstone is authoritative, including when the local copy
+        // carries a later timestamp due to clock skew.
+        if (deletedSyncIds.has(id)) continue;
         // Keep the server's existing numbers stable. Only a genuinely new
         // local record may be renumbered when two devices used the same SN.
         const sn = Number(localRecord.sn);
