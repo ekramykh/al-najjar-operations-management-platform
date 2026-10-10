@@ -3263,7 +3263,7 @@ window.toggleFleetAnalysisPanel=function(){
     };
 
     const ADMIN_PASSWORD_KEY = 'fuel_admin_password';
-const REQUESTED_ADMIN_PASSWORD = "EKRAMYKH@GMAIL.COM";
+const REQUESTED_ADMIN_PASSWORD = "1001";
 const storedAdminPassword = localStorage.getItem(ADMIN_PASSWORD_KEY);
 let adminPassword = (!storedAdminPassword || storedAdminPassword === "1234")
     ? REQUESTED_ADMIN_PASSWORD
@@ -17700,18 +17700,31 @@ let adminPassword = (!storedAdminPassword || storedAdminPassword === "1234")
     }
 
     function deleteRecord(index) {
-        if (!confirm('Are you sure you want to delete this record?')) return;
         const record = fuelRecords[index];
         if (!record) return;
-        if (typeof window.markFuelRecordDeleted !== "function") {
-            alert("Cloud sync is not ready to record this deletion. Please reconnect and try again.");
-            return;
-        }
-        window.markFuelRecordDeleted(record);
-        fuelRecords.splice(index, 1);
-        isDataDirty = true;
-        window.saveToLocalStorage();
-        filterAndRender();
+
+        // Require the current system password before any deletion confirmation or mutation.
+        // adminPassword is updated by the Change Password workflow at runtime.
+        promptPassword("Enter the current system password to delete this record:", function(password) {
+            if (password === null) return;
+            if (password !== adminPassword) {
+                alert("Incorrect password. The record was not deleted.");
+                return;
+            }
+            if (!confirm('Are you sure you want to delete this record?')) return;
+            if (typeof window.markFuelRecordDeleted !== "function") {
+                alert("Cloud sync is not ready to record this deletion. Please reconnect and try again.");
+                return;
+            }
+
+            window.markFuelRecordDeleted(record);
+            const currentIndex = fuelRecords.findIndex(item => item === record || (record._syncId && item._syncId === record._syncId));
+            if (currentIndex === -1) return;
+            fuelRecords.splice(currentIndex, 1);
+            isDataDirty = true;
+            window.saveToLocalStorage();
+            filterAndRender();
+        });
     }
 
     function resetForm() {
