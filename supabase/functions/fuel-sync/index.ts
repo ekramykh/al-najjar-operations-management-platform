@@ -272,6 +272,15 @@ Deno.serve(async (req: Request) => {
         merged.set(id, row);
       } else {
         if (!permissions.can_edit) return reply(403, { error: "Edit permission is required." });
+        const recordNumber = Number(row.sn);
+        const duplicateNumber = Number.isFinite(recordNumber) && remoteRecords.some(existing =>
+          existing._deleted !== true
+          && String(existing._syncId) !== id
+          && Number(existing.sn) === recordNumber
+        );
+        if (duplicateNumber) {
+          return reply(409, { error: "Record number conflict. Read the latest snapshot and retry." });
+        }
         merged.set(id, row);
       }
     }
