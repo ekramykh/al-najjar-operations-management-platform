@@ -27,6 +27,12 @@ comment on table public.app_user_permissions is
 
 alter table public.app_user_permissions enable row level security;
 
+-- Make the browser privilege boundary explicit even if project-wide default
+-- privileges would otherwise grant access to newly created public tables.
+revoke all on table public.app_user_permissions from anon, authenticated;
+grant select on table public.app_user_permissions to authenticated;
+grant all on table public.app_user_permissions to service_role;
+
 -- Users can read only their own permission record. Admin management is performed
 -- by a trusted server-side function in a later phase, not by browser table writes.
 drop policy if exists "Users can read their own permissions" on public.app_user_permissions;
