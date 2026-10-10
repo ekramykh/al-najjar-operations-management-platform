@@ -253,7 +253,9 @@ Deno.serve(async (req: Request) => {
         // Keep a tombstone in the shared snapshot so stale devices cannot
         // reintroduce the deleted record on their next sync.
         merged.set(id, row);
-      } else if (!old || old._deleted === true) {
+      } else if (old && old._deleted === true) {
+        return reply(409, { error: "A deleted record ID cannot be reused. Create a new record with a new sync ID." });
+      } else if (!old) {
         if (!permissions.can_add) return reply(403, { error: "Add permission is required." });
         if (typeof row.sn !== "number" || !Number.isFinite(row.sn)) {
           return reply(400, { error: "New records must contain a valid record number." });
