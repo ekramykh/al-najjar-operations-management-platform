@@ -18222,9 +18222,14 @@ window.applySyncedAdminPassword = function(value) {
     return n;
   };
 
+  // Remember cloud-confirmed identities during this session. This prevents
+  // offline-only deletions from becoming invalid cloud tombstones while still
+  // retaining deletions of records previously seen on the server.
+  const knownCloudSyncIds = new Set();
   const mergeRecordSets = (localInput, remoteInput) => {
     const local = normalizeRecordsForSync(localInput);
     const remote = normalizeRecordsForSync(remoteInput);
+    for (const record of remote) knownCloudSyncIds.add(stableRecordKey(record));
     for (const record of [...local, ...remote]) {
       if (record?._deleted && record._syncId) deletedSyncIds.set(record._syncId, record._syncUpdatedAt || new Date().toISOString());
     }
@@ -18274,10 +18279,9 @@ window.applySyncedAdminPassword = function(value) {
     // Only propagate deletions for IDs that have existed in the shared cloud
     // snapshot. A record created and deleted while offline must not generate
     // an unknown-ID tombstone rejected by the server.
-    const remoteIds = new Set(remote.map(record => stableRecordKey(record)));
     for (const [id, timestamp] of deletedSyncIds) {
       byId.delete(id);
-      if (remoteIds.has(id)) {
+      if (knownCloudSyncIds.has(id)) {
         byId.set("deleted-marker:" + id, {_syncId:id, _deleted:true, _syncUpdatedAt:timestamp});
       }
     }
