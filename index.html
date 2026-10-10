@@ -17588,7 +17588,8 @@ let adminPassword = (!storedAdminPassword || storedAdminPassword === "1234")
         }
 
         isDataDirty = true;
-        saveToLocalStorage();
+        // Call the public hook so the cloud-sync wrapper is used consistently.
+        window.saveToLocalStorage();
         sortRecordsArray(fuelRecords, currentSortColumn, currentSortDirection);
         filterAndRender();
         closeRecordModal();
@@ -18445,7 +18446,10 @@ let adminPassword = (!storedAdminPassword || storedAdminPassword === "1234")
     setDirtyFlag();
     if (client) {
       setCloudDirty(true);
-      queueCloudWrite(currentSnapshot());
+      queueCloudWrite(currentSnapshot()).catch(err => {
+        status("Save failed", "#f87171");
+        message("Sync failed: " + (err?.message || String(err)));
+      });
     }
   };
 
