@@ -18,7 +18,7 @@ function makeMerge() {
     recordTime: row => Date.parse(row._syncUpdatedAt || '') || 0,
     saveConflictBackup: () => {},
   };
-  vm.runInNewContext(implementation + '\nthis.merge = mergeRecordSets;', context);
+  vm.runInNewContext('const knownCloudSyncIds = new Set();\n' + implementation + '\nthis.merge = mergeRecordSets;', context);
   return context;
 }
 const row = (id, sn, updated, extra={}) => ({_syncId:id,sn,_syncUpdatedAt:updated,...extra});
