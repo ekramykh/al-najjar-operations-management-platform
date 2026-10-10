@@ -18079,6 +18079,7 @@ window.applySyncedAdminPassword = function(value) {
 
   let client = null;
   let channel = null;
+  let pollTimer = null;
   // All protected reads and writes must go through the server-side permission
   // boundary; the browser never writes fuel_shared_state directly.
   async function invokeFuelSync(action, records) {
@@ -18445,6 +18446,8 @@ window.applySyncedAdminPassword = function(value) {
     const response = await invokeFuelSync("read");
     const data = response.data;
     if (!data) { await queueCloudWrite(currentSnapshot()); return; }
+    const remoteStamp = data.updated_at || "";
+    if (!cloudDirty && remoteStamp && remoteStamp === lastRemoteUpdatedAt) return;
 
     const remoteRecords = normalizeRecordsForSync(data.records || []);
     if (cloudDirty || options.merge === true) {
@@ -18461,53 +18464,20 @@ window.applySyncedAdminPassword = function(value) {
   }
 
   async function startRealtime() {
+    // Do not subscribe to raw Postgres row changes: the legacy row may contain
+    // app-level settings. Poll the permission-checked API instead.
     if (channel) {
-      await client.removeChannel(channel);
+      try { await client.removeChannel(channel); } catch (_) {}
       channel = null;
     }
-
-    channel = client
-      .channel("fuel-shared-live")
-      .on(
-        "postgres_changes",
-        {event:"*", schema:"public", table:"fuel_shared_state", filter:"id=eq.shared"},
-        payload => {
-          if (!payload.new?.records) return;
-
-          const incomingRecords = normalizeRecordsForSync(payload.new.records);
-          const incoming = JSON.stringify(incomingRecords);
-          if (incoming === lastSaved) return;
-
-          if (cloudDirty) {
-            // Merge remote changes into local changes, preserving tombstones.
-            const merged = mergeRecordSets(currentSnapshotRecords(), incomingRecords);
-            const mergedSnapshot = JSON.stringify(merged);
-            persistMergedRecords(merged);
-            setCloudDirty(true);
-            queueCloudWrite(mergedSnapshot).catch(() => {});
-            return;
-          }
-
-          persistMergedRecords(incomingRecords);
-          lastSaved = incoming;
-          setRemoteBaseline(payload.new.updated_at || lastRemoteUpdatedAt || "");
-
-          if (typeof sortRecordsArray === "function") {
-            sortRecordsArray(fuelRecords, currentSortColumn, currentSortDirection);
-          }
-          if (typeof filterAndRender === "function") filterAndRender();
-          if (typeof renderDashboard === "function") renderDashboard();
-
-          message("A new update was received from another device.");
-        }
-      )
-      .subscribe(state => {
-        if (state === "SUBSCRIBED") {
-          status("Connected & Synced", "#34d399");
-        } else if (state === "CHANNEL_ERROR" || state === "TIMED_OUT") {
-          status("Connection lost", "#f87171");
-        }
+    if (pollTimer) clearInterval(pollTimer);
+    pollTimer = setInterval(() => {
+      if (!client || cloudDirty || busy || document.hidden) return;
+      pullCloud().catch(err => {
+        status("Connection lost", "#f87171");
+        message(err?.message || String(err));
       });
+    }, 5000);
   }
 
   // Preserve the system's local backup while reliably queueing every cloud
@@ -18570,7 +18540,7 @@ window.applySyncedAdminPassword = function(value) {
   $("cloudSignOut").addEventListener("click", async () => {
     const activeClient = client;
     const activeChannel = channel;
-    // Close Realtime before discarding the client/channel references.
+    if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
     if (activeClient && activeChannel) {
       try { await activeClient.removeChannel(activeChannel); } catch(e) {}
     }
