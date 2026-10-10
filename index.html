@@ -18242,9 +18242,14 @@ window.applySyncedAdminPassword = function(value) {
       let id = stableRecordKey(localRecord);
       const remoteRecord = byId.get(id);
       if (!remoteRecord) {
-        byId.set(id, localRecord);
+        // Keep the server's existing numbers stable. Only a genuinely new
+        // local record may be renumbered when two devices used the same SN.
         const sn = Number(localRecord.sn);
-        if (Number.isFinite(sn) && sn > 0) usedSn.add(sn);
+        if (localRecord._deleted !== true && (!Number.isSafeInteger(sn) || sn <= 0 || usedSn.has(sn))) {
+          localRecord.sn = nextAvailableSn(usedSn);
+        }
+        byId.set(id, localRecord);
+        if (localRecord._deleted !== true) usedSn.add(Number(localRecord.sn));
         continue;
       }
 
@@ -18266,23 +18271,9 @@ window.applySyncedAdminPassword = function(value) {
       byId.delete(id);
       byId.set("deleted-marker:" + id, {_syncId:id, _deleted:true, _syncUpdatedAt:timestamp});
     }
-    // A new record created on two devices can have the same human SN. Never
-    // overwrite either record: keep the remote SN and assign a free SN locally.
-    const out = Array.from(byId.values());
-    const snOwner = new Map();
-    for (const r of out) {
-      const sn = Number(r.sn);
-      if (Number.isFinite(sn) && sn > 0) {
-        const id = stableRecordKey(r);
-        if (!snOwner.has(sn)) snOwner.set(sn, id);
-        else if (snOwner.get(sn) !== id) {
-          const replacement = nextAvailableSn(usedSn);
-          usedSn.add(replacement);
-          r.sn = replacement;
-        }
-      }
-    }
-    return out;
+    // Do not mutate previously stored remote records while resolving numbers.
+    // Such mutation would appear to the server as an unauthorized edit.
+    return Array.from(byId.values());
   };
 
   const persistMergedRecords = records => {
