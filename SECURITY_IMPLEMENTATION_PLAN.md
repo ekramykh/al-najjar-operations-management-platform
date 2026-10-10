@@ -3,6 +3,13 @@
 Branch: `security-server-side-auth-2026-10-10`
 Base: stable `main` at merge commit `54914d23e7617954e0facaa20e54d5b1225fb171`
 
+## Password preservation requirement
+
+- This security work must not change, reset, replace, or migrate the current passwords for any of the three existing accounts.
+- The Phase 1 SQL migration does not update Supabase Auth credentials or password hashes. It only seeds/updates permission flags for matching existing Auth users.
+- Do not deploy a password migration, call an Auth password-update endpoint, or ask users to change passwords as part of this rollout. Authentication redesign must preserve the existing sign-in method and credentials.
+- The legacy application-level `adminPassword` is a separate, insecure shared setting; removing its authority is not the same as changing a Supabase account password. Do not delete or alter this legacy setting in the live app until a tested transition plan is approved, and never treat it as the source of server authorization.
+
 ## Safety rules
 
 - Do not change `main` directly.
