@@ -18271,10 +18271,15 @@ window.applySyncedAdminPassword = function(value) {
       }
     }
 
-    // Tombstones suppress old copies and remain in the shared snapshot so every device learns deletions.
+    // Only propagate deletions for IDs that have existed in the shared cloud
+    // snapshot. A record created and deleted while offline must not generate
+    // an unknown-ID tombstone rejected by the server.
+    const remoteIds = new Set(remote.map(record => stableRecordKey(record)));
     for (const [id, timestamp] of deletedSyncIds) {
       byId.delete(id);
-      byId.set("deleted-marker:" + id, {_syncId:id, _deleted:true, _syncUpdatedAt:timestamp});
+      if (remoteIds.has(id)) {
+        byId.set("deleted-marker:" + id, {_syncId:id, _deleted:true, _syncUpdatedAt:timestamp});
+      }
     }
     // Do not mutate previously stored remote records while resolving numbers.
     // Such mutation would appear to the server as an unauthorized edit.
