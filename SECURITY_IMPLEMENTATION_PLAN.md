@@ -87,15 +87,16 @@ A missing permission row means the account was not found/seeding did not happen;
 
 - Admin: read, add, edit, delete, manage users; permission changes take effect on the server.
 - Add-only user: read and add; attempts to edit existing records, delete records, write tombstones, change app settings, or manage users are rejected by the server even with direct API calls.
-- Read-only user: reads/realtime only; all write attempts rejected by the server.
+- Read-only user: reads through the permission-checked API; all write attempts rejected by the server. Cross-device updates arrive through secure polling, not raw table realtime.
 - Unauthenticated client and `anon`: cannot read or mutate protected business data.
 - New user: receives no elevated rights; admin can grant/revoke capabilities.
 - Two-device tests: add, edit, delete, add-as-new, concurrent writes, reconnect/offline recovery, and realtime propagation.
 - No record loss, duplicate IDs, or regression to localStorage quota failures.
-- No secrets or plaintext admin password in the browser bundle, localStorage, or synchronized records.
+- No service-role secrets in the browser bundle or browser storage; no legacy admin password in API responses or synchronized records.
+- The old application-level password remains in localStorage for compatibility and is not a cloud authorization credential. A separate approved transition is still required to remove it without changing or losing the current setting.
 
 ## Current known blockers
 
 - The current application stores the entire business dataset in one `fuel_shared_state` row, so per-record permissions cannot be safely enforced using browser table policies alone.
-- The current client synchronizes a plaintext `adminPassword` setting and stores the admin password in localStorage. This must be removed as part of the auth migration.
+- The legacy application password is no longer sent in sync requests or returned by the secure read API, but its existing localStorage setting remains. Do not delete or alter it until the compatibility transition is approved.
 - The migration seeds only Auth accounts that already exist; it does not create accounts or change their passwords.
