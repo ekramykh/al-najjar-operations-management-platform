@@ -18048,6 +18048,23 @@ window.applySyncedAdminPassword = function(value) {
       <button id="cloudConnect" style="margin-top:10px;width:100%;padding:9px;border:0;border-radius:6px;background:#2563eb;color:white;cursor:pointer">Save Settings & Connect</button>
       <button id="cloudSignOut" style="margin-top:6px;width:100%;padding:8px;border:1px solid #64748b;border-radius:6px;background:transparent;color:white;cursor:pointer">Sign Out</button>
     </details>
+    <details id="permissionAdminPanel" hidden style="margin-top:10px;border-top:1px solid #475569;padding-top:10px">
+      <summary style="cursor:pointer;font-weight:600">User Permissions (Administrator)</summary>
+      <div style="font-size:12px;color:#cbd5e1;margin:7px 0">Existing account passwords are not changed. New accounts receive an email invitation.</div>
+      <label for="permissionAdminEmail" style="display:block;margin:6px 0 3px">Account email</label>
+      <input id="permissionAdminEmail" type="email" placeholder="user@company.com" style="box-sizing:border-box;width:100%;padding:8px;border-radius:6px;border:1px solid #475569;background:#1f2937;color:white">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px;margin:9px 0;font-size:12px">
+        <label><input id="permissionCanRead" type="checkbox" checked> Read records</label>
+        <label><input id="permissionCanAdd" type="checkbox"> Add new records</label>
+        <label><input id="permissionCanEdit" type="checkbox"> Edit records</label>
+        <label><input id="permissionCanDelete" type="checkbox"> Delete records</label>
+        <label style="grid-column:1/-1"><input id="permissionCanManage" type="checkbox"> Manage users and permissions</label>
+      </div>
+      <button id="permissionAdminSave" type="button" style="width:100%;padding:8px;border:0;border-radius:6px;background:#2563eb;color:white;cursor:pointer">Invite / Save Permissions</button>
+      <button id="permissionAdminRefresh" type="button" style="width:100%;padding:8px;margin-top:5px;border:1px solid #64748b;border-radius:6px;background:transparent;color:white;cursor:pointer">Refresh User List</button>
+      <div id="permissionAdminStatus" role="status" style="font-size:12px;color:#cbd5e1;margin-top:7px"></div>
+      <ul id="permissionAdminList" style="font-size:11px;color:#e2e8f0;padding-left:18px;max-height:180px;overflow:auto"></ul>
+    </details>
     <div style="display:flex;gap:8px;margin-top:10px">
       <button id="cloudSyncNow" style="flex:1;padding:9px;border:0;border-radius:6px;background:#059669;color:white;cursor:pointer">Sync Now</button>
       <button id="cloudExport" style="padding:9px;border:1px solid #64748b;border-radius:6px;background:transparent;color:white;cursor:pointer">Backup</button>
@@ -18080,11 +18097,12 @@ window.applySyncedAdminPassword = function(value) {
   let client = null;
   let channel = null;
   let pollTimer = null;
+  let currentPermissions = null;
   // All protected reads and writes must go through the server-side permission
   // boundary; the browser never writes fuel_shared_state directly.
-  async function invokeFuelSync(action, records) {
+  async function invokeFuelSync(action, records, extra = {}) {
     if (!client) throw new Error("Sign in to the cloud before accessing shared records.");
-    const body = { action };
+    const body = { ...extra, action };
     if (records !== undefined) body.records = records;
     const { data, error } = await client.functions.invoke("fuel-sync", { body });
     if (error) {
@@ -18426,6 +18444,9 @@ window.applySyncedAdminPassword = function(value) {
     await startRealtime();
 
     const remoteCheck = await invokeFuelSync("read");
+    currentPermissions = remoteCheck.permissions || null;
+    const permissionPanel = $("permissionAdminPanel");
+    if (permissionPanel) permissionPanel.hidden = currentPermissions?.can_manage_users !== true;
     if (await performOneTimeRecovery(remoteCheck.data)) {
       // Recovery is complete; do not run a second write in this connection.
     } else if (legacyMigrationPending) {
@@ -18516,6 +18537,69 @@ window.applySyncedAdminPassword = function(value) {
     }
   });
 
+  const permissionStatus = text => {
+    const el = $("permissionAdminStatus");
+    if (el) el.textContent = text;
+  };
+  const permissionFlagsFromForm = () => ({
+    can_read: $("permissionCanRead").checked,
+    can_add: $("permissionCanAdd").checked,
+    can_edit: $("permissionCanEdit").checked,
+    can_delete: $("permissionCanDelete").checked,
+    can_manage_users: $("permissionCanManage").checked,
+  });
+  $("permissionAdminRefresh")?.addEventListener("click", async () => {
+    if (currentPermissions?.can_manage_users !== true) {
+      permissionStatus("Administrator permission is required.");
+      return;
+    }
+    permissionStatus("Loading accounts...");
+    try {
+      const result = await invokeFuelSync("manage_users", undefined, { operation: "list" });
+      const list = $("permissionAdminList");
+      list.replaceChildren();
+      for (const user of result.users || []) {
+        const li = document.createElement("li");
+        const p = user.permissions;
+        const role = !p ? "No permissions assigned"
+          : p.can_manage_users ? "Administrator"
+          : p.can_add && !p.can_edit && !p.can_delete ? "Read + Add"
+          : p.can_read && !p.can_add && !p.can_edit && !p.can_delete ? "Read only"
+          : [p.can_read && "Read", p.can_add && "Add", p.can_edit && "Edit", p.can_delete && "Delete"].filter(Boolean).join(" + ") || "No access";
+        li.textContent = (user.email || "(no email)") + " — " + role;
+        list.appendChild(li);
+      }
+      permissionStatus("Account list refreshed.");
+    } catch (err) {
+      permissionStatus(err?.message || String(err));
+    }
+  });
+  $("permissionAdminSave")?.addEventListener("click", async () => {
+    if (currentPermissions?.can_manage_users !== true) {
+      permissionStatus("Administrator permission is required.");
+      return;
+    }
+    const email = $("permissionAdminEmail").value.trim();
+    if (!email) {
+      permissionStatus("Enter the account email.");
+      return;
+    }
+    permissionStatus("Saving permissions...");
+    try {
+      const result = await invokeFuelSync("manage_users", undefined, {
+        operation: "invite_or_assign",
+        email,
+        ...permissionFlagsFromForm(),
+      });
+      permissionStatus(result.invited
+        ? "Invitation sent and permissions assigned. The user must accept the invitation to sign in."
+        : "Permissions saved. The existing password was not changed.");
+      await $("permissionAdminRefresh").click();
+    } catch (err) {
+      permissionStatus(err?.message || String(err));
+    }
+  });
+
   $("cloudSyncNow").addEventListener("click", async () => {
     if (!client) {
       message("Connect first from Connection Settings.");
@@ -18545,6 +18629,10 @@ window.applySyncedAdminPassword = function(value) {
       try { await activeClient.removeChannel(activeChannel); } catch(e) {}
     }
     channel = null;
+    currentPermissions = null;
+    const permissionPanel = $("permissionAdminPanel");
+    if (permissionPanel) permissionPanel.hidden = true;
+    if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
     if (activeClient) {
       try { await activeClient.auth.signOut(); } catch(e) {}
     }
