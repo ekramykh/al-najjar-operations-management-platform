@@ -18403,7 +18403,16 @@ window.applySyncedAdminPassword = function(value) {
             const outgoing = latest?.data
               ? mergeRecordSets(localRecords, latestRecords)
               : localRecords;
-            const result = await invokeFuelSync("sync", outgoing);
+            // An empty delta must never trigger a server write: read-only
+            // snapshots and unchanged rows should not update cloud timestamps.
+            const remoteById = new Map(latestRecords.map(row => [stableRecordKey(row), row]));
+            const changed = outgoing.filter(row => {
+              const prior = remoteById.get(stableRecordKey(row));
+              return !prior || recordChanged(row, prior);
+            });
+            const result = changed.length
+              ? await invokeFuelSync("sync", changed)
+              : { data: { records: latestRecords, updated_at: latest?.data?.updated_at || "" } };
             const savedRecords = normalizeRecordsForSync(result?.data?.records || []);
             // Never overwrite edits made while the network request was pending.
             // Keep those edits locally and merge them into the acknowledged
