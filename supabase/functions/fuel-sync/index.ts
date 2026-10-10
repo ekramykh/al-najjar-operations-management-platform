@@ -106,6 +106,95 @@ Deno.serve(async (req: Request) => {
     return reply(400, { error: "Request body must be valid JSON." });
   }
   const action = body.action;
+  if (action === "manage_users") {
+    if (permissions.can_manage_users !== true) {
+      return reply(403, { error: "Administrator permission is required to manage users." });
+    }
+    const operation = body.operation;
+
+    const readFlags = () => ({
+      can_read: body.can_read === true,
+      can_add: body.can_add === true,
+      can_edit: body.can_edit === true,
+      can_delete: body.can_delete === true,
+      can_manage_users: body.can_manage_users === true,
+    });
+    const validFlags = (flags: Record<string, boolean>) =>
+      !flags.can_manage_users || (flags.can_read && flags.can_add && flags.can_edit && flags.can_delete);
+
+    if (operation === "list") {
+      const allUsers: Array<{ id: string; email?: string }> = [];
+      for (let page = 1; page <= 50; page++) {
+        const { data, error } = await admin.auth.admin.listUsers({ page, perPage: 1000 });
+        if (error) return reply(500, { error: "Unable to list accounts." });
+        const users = data.users || [];
+        allUsers.push(...users.map(user => ({ id: user.id, email: user.email || undefined })));
+        if (users.length < 1000) break;
+      }
+      const { data: rows, error } = await admin.from("app_user_permissions")
+        .select("user_id,can_read,can_add,can_edit,can_delete,can_manage_users");
+      if (error) return reply(500, { error: "Unable to load user permissions." });
+      const byUser = new Map((rows || []).map(row => [row.user_id, row]));
+      return reply(200, {
+        users: allUsers.map(user => ({
+          ...user,
+          permissions: byUser.get(user.id) || null,
+        })).sort((a, b) => (a.email || "").localeCompare(b.email || "")),
+      });
+    }
+
+    if (operation !== "invite_or_assign") {
+      return reply(400, { error: "Unsupported user-management operation." });
+    }
+    const email = typeof body.email === "string" ? body.email.trim().toLowerCase() : "";
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 254) {
+      return reply(400, { error: "Enter a valid email address." });
+    }
+    const flags = readFlags();
+    if (!validFlags(flags)) {
+      return reply(400, { error: "An administrator account must have read, add, edit, and delete permissions." });
+    }
+
+    let targetUser: { id: string; email?: string } | null = null;
+    for (let page = 1; page <= 50 && !targetUser; page++) {
+      const { data, error } = await admin.auth.admin.listUsers({ page, perPage: 1000 });
+      if (error) return reply(500, { error: "Unable to verify the target account." });
+      const found = (data.users || []).find(user => (user.email || "").toLowerCase() === email);
+      if (found) targetUser = { id: found.id, email: found.email || email };
+      if ((data.users || []).length < 1000) break;
+    }
+
+    let invited = false;
+    if (!targetUser) {
+      // Existing accounts are never re-invited or password-reset here. Only a
+      // genuinely new email receives an invitation to establish its credentials.
+      const { data, error } = await admin.auth.admin.inviteUserByEmail(email);
+      if (error || !data.user) return reply(400, { error: error?.message || "Unable to invite this account." });
+      targetUser = { id: data.user.id, email: data.user.email || email };
+      invited = true;
+    }
+    if (targetUser.id === authData.user.id) {
+      return reply(400, { error: "For safety, an administrator cannot change their own permissions here." });
+    }
+
+    const { error: saveError } = await admin.from("app_user_permissions").upsert({
+      user_id: targetUser.id,
+      ...flags,
+      updated_at: new Date().toISOString(),
+    }, { onConflict: "user_id" });
+    if (saveError) return reply(500, {
+      error: invited
+        ? "The invitation was sent, but permissions could not be saved. The new account has no application access until an administrator assigns permissions."
+        : "Unable to save account permissions.",
+    });
+    return reply(200, {
+      ok: true,
+      invited,
+      user: { id: targetUser.id, email: targetUser.email },
+      permissions: flags,
+    });
+  }
+
   if (action === "read") {
     if (!permissions.can_read) return reply(403, { error: "Read permission is required." });
     const { data, error } = await admin.from("fuel_shared_state")
