@@ -4,7 +4,7 @@
 -- be embedded in index.html or exposed to any client.
 begin;
 
-revoke all privileges on table public.fuel_shared_state from anon, authenticated;
+revoke all privileges on table public.fuel_shared_state from public, anon, authenticated;
 grant select, insert, update, delete on table public.fuel_shared_state to service_role;
 
 commit;
