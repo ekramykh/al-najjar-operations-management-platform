@@ -18283,37 +18283,57 @@ let adminPassword = (!storedAdminPassword || storedAdminPassword === "1234")
       busy = true;
       try {
         const localRecords = normalizeRecordsForSync(JSON.parse(snapshot));
-        const remote = await client.from("fuel_shared_state").select("records,updated_at").eq("id","shared").maybeSingle();
-        if (remote.error) throw remote.error;
+        // Retry optimistic-concurrency conflicts by fetching the newest cloud
+        // state and merging again. A conflict must not silently drop a new save.
+        const maxAttempts = 6;
+        for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+          if (!client) throw new Error("Cloud connection was closed before the save completed.");
+          const remote = await client.from("fuel_shared_state")
+            .select("records,updated_at").eq("id","shared").maybeSingle();
+          if (remote.error) throw remote.error;
 
-        if (!remote.data) {
+          if (!remote.data) {
+            const ts = new Date().toISOString();
+            const {data,error} = await client.from("fuel_shared_state")
+              .insert({id:"shared",records:localRecords,updated_at:ts})
+              .select("updated_at").maybeSingle();
+            if (error) {
+              // Another device may have created the shared row at the same time.
+              if (attempt < maxAttempts && /duplicate|unique|already exists/i.test(error.message || "")) continue;
+              throw error;
+            }
+            const saved = JSON.stringify(localRecords);
+            persistMergedRecords(localRecords);
+            lastSaved = saved;
+            setRemoteBaseline(data?.updated_at || ts);
+            setCloudDirty(currentSnapshot() !== saved);
+            status(cloudDirty ? "Connected" : "Connected & Synced", "#34d399");
+            return;
+          }
+
+          const merged = mergeRecordSets(localRecords, remote.data.records || []);
+          const mergedSnapshot = JSON.stringify(merged);
           const ts = new Date().toISOString();
-          const {data,error} = await client.from("fuel_shared_state").insert({id:"shared",records:localRecords,updated_at:ts}).select("updated_at").maybeSingle();
+          const {data,error} = await client.from("fuel_shared_state")
+            .update({records:merged,updated_at:ts})
+            .eq("id","shared")
+            .eq("updated_at",remote.data.updated_at || "")
+            .select("updated_at")
+            .maybeSingle();
           if (error) throw error;
-          const saved = JSON.stringify(localRecords);
-          persistMergedRecords(localRecords); lastSaved=saved; setRemoteBaseline(data?.updated_at || ts); setCloudDirty(currentSnapshot()!==saved);
+          if (!data) {
+            if (attempt < maxAttempts) continue;
+            throw new Error("Cloud data kept changing during this save. The record is still queued locally; use Sync Now to retry.");
+          }
+
+          persistMergedRecords(merged);
+          lastSaved = mergedSnapshot;
+          setRemoteBaseline(data.updated_at || ts);
+          setCloudDirty(currentSnapshot() !== mergedSnapshot);
+          status(cloudDirty ? "Connected" : "Connected & Synced", "#34d399");
           return;
         }
-
-        // Always merge against the latest cloud snapshot. Never write the local
-        // snapshot over the remote snapshot just because this device is dirty.
-        const merged = mergeRecordSets(localRecords, remote.data.records || []);
-        const mergedSnapshot = JSON.stringify(merged);
-        const ts = new Date().toISOString();
-        const {data,error} = await client.from("fuel_shared_state")
-          .update({records:merged,updated_at:ts})
-          .eq("id","shared")
-          .eq("updated_at",remote.data.updated_at || "")
-          .select("updated_at")
-          .maybeSingle();
-        if (error) throw error;
-        if (!data) throw new Error("Sync retry required: another device changed the shared data during this save. No data was overwritten.");
-
-        persistMergedRecords(merged);
-        lastSaved = mergedSnapshot;
-        setRemoteBaseline(data.updated_at || ts);
-        setCloudDirty(currentSnapshot() !== mergedSnapshot);
-        status(cloudDirty ? "Connected" : "Connected & Synced", "#34d399");
+        throw new Error("Could not save after several cloud-sync retries. The record remains queued for another attempt.");
       } catch(err) {
         setCloudDirty(true);
         status("Save failed", "#f87171");
