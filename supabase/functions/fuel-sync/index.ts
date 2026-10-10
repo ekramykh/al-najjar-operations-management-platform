@@ -247,7 +247,15 @@ Deno.serve(async (req: Request) => {
       const old = merged.get(id);
       if (old && stableJson(old) === stableJson(row)) continue;
 
-      // Reject delayed writes to a newer server version.
+      // Tombstones are permanent for a sync ID. Check this before timestamp
+      // comparison so a clock-skewed device cannot resurrect deleted records.
+      if (old && old._deleted === true && row._deleted !== true) {
+        return reply(409, { error: "A deleted record ID cannot be reused. Create a new record with a new sync ID." });
+      }
+
+      // Reject delayed writes to a newer server version. A complete snapshot
+      // can contain older *unchanged* rows: clients must resolve them before
+      // sending rather than silently overwriting server state.
       if (old) {
         const oldTime = Date.parse(String(old._syncUpdatedAt || ""));
         const newTime = Date.parse(String(row._syncUpdatedAt || ""));
