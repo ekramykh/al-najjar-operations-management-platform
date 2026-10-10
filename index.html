@@ -18403,12 +18403,21 @@ window.applySyncedAdminPassword = function(value) {
               : localRecords;
             const result = await invokeFuelSync("sync", outgoing);
             const savedRecords = normalizeRecordsForSync(result?.data?.records || []);
-            const savedSnapshot = persistMergedRecords(savedRecords);
+            // Never overwrite edits made while the network request was pending.
+            // Keep those edits locally and merge them into the acknowledged
+            // server snapshot, so the next queued write can upload them.
+            const newerLocalSave = localWriteRevision !== startingRevision;
+            const postRequestLocal = newerLocalSave
+              ? normalizeRecordsForSync(currentSnapshotRecords())
+              : null;
+            const acknowledgedRecords = newerLocalSave
+              ? mergeRecordSets(postRequestLocal, savedRecords)
+              : savedRecords;
+            const savedSnapshot = persistMergedRecords(acknowledgedRecords);
             lastSaved = savedSnapshot;
             setRemoteBaseline(result?.data?.updated_at || "");
             // A save may occur while the request is in flight. Never mark the
             // device clean or silently discard those newer local edits.
-            const newerLocalSave = localWriteRevision !== startingRevision;
             setCloudDirty(newerLocalSave || currentSnapshot() !== savedSnapshot);
             status(cloudDirty ? "Pending local changes" : "Connected & Synced", "#34d399");
             return;
