@@ -18260,6 +18260,8 @@ window.applySyncedAdminPassword = function(value) {
       if (recordTime(localRecord) > recordTime(remoteRecord)) {
         byId.set(id, localRecord);
       } else if (recordTime(localRecord) < recordTime(remoteRecord)) {
+        // A remote edit won. Preserve the losing local version for recovery.
+        saveConflictBackup(JSON.stringify([localRecord]));
         continue;
       } else {
         saveConflictBackup(JSON.stringify([localRecord]));
