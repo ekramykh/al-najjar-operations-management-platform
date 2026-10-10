@@ -306,6 +306,17 @@ Deno.serve(async (req: Request) => {
     }
 
     const updated = Array.from(merged.values());
+    // A no-op sync must not rewrite the shared row or advance its revision.
+    // This also lets add-only users safely submit an unchanged snapshot.
+    const previousBusinessRecords = remoteRecords.filter(row => !row._appSetting);
+    const sameSnapshot = updated.length === previousBusinessRecords.length
+      && updated.every(row => {
+        const previous = previousBusinessRecords.find(old => old._syncId === row._syncId);
+        return previous && stableJson(previous) === stableJson(row);
+      });
+    if (sameSnapshot && remote) {
+      return reply(200, { data: { records: updated, updated_at: remote.updated_at } });
+    }
     const numbers = new Set<number>();
     for (const row of updated) {
       if (row._deleted === true) continue;
