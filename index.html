@@ -16557,16 +16557,7 @@ window.applySyncedAdminPassword = function(value) {
         isDataDirty = true;
         modal.classList.remove('active');
         document.body.classList.remove('modal-open');
-        if (typeof window.syncAdminPasswordToCloud === "function") {
-            window.syncAdminPasswordToCloud(newVal).then(function() {
-                alert("Password updated and synchronized to the shared cloud state.");
-            }).catch(function(error) {
-                console.error("Admin password cloud sync failed:", error);
-                alert("Password changed on this device, but cloud synchronization failed. Keep this device connected and use Sync Now before changing passwords or deleting on another device.");
-            });
-        } else {
-            alert("Password changed on this device only because cloud sync is not connected. Connect to the cloud to distribute it to other devices.");
-        }
+        alert("Application password changed on this device only. It is no longer synchronized to the shared database; cloud access is controlled by your signed-in account permissions.");
     }
 
     document.getElementById('confirmPassInput').addEventListener('keydown', function(e) {
@@ -18369,17 +18360,8 @@ window.applySyncedAdminPassword = function(value) {
   ];
   const currentSnapshot = () => JSON.stringify(currentSnapshotRecords());
 
-  window.syncAdminPasswordToCloud = async function(value) {
-    if (typeof value !== "string" || !value) throw new Error("Password cannot be empty.");
-    if (!client) throw new Error("Cloud is not connected; password was not synchronized.");
-    sharedAdminPassword = value;
-    sharedAdminPasswordUpdatedAt = new Date().toISOString();
-    try {
-      localStorage.setItem("fuel_admin_password", value);
-      localStorage.setItem("fuel_admin_password_updated_at", sharedAdminPasswordUpdatedAt);
-    } catch (e) {}
-    setCloudDirty(true);
-    await queueCloudWrite(currentSnapshot());
+  window.syncAdminPasswordToCloud = async function() {
+    throw new Error("The legacy application password is local-only and is not an authorization credential. Sign-in and server permissions control cloud access.");
   };
 
   function queueCloudWrite(snapshot) {
