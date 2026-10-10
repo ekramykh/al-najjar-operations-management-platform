@@ -159,6 +159,9 @@ Deno.serve(async (req: Request) => {
     for (const row of incoming) {
       const id = String(row._syncId);
       const old = merged.get(id);
+      // Ignore identical entries from the current snapshot, including historical
+      // tombstones/settings; they are not new requests to mutate server state.
+      if (old && stableJson(old) === stableJson(row)) continue;
       if (row._deleted === true) {
         if (!permissions.can_delete) return reply(403, { error: "Delete permission is required." });
         merged.delete(id);
