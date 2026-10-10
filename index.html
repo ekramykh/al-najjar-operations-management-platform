@@ -3264,10 +3264,21 @@ window.toggleFleetAnalysisPanel=function(){
 
     const ADMIN_PASSWORD_KEY = 'fuel_admin_password';
 const REQUESTED_ADMIN_PASSWORD = "1001";
+const PREVIOUS_DEFAULT_ADMIN_PASSWORD = "EKRAMYKH@GMAIL.COM";
 const storedAdminPassword = localStorage.getItem(ADMIN_PASSWORD_KEY);
-let adminPassword = (!storedAdminPassword || storedAdminPassword === "1234")
+// Migrate known legacy defaults on every device; preserve any custom password.
+let adminPassword = (!storedAdminPassword || storedAdminPassword === "1234" || storedAdminPassword === PREVIOUS_DEFAULT_ADMIN_PASSWORD)
     ? REQUESTED_ADMIN_PASSWORD
     : storedAdminPassword;
+if (adminPassword !== storedAdminPassword) {
+    try { localStorage.setItem(ADMIN_PASSWORD_KEY, adminPassword); } catch (e) {}
+}
+// Cloud sync can update this value from the shared state on every connected device.
+window.applySyncedAdminPassword = function(value) {
+    if (typeof value !== "string" || !value) return;
+    adminPassword = value;
+    try { localStorage.setItem(ADMIN_PASSWORD_KEY, value); } catch (e) {}
+};
 
     let defaultInitialRecords = [
         {
@@ -16546,7 +16557,16 @@ let adminPassword = (!storedAdminPassword || storedAdminPassword === "1234")
         isDataDirty = true;
         modal.classList.remove('active');
         document.body.classList.remove('modal-open');
-        alert("Admin password updated successfully!");
+        if (typeof window.syncAdminPasswordToCloud === "function") {
+            window.syncAdminPasswordToCloud(newVal).then(function() {
+                alert("Password updated and synchronized to the shared cloud state.");
+            }).catch(function(error) {
+                console.error("Admin password cloud sync failed:", error);
+                alert("Password changed on this device, but cloud synchronization failed. Keep this device connected and use Sync Now before changing passwords or deleting on another device.");
+            });
+        } else {
+            alert("Password changed on this device only because cloud sync is not connected. Connect to the cloud to distribute it to other devices.");
+        }
     }
 
     document.getElementById('confirmPassInput').addEventListener('keydown', function(e) {
@@ -18237,9 +18257,19 @@ let adminPassword = (!storedAdminPassword || storedAdminPassword === "1234")
     for (const record of normalized) {
       if (record?._deleted && record._syncId) deletedSyncIds.set(record._syncId, record._syncUpdatedAt || new Date().toISOString());
     }
+    const syncedPassword = normalized.find(record => record?._appSetting === "adminPassword" && record._syncId === ADMIN_PASSWORD_SYNC_ID);
+    if (syncedPassword && typeof syncedPassword.value === "string" && syncedPassword.value) {
+      sharedAdminPassword = syncedPassword.value;
+      sharedAdminPasswordUpdatedAt = syncedPassword._syncUpdatedAt || new Date(0).toISOString();
+      try {
+        localStorage.setItem("fuel_admin_password", sharedAdminPassword);
+        localStorage.setItem("fuel_admin_password_updated_at", sharedAdminPasswordUpdatedAt);
+      } catch (e) {}
+      if (typeof window.applySyncedAdminPassword === "function") window.applySyncedAdminPassword(sharedAdminPassword);
+    }
     const tombstones = Array.from(deletedSyncIds, ([id, timestamp]) => ({_syncId:id, _deleted:true, _syncUpdatedAt:timestamp}));
-    fuelRecords = normalized.filter(record => !record?._deleted && !deletedSyncIds.has(stableRecordKey(record)));
-    const snapshot = JSON.stringify([...fuelRecords, ...tombstones]);
+    fuelRecords = normalized.filter(record => !record?._deleted && !record?._appSetting && !deletedSyncIds.has(stableRecordKey(record)));
+    const snapshot = JSON.stringify([...fuelRecords, ...tombstones, ...(syncedPassword ? [syncedPassword] : [])]);
     try { localStorage.setItem("fuel_system_records", JSON.stringify(fuelRecords)); }
     catch (e) { console.warn("LocalStorage quota reached; keeping records in memory and cloud sync.", e); }
     try { localStorage.setItem(DELETED_SYNC_IDS_KEY, JSON.stringify(Object.fromEntries(deletedSyncIds))); }
@@ -18319,8 +18349,28 @@ let adminPassword = (!storedAdminPassword || storedAdminPassword === "1234")
     try { isDataDirty = true; } catch(e) {}
   };
 
-  const currentSnapshotRecords = () => [...fuelRecords, ...Array.from(deletedSyncIds, ([id, timestamp]) => ({_syncId:id, _deleted:true, _syncUpdatedAt:timestamp}))];
+  let sharedAdminPassword = localStorage.getItem("fuel_admin_password") || "1001";
+  let sharedAdminPasswordUpdatedAt = localStorage.getItem("fuel_admin_password_updated_at") || new Date(0).toISOString();
+  const ADMIN_PASSWORD_SYNC_ID = "app-settings:admin-password";
+  const currentSnapshotRecords = () => [
+    ...fuelRecords,
+    ...Array.from(deletedSyncIds, ([id, timestamp]) => ({_syncId:id, _deleted:true, _syncUpdatedAt:timestamp})),
+    {_syncId:ADMIN_PASSWORD_SYNC_ID, _appSetting:"adminPassword", value:sharedAdminPassword, _syncUpdatedAt:sharedAdminPasswordUpdatedAt}
+  ];
   const currentSnapshot = () => JSON.stringify(currentSnapshotRecords());
+
+  window.syncAdminPasswordToCloud = async function(value) {
+    if (typeof value !== "string" || !value) throw new Error("Password cannot be empty.");
+    if (!client) throw new Error("Cloud is not connected; password was not synchronized.");
+    sharedAdminPassword = value;
+    sharedAdminPasswordUpdatedAt = new Date().toISOString();
+    try {
+      localStorage.setItem("fuel_admin_password", value);
+      localStorage.setItem("fuel_admin_password_updated_at", sharedAdminPasswordUpdatedAt);
+    } catch (e) {}
+    setCloudDirty(true);
+    await queueCloudWrite(currentSnapshot());
+  };
 
   function queueCloudWrite(snapshot) {
     if (!client) return Promise.resolve();
