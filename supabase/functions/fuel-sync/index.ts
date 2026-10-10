@@ -111,7 +111,14 @@ Deno.serve(async (req: Request) => {
     const { data, error } = await admin.from("fuel_shared_state")
       .select("records,updated_at").eq("id", "shared").maybeSingle();
     if (error) return reply(500, { error: "Unable to load shared records." });
-    return reply(200, { data: data ?? null });
+    if (!data) return reply(200, { data: null, permissions });
+    // Legacy admin-password settings may still exist in the old shared row.
+    // Never return those secrets to any browser session.
+    const safeRecords = Array.isArray(data.records)
+      ? data.records.filter((row: unknown) => !!row && typeof row === "object"
+          && !(row as Record<string, unknown>)._appSetting)
+      : [];
+    return reply(200, { data: { ...data, records: safeRecords }, permissions });
   }
 
   if (action !== "sync") return reply(400, { error: "Unsupported action." });
@@ -141,7 +148,11 @@ Deno.serve(async (req: Request) => {
     // Never replace the remote snapshot with a stale client snapshot. Merge by
     // sync ID, retain remote-only rows, and enforce the precise operation on every
     // changed item. Omitted rows are not deletions; explicit tombstones are.
-    const merged = new Map(remoteRecords.map(row => [String(row._syncId), row]));
+    // Drop legacy app-level settings from the next authorized write. They are
+    // not business records and must not remain part of the shared snapshot.
+    const merged = new Map(remoteRecords
+      .filter(row => !row._appSetting)
+      .map(row => [String(row._syncId), row]));
     for (const row of incoming) {
       const id = String(row._syncId);
       const old = merged.get(id);
