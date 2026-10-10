@@ -18383,11 +18383,13 @@ window.applySyncedAdminPassword = function(value) {
     if (!client) return Promise.resolve();
     setCloudDirty(true);
     cloudWriteQueue = cloudWriteQueue.catch(() => {}).then(async () => {
-      const startingRevision = localWriteRevision;
       if (!client) throw new Error("Cloud connection was closed before the save completed.");
       busy = true;
       try {
-        const localRecords = normalizeRecordsForSync(JSON.parse(snapshot));
+        // Queued snapshots become stale when another save occurs before this
+        // operation starts. Always send the latest local state instead.
+        const startingRevision = localWriteRevision;
+        const localRecords = normalizeRecordsForSync(currentSnapshotRecords());
         let lastError;
         // The Edge Function performs server-side permission checks and its own
         // compare-and-swap retries. Retry transient conflicts without bypassing it.
