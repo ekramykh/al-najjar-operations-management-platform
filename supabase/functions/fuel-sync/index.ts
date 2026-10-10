@@ -50,14 +50,16 @@ function mapById(rows: Record<string, unknown>[]) {
 function validateAddOnly(incoming: Record<string, unknown>[], remote: Record<string, unknown>[]) {
   const before = mapById(remote);
   for (const row of incoming) {
+    const old = before.get(String(row._syncId));
+    // Legacy snapshots may still contain an unchanged admin-password setting or
+    // previously synchronized tombstone. Allow identical legacy entries during
+    // the transition, but never let an add-only user create or change them.
+    if (old && stableJson(old) === stableJson(row)) continue;
     if (row._appSetting || row._deleted === true) {
       return "Add-only accounts cannot change application settings or delete records.";
     }
-    const old = before.get(String(row._syncId));
-    if (old && stableJson(old) !== stableJson(row)) {
-      return "Add-only accounts cannot edit existing records.";
-    }
-    if (!old && (typeof row.sn !== "number" || !Number.isFinite(row.sn))) {
+    if (old) return "Add-only accounts cannot edit existing records.";
+    if (typeof row.sn !== "number" || !Number.isFinite(row.sn)) {
       return "New records must contain a valid record number.";
     }
   }
@@ -113,6 +115,7 @@ Deno.serve(async (req: Request) => {
   }
 
   if (action !== "sync") return reply(400, { error: "Unsupported action." });
+  if (!permissions.can_read) return reply(403, { error: "Read permission is required for synchronization." });
   if (!permissions.can_add && !permissions.can_edit && !permissions.can_delete) {
     return reply(403, { error: "This account has no write permission." });
   }
