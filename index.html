@@ -18117,6 +18117,7 @@ window.applySyncedAdminPassword = function(value) {
   let cloudDirty = localStorage.getItem(CLOUD_DIRTY_KEY) === "1";
   let lastRemoteUpdatedAt = localStorage.getItem(CLOUD_REMOTE_UPDATED_KEY) || "";
   let cloudWriteQueue = Promise.resolve();
+  let localWriteRevision = 0;
 
   const setCloudDirty = value => {
     cloudDirty = !!value;
@@ -18389,6 +18390,7 @@ window.applySyncedAdminPassword = function(value) {
     if (!client) return Promise.resolve();
     setCloudDirty(true);
     cloudWriteQueue = cloudWriteQueue.catch(() => {}).then(async () => {
+      const startingRevision = localWriteRevision;
       if (!client) throw new Error("Cloud connection was closed before the save completed.");
       busy = true;
       try {
@@ -18411,8 +18413,11 @@ window.applySyncedAdminPassword = function(value) {
             const savedSnapshot = persistMergedRecords(savedRecords);
             lastSaved = savedSnapshot;
             setRemoteBaseline(result?.data?.updated_at || "");
-            setCloudDirty(currentSnapshot() !== savedSnapshot);
-            status(cloudDirty ? "Connected" : "Connected & Synced", "#34d399");
+            // A save may occur while the request is in flight. Never mark the
+            // device clean or silently discard those newer local edits.
+            const newerLocalSave = localWriteRevision !== startingRevision;
+            setCloudDirty(newerLocalSave || currentSnapshot() !== savedSnapshot);
+            status(cloudDirty ? "Pending local changes" : "Connected & Synced", "#34d399");
             return;
           } catch (err) {
             lastError = err;
@@ -18524,6 +18529,7 @@ window.applySyncedAdminPassword = function(value) {
   window.saveToLocalStorage = function() {
     if (originalSave) originalSave();
     setDirtyFlag();
+    localWriteRevision++;
     if (client) {
       setCloudDirty(true);
       queueCloudWrite(currentSnapshot()).catch(err => {
