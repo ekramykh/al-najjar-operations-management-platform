@@ -265,6 +265,9 @@ Deno.serve(async (req: Request) => {
       }
 
       if (row._deleted === true) {
+        // A deletion is only valid for a record that actually existed. An
+        // unknown tombstone must not become a way to create arbitrary state.
+        if (!old) return reply(409, { error: "Cannot delete an unknown record ID." });
         if (!permissions.can_delete) return reply(403, { error: "Delete permission is required." });
         merged.delete(id);
         // Keep a tombstone in the shared snapshot so stale devices cannot
