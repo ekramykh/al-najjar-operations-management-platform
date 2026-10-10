@@ -247,6 +247,15 @@ Deno.serve(async (req: Request) => {
       const old = merged.get(id);
       if (old && stableJson(old) === stableJson(row)) continue;
 
+      // Reject delayed writes to a newer server version.
+      if (old) {
+        const oldTime = Date.parse(String(old._syncUpdatedAt || ""));
+        const newTime = Date.parse(String(row._syncUpdatedAt || ""));
+        if (!Number.isFinite(newTime) || (Number.isFinite(oldTime) && newTime <= oldTime)) {
+          return reply(409, { error: "Stale record version. Refresh cloud data and preserve the local change." });
+        }
+      }
+
       if (row._deleted === true) {
         if (!permissions.can_delete) return reply(403, { error: "Delete permission is required." });
         merged.delete(id);
@@ -286,6 +295,15 @@ Deno.serve(async (req: Request) => {
     }
 
     const updated = Array.from(merged.values());
+    const numbers = new Set<number>();
+    for (const row of updated) {
+      if (row._deleted === true) continue;
+      const sn = Number(row.sn);
+      if (!Number.isSafeInteger(sn) || sn <= 0 || numbers.has(sn)) {
+        return reply(409, { error: "Duplicate or invalid record number in merged snapshot." });
+      }
+      numbers.add(sn);
+    }
     const timestamp = new Date().toISOString();
     let writeQuery = admin.from("fuel_shared_state");
     if (!remote) {
