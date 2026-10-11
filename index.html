@@ -16283,16 +16283,10 @@ window.applySyncedAdminPassword = function(value) {
         }
 ];
 
-    let storedRecords = localStorage.getItem('fuel_system_records');
-    let fuelRecords = storedRecords ? JSON.parse(storedRecords) : defaultInitialRecords;
-    // Recovery build: before the first successful cloud connection, ignore any
-    // locally corrupted 2087-record snapshot and restore the confirmed 7-10 baseline.
-    try {
-        if (!localStorage.getItem("fuel_sync_recovery_2026_10_08_v1") && Array.isArray(fuelRecords) && fuelRecords.length !== 520) {
-            fuelRecords = JSON.parse(JSON.stringify(defaultInitialRecords));
-            localStorage.setItem("fuel_system_records", JSON.stringify(fuelRecords));
-        }
-    } catch(e) {}
+    const storedRecords = localStorage.getItem('fuel_system_records');
+    // Embedded historical rows supply lookup names only. They are not new work
+    // and must never initialize or replace this device's business dataset.
+    let fuelRecords = storedRecords ? JSON.parse(storedRecords) : [];
 
     let isDataDirty = false;
 
@@ -18428,23 +18422,43 @@ window.applySyncedAdminPassword = function(value) {
     message("Read-only access: shared cloud records loaded. Any unsynced local data was backed up locally and was not uploaded.");
   }
 
-  async function migrateLegacyLocalData() {
-    // Reconcile legacy local records through the same permission-checked API as
-    // every other save. The server remains authoritative and may reject a local
-    // change that this account is not allowed to make.
-    if (!legacyMigrationPending) return;
-    const localRecords = normalizeRecordsForSync(currentSnapshotRecords());
-    const remote = await invokeFuelSync("read");
-    const merged = remote?.data
-      ? mergeRecordSets(localRecords, remote.data.records || [])
-      : localRecords;
-    const result = await invokeFuelSync("sync", merged);
-    const saved = persistMergedRecords(result?.data?.records || merged);
-    lastSaved = saved;
-    setRemoteBaseline(result?.data?.updated_at || "");
-    setCloudDirty(false);
-    markLegacyMigrationComplete();
-  };
+  const CLOUD_DATA_PROJECT_KEY = "fuel_cloud_data_project_v1";
+  let dataProject = localStorage.getItem(CLOUD_DATA_PROJECT_KEY) || "";
+
+  async function initializeCloudData(remoteCheck, url) {
+    const sameProject = dataProject === url;
+    // Unknown legacy cache or a different project is never an upload source.
+    // Preserve it before loading the authorized cloud dataset. If backup fails,
+    // stop without overwriting local data or issuing any server write.
+    if (legacyMigrationPending || !sameProject) {
+      const localSnapshot = JSON.stringify(currentSnapshotRecords());
+      if ((storedRecords !== null || cloudDirty) && !saveConflictBackup(localSnapshot)) {
+        throw new Error("Local records could not be backed up. No local or cloud data was replaced. Export a backup before reconnecting.");
+      }
+      if (!remoteCheck.data) {
+        throw new Error("The shared cloud dataset is not initialized. No local records were uploaded.");
+      }
+      deletedSyncIds.clear();
+      const snapshot = persistMergedRecords(normalizeRecordsForSync(remoteCheck.data.records || []));
+      lastSaved = snapshot;
+      setRemoteBaseline(remoteCheck.data.updated_at || "");
+      setCloudDirty(false);
+      markLegacyMigrationComplete();
+    } else if (cloudDirty) {
+      const canWrite = currentPermissions?.can_add === true
+        || currentPermissions?.can_edit === true || currentPermissions?.can_delete === true;
+      if (canWrite) await queueCloudWrite(currentSnapshot());
+      else await loadCloudReadOnly();
+    } else {
+      // Always load on login, even if an old local revision equals the server's.
+      if (!remoteCheck.data) throw new Error("The shared cloud dataset is not initialized.");
+      const snapshot = persistMergedRecords(normalizeRecordsForSync(remoteCheck.data.records || []));
+      lastSaved = snapshot;
+      setRemoteBaseline(remoteCheck.data.updated_at || "");
+    }
+    localStorage.setItem(CLOUD_DATA_PROJECT_KEY, url);
+    dataProject = url;
+  }
 
   const localUrl = localStorage.getItem("fuel_cloud_url") || "https://mykwxfifrjohhjhomegf.supabase.co";
   const localKey = localStorage.getItem("fuel_cloud_key") || "";
@@ -18575,21 +18589,7 @@ window.applySyncedAdminPassword = function(value) {
     currentPermissions = remoteCheck.permissions || null;
     const permissionPanel = $("permissionAdminPanel");
     if (permissionPanel) permissionPanel.hidden = currentPermissions?.can_manage_users !== true;
-    const canWriteRecords = currentPermissions?.can_add === true
-      || currentPermissions?.can_edit === true
-      || currentPermissions?.can_delete === true;
-    if (!canWriteRecords && (legacyMigrationPending || cloudDirty)) {
-      // Never try to upload an old or dirty local snapshot as a read-only user.
-      await loadCloudReadOnly();
-    } else if (await performOneTimeRecovery(remoteCheck.data)) {
-      // Recovery is complete; do not run a second write in this connection.
-    } else if (legacyMigrationPending) {
-      await migrateLegacyLocalData();
-    } else if (cloudDirty) {
-      await queueCloudWrite(currentSnapshot());
-    } else {
-      await pullCloud();
-    }
+    await initializeCloudData(remoteCheck, url);
 
     permissionsReady = true;
     window.refreshFuelPermissionControls();
@@ -18603,7 +18603,7 @@ window.applySyncedAdminPassword = function(value) {
     if (!client) return;
     const response = await invokeFuelSync("read");
     const data = response.data;
-    if (!data) { await queueCloudWrite(currentSnapshot()); return; }
+    if (!data) throw new Error("The shared cloud dataset is not initialized. No local records were uploaded.");
     const remoteStamp = data.updated_at || "";
     if (!cloudDirty && remoteStamp && remoteStamp === lastRemoteUpdatedAt) return;
 

@@ -25,7 +25,7 @@ security-branch-only execution condition. Main was not modified.
 
 ## Validation
 
-`node --test tests/*.test.cjs`: 28 passing tests, no failures.
+`node --test tests/*.test.cjs`: 40 passing tests, no failures.
 `git diff --check`: passes.
 Inline JavaScript syntax parsing: passes (included in tests).
 Main is an ancestor of the resulting review branch.
@@ -68,3 +68,20 @@ Use staging accounts, not production data or an old production backup.
    a different account does not apply the old request's response.
 7. Compare the administrator desktop layout with the stable version and report
    any visible regression. No production merge or deployment is authorized here.
+
+## Follow-up: safe startup and connection (11 October)
+
+Fresh browser startup now uses zero business records. Embedded historical rows
+are used only for lookup names and never seed local storage. The obsolete local
+520-row automatic recovery has been removed. Unknown legacy caches and caches
+from another Supabase project are backed up before authorized cloud data is
+loaded; they are never automatically uploaded. If the backup fails, connection
+stops without replacing the cache. Known same-project pending saves retain the
+existing authorized queue. An absent shared dataset cannot trigger an automatic
+initialization upload. Cloud tombstones preserve their original fields/version.
+
+The practical test exposed an unintended upload of 520 embedded rows to staging.
+Read-only inspection confirmed 520 active rows plus 6 tombstones in staging.
+This fix does not remove or change those cloud rows. They will remain visible
+when loading staging, so that count alone does not indicate another upload.
+No production database operations or main-branch writes were performed.
