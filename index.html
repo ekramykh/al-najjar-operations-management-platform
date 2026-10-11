@@ -18638,7 +18638,7 @@ window.applySyncedAdminPassword = function(value) {
     }
     if (pollTimer) clearInterval(pollTimer);
     pollTimer = setInterval(() => {
-      if (!client || cloudDirty || busy || document.hidden) return;
+      if (!client || !permissionsReady || cloudDirty || busy || document.hidden) return;
       pullCloud().catch(err => {
         status("Connection lost", "#f87171");
         message(err?.message || String(err));
@@ -18653,7 +18653,7 @@ window.applySyncedAdminPassword = function(value) {
     if (originalSave) originalSave();
     setDirtyFlag();
     localWriteRevision++;
-    if (client) {
+    if (client && permissionsReady) {
       setCloudDirty(true);
       queueCloudWrite(currentSnapshot()).catch(err => {
         status("Save failed", "#f87171");
@@ -18663,7 +18663,7 @@ window.applySyncedAdminPassword = function(value) {
   };
 
   window.addEventListener("online", () => {
-    if (!client) return;
+    if (!client || !permissionsReady) return;
     if (cloudDirty) {
       queueCloudWrite(currentSnapshot()).catch(e => message(e.message));
     } else {
@@ -18763,7 +18763,7 @@ window.applySyncedAdminPassword = function(value) {
   });
 
   $("cloudSyncNow").addEventListener("click", async () => {
-    if (!client) {
+    if (!client || !permissionsReady) {
       message("Connect first from Connection Settings.");
       $("cloudSettings").open = true;
       return;
@@ -18800,9 +18800,10 @@ window.applySyncedAdminPassword = function(value) {
     if (permissionPanel) permissionPanel.hidden = true;
     if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
     if (activeClient) {
-      try { await activeClient.auth.signOut(); } catch(e) {}
+      try { await activeClient.auth.signOut({ scope: "local" }); } catch(e) {}
     }
-    client = null;
+    // Reuse the same auth client on the next sign-in; abandoned clients can
+    // compete over persisted refresh tokens during account switching.
     // Do not clear the persistent dirty marker on logout. Unsynced local data
     // must survive sign-out and browser restarts until it is confirmed in the cloud.
     setCloudDirty(cloudDirty);

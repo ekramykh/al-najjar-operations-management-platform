@@ -41,3 +41,15 @@ test('failed attempt retains actual error and next login succeeds',async()=>{
  await c.login();assert.equal(c.unlocks,0);assert.ok(c.messages.includes('Permission denied'));
  c.pass.value='retry';await c.login();assert.equal(c.unlocks,1);assert.equal(calls,2);
 });
+
+test('sign-out terminates only this device and retains one reusable auth client',async()=>{
+ let callback;const calls=[];const active={auth:{signOut:async options=>calls.push(options.scope)}};
+ const c={client:active,channel:null,pollTimer:null,connectionGeneration:1,permissionsReady:true,
+ currentPermissions:{can_add:true},cloudDirty:true,lastRemoteUpdatedAt:'revision',
+ window:{refreshFuelPermissionControls(){}},$:()=>({hidden:false,addEventListener:(event,fn)=>callback=fn}),
+ setCloudDirty:v=>c.cloudDirty=v,setRemoteBaseline(){},status(){},message(){}};
+ const start=html.indexOf('  $("cloudSignOut").addEventListener');
+ vm.runInNewContext(html.slice(start,html.indexOf('  $("cloudExport")',start)),c);
+ await callback();assert.deepEqual(calls,['local']);assert.equal(c.client,active);
+ assert.equal(c.permissionsReady,false);assert.equal(c.currentPermissions,null);assert.equal(c.cloudDirty,true);
+});
