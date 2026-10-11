@@ -18122,6 +18122,7 @@ window.applySyncedAdminPassword = function(value) {
   };
 
   let client = null;
+  let clientConnectionSignature = "";
   let channel = null;
   let pollTimer = null;
   let currentPermissions = null;
@@ -18578,7 +18579,11 @@ window.applySyncedAdminPassword = function(value) {
     localStorage.setItem("fuel_cloud_url", url);
     localStorage.setItem("fuel_cloud_key", key);
 
-    client = window.supabase.createClient(url, key);
+    const signature = JSON.stringify([url, key]);
+    if (!client || clientConnectionSignature !== signature) {
+      client = window.supabase.createClient(url, key);
+      clientConnectionSignature = signature;
+    }
     const {data, error} = await client.auth.signInWithPassword({email, password});
     if (error) throw error;
     if (!data.session) throw new Error("Sign-in failed.");
@@ -18663,20 +18668,32 @@ window.applySyncedAdminPassword = function(value) {
     }
   });
 
-  $("cloudConnect").addEventListener("click", async () => {
+  let connectionAttempt = null;
+  window.connectFuelCloud = function() {
+    if (connectionAttempt) return connectionAttempt;
     $("cloudConnect").disabled = true;
-    try {
-      await connect();
-    } catch(err) {
-      permissionsReady = false;
-      currentPermissions = null;
-      window.refreshFuelPermissionControls();
-      if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
-      status("غير متصل", "#f87171");
-      message(err.message || String(err));
-    } finally {
-      $("cloudConnect").disabled = false;
-    }
+    status("Connecting...", "#93c5fd");
+    message("");
+    connectionAttempt = (async () => {
+      try {
+        await connect();
+      } catch(err) {
+        permissionsReady = false;
+        currentPermissions = null;
+        window.refreshFuelPermissionControls();
+        if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+        status("غير متصل", "#f87171");
+        message(err.message || String(err));
+        throw err;
+      } finally {
+        $("cloudConnect").disabled = false;
+        connectionAttempt = null;
+      }
+    })();
+    return connectionAttempt;
+  };
+  $("cloudConnect").addEventListener("click", () => {
+    window.connectFuelCloud().catch(() => {});
   });
 
   const permissionStatus = text => {
@@ -18838,8 +18855,35 @@ window.applySyncedAdminPassword = function(value) {
   const lock=()=>{document.documentElement.classList.add("cloud-login-locked");app?.setAttribute("inert","");if(gate)gate.style.display="flex";loading(false);status("Enter your account details to continue.","#94a3b8");setTimeout(()=>email?.focus(),0)};
   const unlock=()=>{document.documentElement.classList.remove("cloud-login-locked");app?.removeAttribute("inert");if(gate)gate.style.display="none";if(pass)pass.value=""};
   url.value=localStorage.getItem("fuel_cloud_url")||"https://mykwxfifrjohhjhomegf.supabase.co";key.value=localStorage.getItem("fuel_cloud_key")||"";if(!key.value)details.open=true;
-  const wait=()=>new Promise((resolve,reject)=>{const started=Date.now(),timer=setInterval(()=>{const cs=String(document.getElementById("cloudStatus")?.textContent||""),cm=String(document.getElementById("cloudMessage")?.textContent||"");if(/Connected & Synced/i.test(cs)){clearInterval(timer);resolve()}else if(/Save failed|Sync conflict|Connection lost|Disconnected|غير متصل/i.test(cs)){clearInterval(timer);reject(new Error(cm||"Unable to connect to the shared database."))}else if(Date.now()-started>30000){clearInterval(timer);reject(new Error("The connection timed out. Check the connection settings and try again."))}},200)});
-  const login=async()=>{const e=email.value.trim(),p=pass.value,u=url.value.trim(),k=key.value.trim();if(!e||!p||!u||!k){status("Please complete the email, password, and connection settings.","#f87171");if(!u||!k)details.open=true;return}loading(true);status("Authenticating and loading shared data...","#93c5fd");try{document.getElementById("cloudUrl").value=u;document.getElementById("cloudKey").value=k;document.getElementById("cloudEmail").value=e;document.getElementById("cloudPassword").value=p;document.getElementById("cloudConnect").click();await wait();unlock()}catch(err){status(err?.message||String(err),"#f87171");pass.value="";loading(false);pass.focus()}};
+  let loginPending = false;
+  const login = async () => {
+    if (loginPending) return;
+    const e=email.value.trim(),p=pass.value,u=url.value.trim(),k=key.value.trim();
+    if (!e||!p||!u||!k) {
+      status("Please complete the email, password, and connection settings.","#f87171");
+      if (!u||!k) details.open=true;
+      return;
+    }
+    loginPending = true;
+    loading(true);
+    status("Authenticating and loading shared data...","#93c5fd");
+    try {
+      document.getElementById("cloudUrl").value=u;
+      document.getElementById("cloudKey").value=k;
+      document.getElementById("cloudEmail").value=e;
+      document.getElementById("cloudPassword").value=p;
+      // Await this attempt itself; stale status text cannot decide its result.
+      await window.connectFuelCloud();
+      unlock();
+    } catch(err) {
+      status(err?.message||String(err),"#f87171");
+      pass.value="";
+      pass.focus();
+    } finally {
+      loginPending = false;
+      loading(false);
+    }
+  };
   btn.addEventListener("click",login);[email,pass,url,key].forEach(el=>el?.addEventListener("keydown",e=>{if(e.key==="Enter")login()}));document.getElementById("cloudSignOut")?.addEventListener("click",()=>setTimeout(()=>{lock()},100));lock();
 })();
 </script></body></html>
