@@ -13,6 +13,7 @@ concurrency:
 jobs:
   deploy-fuel-sync:
     name: Deploy fuel-sync to the configured Supabase project
+    if: github.ref == 'refs/heads/security-server-side-auth-2026-10-10'
     runs-on: ubuntu-latest
     environment: supabase-production
     steps:
