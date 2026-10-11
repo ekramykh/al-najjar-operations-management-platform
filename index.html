@@ -16753,6 +16753,12 @@ window.applySyncedAdminPassword = function(value) {
     }
 
     function updateFormAndFilterDatalists() {
+        // Vehicle choices must exist before the first refueling record is saved.
+        // Read vehicle names only; never restore historical business records.
+        const vehicleChoices = [...new Set([
+            ...defaultInitialRecords.map(r => r.car),
+            ...fuelRecords.map(r => r.car)
+        ].filter(Boolean).map(formatTitleCase))].sort();
         const cars = [...new Set(fuelRecords.map(r => r.car).filter(Boolean))].sort();
         const drivers = [...new Set(fuelRecords.map(r => r.driver).filter(Boolean))].sort();
         const dynamicSites = [...new Set(fuelRecords.map(r => r.site).filter(Boolean))].sort();
@@ -16761,7 +16767,7 @@ window.applySyncedAdminPassword = function(value) {
         if (carSelect) {
             const currentCarVal = carSelect.value;
             let carOptionsHtml = `<option value="">-- Select Vehicle --</option>`;
-            cars.forEach(c => {
+            vehicleChoices.forEach(c => {
                 carOptionsHtml += `<option value="${c}">${c}</option>`;
             });
             carSelect.innerHTML = carOptionsHtml;
