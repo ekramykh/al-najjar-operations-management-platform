@@ -73,3 +73,11 @@ test('a cloud-confirmed deletion remains authoritative if a later read omits it'
   assert.equal(result.length,1);
   assert.equal(result[0]._deleted,true);
 });
+
+test('cloud tombstone retains every field so reconnect produces no stale delta', () => {
+  const {merge} = makeMerge();
+  const tombstone = row('deleted', 123, early, {_deleted:true, notes:'temporary test', car:'Volvo'});
+  const result = merge([row('deleted',123,late)], [tombstone]);
+  assert.equal(JSON.stringify(result[0]),JSON.stringify(tombstone));
+  assert.equal(JSON.stringify(merge(result,[tombstone])[0]),JSON.stringify(tombstone));
+});

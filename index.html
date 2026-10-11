@@ -18355,8 +18355,13 @@ window.applySyncedAdminPassword = function(value) {
     // snapshot. A record created and deleted while offline must not generate
     // an unknown-ID tombstone rejected by the server.
     for (const [id, timestamp] of deletedSyncIds) {
+      // A cloud tombstone is already authoritative. Preserve its exact payload
+      // and version; stripping fields would submit a changed row at an old time.
+      const cloudTombstone = remote.find(record => stableRecordKey(record) === id && record._deleted === true);
       byId.delete(id);
-      if (knownCloudSyncIds.has(id)) {
+      if (cloudTombstone) {
+        byId.set("deleted-marker:" + id, cloudTombstone);
+      } else if (knownCloudSyncIds.has(id)) {
         byId.set("deleted-marker:" + id, {_syncId:id, _deleted:true, _syncUpdatedAt:timestamp});
       }
     }
