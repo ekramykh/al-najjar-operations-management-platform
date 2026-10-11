@@ -103,3 +103,22 @@ test('unchanged snapshots do not write and remote-only records survive',async()=
   assert.equal((await h.request({action:'sync',records:[row('b',2,time2)]})).status,200);
   assert.deepEqual(h.state().records.map(x=>x._syncId).sort(),['a','b']);
 });
+
+test('two-device lifecycle retains twelve unrelated new business records and permanent deletion',async()=>{
+  const protectedRows=Array.from({length:12},(_,i)=>row('today-'+i,100+i,time1,{value:'business-'+i}));
+  const h=harness(admin,protectedRows);
+  // Both simulated devices access the same server handler/storage.
+  const first=await h.request({action:'sync',records:[row('temporary',500,time1)]});
+  assert.equal(first.status,200);
+  const device2=await h.request({action:'read'});
+  assert.ok(device2.body.data.records.some(r=>r._syncId==='temporary'));
+  assert.equal((await h.request({action:'sync',records:[row('temporary',500,time2,{value:'edited-on-device-2'})]})).status,200);
+  const device1=await h.request({action:'read'});
+  assert.equal(device1.body.data.records.find(r=>r._syncId==='temporary').value,'edited-on-device-2');
+  assert.equal((await h.request({action:'sync',records:[row('temporary',500,'2026-10-10T12:00:00Z',{_deleted:true})]})).status,200);
+  const deleted=await h.request({action:'read'});
+  assert.equal(deleted.body.data.records.find(r=>r._syncId==='temporary')._deleted,true);
+  assert.equal((await h.request({action:'sync',records:[row('temporary',500,'2026-10-10T13:00:00Z')]})).status,409);
+  assert.deepEqual(h.state().records.filter(r=>r._syncId.startsWith('today-')),protectedRows);
+  assert.equal(h.state().records.length,13);
+});

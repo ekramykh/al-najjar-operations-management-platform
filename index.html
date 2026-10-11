@@ -16413,6 +16413,7 @@ window.applySyncedAdminPassword = function(value) {
     }
 
     function openRecordModal() {
+        if (!requireFuelPermission('add')) return;
         resetForm();
         onDriverSelectionChange();
         document.getElementById('formTitle').innerHTML = '<span>➕ Add Refueling Entry</span><button type="button" class="close-modal-x" onclick="closeRecordModal()">×</button>';
@@ -17546,7 +17547,29 @@ window.applySyncedAdminPassword = function(value) {
         return true;
     }
 
+    function requireFuelPermission(action) {
+        if (typeof window.requireFuelPermission !== 'function') {
+            alert('Sign in and load your account permissions before changing records.');
+            return false;
+        }
+        return window.requireFuelPermission(action);
+    }
+
+    let editingRecordIdentity = null;
+    let editingRecordVersion = null;
     function saveRecord(mode) {
+        const updating = mode === 'update';
+        if (!requireFuelPermission(updating ? 'edit' : 'add')) return;
+        // Polling can reorder or remove rows while the edit form is open.
+        // Resolve the original identity, never a now-stale array position.
+        if (updating) {
+            const current = fuelRecords.findIndex(r => (r._syncId || 'legacy-sn:' + r.sn) === editingRecordIdentity);
+            if (current < 0 || JSON.stringify(fuelRecords[current]) !== editingRecordVersion) {
+                alert('This record changed or was deleted on another device. Reopen it before saving. Your form has been kept.');
+                return;
+            }
+            document.getElementById('editIndex').value = current;
+        }
         const form = document.getElementById('fuelForm');
         if (!form.checkValidity()) {
             form.reportValidity();
@@ -17607,6 +17630,7 @@ window.applySyncedAdminPassword = function(value) {
     }
 
     function saveRecordAsNew() {
+        if (!requireFuelPermission('add')) return;
         const form = document.getElementById('fuelForm');
         if (!form.checkValidity()) {
             form.reportValidity();
@@ -17662,6 +17686,9 @@ window.applySyncedAdminPassword = function(value) {
 
     function editRecord(index) {
         const item = fuelRecords[index];
+        if (!item) return;
+        editingRecordIdentity = item._syncId || 'legacy-sn:' + item.sn;
+        editingRecordVersion = JSON.stringify(item);
         document.getElementById('editIndex').value = index;
         
         const formatted = item.date ? formatDateDisplay(item.date) : '';
@@ -17706,11 +17733,13 @@ window.applySyncedAdminPassword = function(value) {
         document.getElementById('formTitle').innerHTML = '<span>✏️ Edit Refueling Entry</span><button type="button" class="close-modal-x" onclick="closeRecordModal()">×</button>';
         document.getElementById('btnModalSubmit').textContent = 'Update Record';
         document.getElementById('btnModalSaveAsNew').style.display = 'block';
+        window.refreshFuelPermissionControls?.();
         document.getElementById('recordModal').classList.add('active');
         document.body.classList.add('modal-open');
     }
 
     function deleteRecord(index) {
+        if (!requireFuelPermission('delete')) return;
         const record = fuelRecords[index];
         if (!record) return;
 
@@ -17722,15 +17751,16 @@ window.applySyncedAdminPassword = function(value) {
                 alert("Incorrect password. The record was not deleted.");
                 return;
             }
+            if (!requireFuelPermission('delete')) return;
             if (!confirm('Are you sure you want to delete this record?')) return;
             if (typeof window.markFuelRecordDeleted !== "function") {
                 alert("Cloud sync is not ready to record this deletion. Please reconnect and try again.");
                 return;
             }
 
-            window.markFuelRecordDeleted(record);
             const currentIndex = fuelRecords.findIndex(item => item === record || (record._syncId && item._syncId === record._syncId));
             if (currentIndex === -1) return;
+            if (!window.markFuelRecordDeleted(fuelRecords[currentIndex])) return;
             fuelRecords.splice(currentIndex, 1);
             isDataDirty = true;
             window.saveToLocalStorage();
@@ -17745,6 +17775,9 @@ window.applySyncedAdminPassword = function(value) {
         document.getElementById('inputSite').value = '';
         document.getElementById('inputSiteDisplay').value = '-- Select or Search Station --';
         document.getElementById('editIndex').value = '-1';
+        editingRecordIdentity = null;
+        editingRecordVersion = null;
+        window.refreshFuelPermissionControls?.();
         updateFormAndFilterDatalists();
         onDriverSelectionChange();
     }
@@ -17757,7 +17790,9 @@ window.applySyncedAdminPassword = function(value) {
 
     function checkUploadPermission(event) {
         event.preventDefault();
+        if (!requireFuelPermission('import')) return;
         promptPassword("Enter authorization password to upload Excel file:", function(password) {
+            if (!requireFuelPermission('import')) return;
             if (password === adminPassword) {
                 isUploadAuthorized = true;
                 document.getElementById('excelFileInput').click();
@@ -17777,6 +17812,7 @@ window.applySyncedAdminPassword = function(value) {
             return;
         }
         isUploadAuthorized = false;
+        if (!requireFuelPermission('import')) { input.value = ''; return; }
         document.getElementById('fileNameDisplay').textContent = file.name;
         try {
             if (typeof XLSX === 'undefined') {
@@ -17865,12 +17901,12 @@ window.applySyncedAdminPassword = function(value) {
             const dateRange = imported.map(r => parseFlexibleDate(r.date)).filter(Boolean).sort((a,b)=>a-b);
             const rangeText = dateRange.length ? `${formatDateDisplay(dateRange[0])} إلى ${formatDateDisplay(dateRange[dateRange.length-1])}` : 'غير محدد';
             const confirmed = confirm(`تمت قراءة ${imported.length} حركة من ورقة (${selectedSheet})، وتم تجاهل ${skipped} صفوف فارغة أو غير مكتملة.\nالفترة: ${rangeText}\n\nسيتم استبدال جميع حركات النظام الحالية ببيانات الملف. سيتم حفظ نسخة احتياطية محلية قبل الاستبدال.\n\nهل تريد المتابعة؟`);
-            if (!confirmed) return;
+            if (!confirmed || !requireFuelPermission('import')) return;
             localStorage.setItem('fuel_system_records_backup_before_excel_import', JSON.stringify({ savedAt: new Date().toISOString(), records: fuelRecords }));
             fuelRecords = imported;
             isDataDirty = true;
             currentPage = 1;
-            saveToLocalStorage();
+            window.saveToLocalStorage();
             sortRecordsArray(fuelRecords, currentSortColumn, currentSortDirection);
             filterAndRender();
             alert(`تم استيراد ${imported.length} حركة بنجاح.\nتم حفظ نسخة احتياطية محلية من البيانات السابقة.`);
@@ -18089,13 +18125,34 @@ window.applySyncedAdminPassword = function(value) {
   let channel = null;
   let pollTimer = null;
   let currentPermissions = null;
+  let permissionsReady = false;
+  let connectionGeneration = 0;
+  // This bridge improves UI behavior; the Edge Function remains authoritative.
+  window.hasFuelPermission = action => {
+    if (!client || !permissionsReady || currentPermissions?.can_read !== true) return false;
+    if (action === 'import') return ['can_add', 'can_edit', 'can_delete'].every(k => currentPermissions[k] === true);
+    return currentPermissions['can_' + action] === true;
+  };
+  window.requireFuelPermission = action => {
+    if (window.hasFuelPermission(action)) return true;
+    alert('Your signed-in account cannot ' + action + ' records. Sign in with an authorized account.');
+    return false;
+  };
+  window.refreshFuelPermissionControls = () => {
+    const submit = $('btnModalSubmit');
+    if (submit) submit.disabled = !window.hasFuelPermission($('editIndex')?.value === '-1' ? 'add' : 'edit');
+    const asNew = $('btnModalSaveAsNew');
+    if (asNew) asNew.disabled = !window.hasFuelPermission('add');
+  };
   // All protected reads and writes must go through the server-side permission
   // boundary; the browser never writes fuel_shared_state directly.
   async function invokeFuelSync(action, records, extra = {}) {
     if (!client) throw new Error("Sign in to the cloud before accessing shared records.");
     const body = { ...extra, action };
     if (records !== undefined) body.records = records;
+    const requestGeneration = connectionGeneration;
     const { data, error } = await client.functions.invoke("fuel-sync", { body });
+    if (requestGeneration !== connectionGeneration) throw new Error('Account changed while a server request was pending.');
     if (error) {
       let detail = error.message || "Secure server request failed.";
       try {
@@ -18105,9 +18162,20 @@ window.applySyncedAdminPassword = function(value) {
           if (payload?.error) detail = payload.error;
         }
       } catch (_) {}
-      throw new Error(detail);
+      if (action === 'read' && [401, 403].includes(error.context?.status)) {
+        permissionsReady = false;
+        currentPermissions = null;
+        window.refreshFuelPermissionControls();
+      }
+      const failure = new Error(detail);
+      failure.status = error.context?.status;
+      throw failure;
     }
     if (!data || data.error) throw new Error(data?.error || "Secure server returned an empty response.");
+    if (action === 'read') {
+      currentPermissions = data.permissions || null;
+      window.refreshFuelPermissionControls();
+    }
     return data;
   }
   let busy = false;
@@ -18197,6 +18265,7 @@ window.applySyncedAdminPassword = function(value) {
   };
   // Public bridge for the main record UI, which runs in a separate script scope.
   window.markFuelRecordDeleted = record => {
+    if (!window.requireFuelPermission('delete')) return null;
     const id = stableRecordKey(record);
     deletedSyncIds.set(id, new Date().toISOString());
     try { localStorage.setItem(DELETED_SYNC_IDS_KEY, JSON.stringify(Object.fromEntries(deletedSyncIds))); }
@@ -18394,7 +18463,9 @@ window.applySyncedAdminPassword = function(value) {
   function queueCloudWrite(snapshot) {
     if (!client) return Promise.resolve();
     setCloudDirty(true);
+    const queuedGeneration = connectionGeneration;
     cloudWriteQueue = cloudWriteQueue.catch(() => {}).then(async () => {
+      if (queuedGeneration !== connectionGeneration) throw new Error('Account changed before this save. Local changes have been kept.');
       if (!client) throw new Error("Cloud connection was closed before the save completed.");
       busy = true;
       try {
@@ -18425,6 +18496,7 @@ window.applySyncedAdminPassword = function(value) {
             const result = changed.length
               ? await invokeFuelSync("sync", changed)
               : { data: { records: latestRecords, updated_at: latest?.data?.updated_at || "" } };
+            if (queuedGeneration !== connectionGeneration) throw new Error('Account changed during this save. Local changes have been kept.');
             const savedRecords = normalizeRecordsForSync(result?.data?.records || []);
             // Never overwrite edits made while the network request was pending.
             // Keep those edits locally and merge them into the acknowledged
@@ -18446,7 +18518,7 @@ window.applySyncedAdminPassword = function(value) {
             return;
           } catch (err) {
             lastError = err;
-            if (attempt === 3 || !/409|changed repeatedly|conflict/i.test(String(err?.message || err))) throw err;
+            if (attempt === 3 || (err.status !== 409 && !/409|changed repeatedly|conflict/i.test(String(err?.message || err)))) throw err;
           }
         }
         throw lastError || new Error("Secure sync failed.");
@@ -18461,6 +18533,10 @@ window.applySyncedAdminPassword = function(value) {
   }
 
   async function connect() {
+    connectionGeneration++;
+    permissionsReady = false;
+    currentPermissions = null;
+    window.refreshFuelPermissionControls();
     if (!window.supabase?.createClient) {
       throw new Error("Unable to load the connection library. Check your internet connection and reopen the page.");
     }
@@ -18482,7 +18558,7 @@ window.applySyncedAdminPassword = function(value) {
     if (error) throw error;
     if (!data.session) throw new Error("Sign-in failed.");
 
-    await startRealtime();
+    if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
 
     const remoteCheck = await invokeFuelSync("read");
     currentPermissions = remoteCheck.permissions || null;
@@ -18504,6 +18580,9 @@ window.applySyncedAdminPassword = function(value) {
       await pullCloud();
     }
 
+    permissionsReady = true;
+    window.refreshFuelPermissionControls();
+    await startRealtime();
     status("Connected & Synced", "#34d399");
     $("cloudSettings").open = false;
     message("Connected. Changes are saved to the shared database and appear on connected devices.");
@@ -18578,6 +18657,10 @@ window.applySyncedAdminPassword = function(value) {
     try {
       await connect();
     } catch(err) {
+      permissionsReady = false;
+      currentPermissions = null;
+      window.refreshFuelPermissionControls();
+      if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
       status("غير متصل", "#f87171");
       message(err.message || String(err));
     } finally {
@@ -18670,6 +18753,10 @@ window.applySyncedAdminPassword = function(value) {
   });
 
   $("cloudSignOut").addEventListener("click", async () => {
+    connectionGeneration++;
+    permissionsReady = false;
+    currentPermissions = null;
+    window.refreshFuelPermissionControls();
     const activeClient = client;
     const activeChannel = channel;
     if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }

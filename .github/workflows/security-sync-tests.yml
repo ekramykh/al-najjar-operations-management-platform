@@ -1,7 +1,7 @@
 name: Secure sync regression tests
 on:
   push:
-    branches: [security-server-side-auth-2026-10-10]
+    branches: [security-server-side-auth-2026-10-10, review-ui-permission-guards-2026-10-11]
   workflow_dispatch:
 jobs:
   test:
@@ -12,5 +12,5 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: '24'
       - run: node --test tests/*.test.cjs
