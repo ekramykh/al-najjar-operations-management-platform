@@ -18000,9 +18000,11 @@ window.applySyncedAdminPassword = function(value) {
   right: 0;
   width: calc((100% - 10px) * 0.75);
   max-width: none;
-  max-height: 620px;
+  max-height: min(620px, calc(100dvh - 140px));
   padding: 14px;
-  overflow: visible;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
   background: #111827;
   border: 1px solid #3b82f6;
   border-radius: 12px;
