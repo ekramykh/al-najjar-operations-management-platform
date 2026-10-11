@@ -18382,13 +18382,16 @@ window.applySyncedAdminPassword = function(value) {
     }
     const tombstones = Array.from(deletedSyncIds, ([id, timestamp]) => ({_syncId:id, _deleted:true, _syncUpdatedAt:timestamp}));
     fuelRecords = normalized.filter(record => !record?._deleted && !record?._appSetting && !deletedSyncIds.has(stableRecordKey(record)));
-    const snapshot = JSON.stringify([...fuelRecords, ...tombstones, ...(syncedPassword ? [syncedPassword] : [])]);
+
     try { localStorage.setItem("fuel_system_records", JSON.stringify(fuelRecords)); }
     catch (e) { console.warn("LocalStorage quota reached; keeping records in memory and cloud sync.", e); }
     try { localStorage.setItem(DELETED_SYNC_IDS_KEY, JSON.stringify(Object.fromEntries(deletedSyncIds))); }
     catch (e) { console.warn("Unable to persist deletion markers locally; cloud sync continues.", e); }
-    lastSaved = snapshot;
     if (typeof sortRecordsArray === "function") sortRecordsArray(fuelRecords, currentSortColumn, currentSortDirection);
+    // Compare the exact post-sort business snapshot used by subsequent saves.
+    // Display sorting is not an unsaved edit and must not suspend cloud polling.
+    const snapshot = JSON.stringify([...fuelRecords, ...tombstones]);
+    lastSaved = snapshot;
     if (typeof filterAndRender === "function") filterAndRender();
     if (typeof renderDashboard === "function") renderDashboard();
     return snapshot;

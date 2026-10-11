@@ -46,3 +46,19 @@ test('real HTTP 409 retries after another read and keeps local change',async()=>
   });
   await c.queueCloudWrite('unused');assert.equal(reads,2);assert.equal(writes,2);assert.equal(c.rows[0].value,'initial');
 });
+
+ test('acknowledged records sorted for display leave the device clean', async()=>{
+  const c=harness(async(ctx)=>({data:{records:[{_syncId:'a',sn:1},{_syncId:'b',sn:2}],updated_at:'revision'}}));
+  const persistSource=html.slice(html.indexOf('  const persistMergedRecords = records => {'),html.indexOf('  const recoveryBaselineRecords'));
+  Object.assign(c,{deletedSyncIds:new Map(),fuelRecords:[],ADMIN_PASSWORD_SYNC_ID:'password',
+    localStorage:{setItem(){}},DELETED_SYNC_IDS_KEY:'deleted',window:{},
+    currentSortColumn:'sn',currentSortDirection:'desc',
+    sortRecordsArray:rows=>rows.sort((a,b)=>b.sn-a.sn),console});
+  vm.runInNewContext(persistSource+'\nthis.persistMergedRecords=persistMergedRecords;',c);
+  c.currentSnapshotRecords=()=>c.fuelRecords;
+  c.currentSnapshot=()=>JSON.stringify(c.fuelRecords);
+  await c.queueCloudWrite('unused');
+  assert.equal(c.cloudDirty,false);
+  assert.deepEqual(Array.from(c.fuelRecords,r=>r.sn),[2,1]);
+  assert.equal(c.lastSaved,c.currentSnapshot());
+ });
