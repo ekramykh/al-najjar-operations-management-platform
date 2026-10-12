@@ -41,3 +41,10 @@ test('reset button is enabled for existing accounts including self and confirmat
  c.window.confirm=()=>false;await el('permissionAdminReset').handlers.click();assert.equal(c.calls.some(x=>x.operation==='reset_password'),false);
  c.window.confirm=()=>true;await el('permissionAdminReset').handlers.click();const sent=c.calls.find(x=>x.operation==='reset_password');assert.equal(sent.email,'admin@example.com');assert.equal(sent.password,undefined);assert.equal(sent.can_read,undefined);
 });
+
+test('custom reset confirmation has explicit cancel and send results and Escape cancels',async()=>{
+ const {c,el}=harness([]);let opened=0,closed=0;const d=el('passwordResetConfirm');d.showModal=()=>opened++;d.close=()=>closed++;el('passwordResetConfirmCancel').focus=()=>{};
+ let promise=c.confirmPasswordReset('user@example.com');assert.equal(opened,1);assert.match(el('passwordResetConfirmText').textContent,/user@example.com/);el('passwordResetConfirmCancel').onclick();assert.equal(await promise,false);
+ promise=c.confirmPasswordReset('user@example.com');el('passwordResetConfirmSend').onclick();assert.equal(await promise,true);
+ promise=c.confirmPasswordReset('user@example.com');d.oncancel({preventDefault(){}});assert.equal(await promise,false);assert.equal(closed,3);
+});
