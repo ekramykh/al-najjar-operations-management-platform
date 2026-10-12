@@ -32,3 +32,15 @@ test('legend visibility survives data refresh and invalid points do not plot',()
  assert.equal(c.myChart.data.datasets[1].hidden,true);
  c.renderFinancialLineChart([{...rows[0],date:'invalid'},{...rows[1],fuel:0}]);assert.equal(c.myChart.data.datasets.length,0);assert.equal(c.myChart.options.plugins.title.display,true);
 });
+test('PDF/PNG export uses dark readable text on white and preserves screen chart and hidden vehicles',()=>{
+ let exported,destroyed=false,removed=false;
+ const options={scales:{x:{ticks:{color:'#9ca3af',callback:x=>x},title:{text:'Date'}},y:{ticks:{color:'#9ca3af'}}},plugins:{legend:{labels:{color:'#e2e8f0',usePointStyle:true}},title:{display:false}}};
+ const source={config:{options},data:{datasets:[{label:'Mercedes - 8245 BA',borderColor:'#3b82f6',data:[{x:1,y:3}]},{label:'Volvo - 8797 AK',borderColor:'#f59e0b',data:[]}]},isDatasetVisible:i=>i===0};
+ const before=JSON.stringify(source),canvas={style:{},getContext:()=>({}),toDataURL:()=> 'data:image/png;test',remove:()=>removed=true};
+ const c={myChart:source,document:{getElementById:()=>({}),createElement:()=>canvas,body:{appendChild(){}}},Chart:function(_ctx,config){exported=config;this.update=()=>{};this.destroy=()=>destroyed=true;}};
+ vm.runInNewContext(html.slice(html.indexOf('    function createChartExportImage()'),html.indexOf('    function executeChartAction()')),c);
+ assert.equal(c.createChartExportImage(),'data:image/png;test');assert.equal(exported.options.plugins.legend.labels.color,'#1e293b');
+ assert.equal(exported.options.scales.x.ticks.color,'#475569');assert.equal(exported.options.devicePixelRatio,2);
+ assert.equal(exported.data.datasets[1].hidden,true);assert.equal(JSON.stringify(source),before);assert.ok(destroyed&&removed);
+ let fill;const ctx={save(){},restore(){},fillRect(){fill=this.fillStyle}};exported.plugins[0].beforeDraw({ctx,width:2000,height:850});assert.equal(fill,'#ffffff');
+});

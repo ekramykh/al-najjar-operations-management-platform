@@ -17243,6 +17243,47 @@ window.applySyncedAdminPassword = function(value) {
         syncActionsBarWidth();
     }
 
+    function createChartExportImage() {
+        const source=document.getElementById('fuelChart');
+        if (!myChart) return source.toDataURL('image/png');
+        const canvas=document.createElement('canvas');
+        canvas.width=2000;canvas.height=850;
+        canvas.style.position='fixed';canvas.style.left='-10000px';
+        document.body.appendChild(canvas);
+        let exportChart;
+        try {
+            const base=myChart.config.options;
+            const scales={};
+            for(const [name,scale] of Object.entries(base.scales || {})) {
+                scales[name]={...scale,
+                    title:{...scale.title,color:'#334155',font:{size:15}},
+                    ticks:{...scale.ticks,color:'#475569',font:{size:13}},
+                    grid:{...scale.grid,color:'#e2e8f0'}};
+            }
+            const datasets=myChart.data.datasets.map((dataset,index)=>({
+                ...dataset,hidden:!myChart.isDatasetVisible(index),
+                borderColor:dataset.label.toLowerCase().includes('volvo')?'#b45309':dataset.label.toLowerCase().includes('mercedes')?'#1d4ed8':dataset.borderColor,
+                borderWidth:3,pointRadius:4,pointBorderColor:'#ffffff',pointBorderWidth:1
+            }));
+            exportChart=new Chart(canvas.getContext('2d'),{
+                type:'line',data:{datasets},
+                options:{...base,responsive:false,animation:false,devicePixelRatio:2,scales,
+                    plugins:{...base.plugins,
+                        legend:{...base.plugins.legend,labels:{...base.plugins.legend.labels,color:'#1e293b',font:{size:16},padding:22}},
+                        title:{...base.plugins.title,color:'#334155'}}},
+                plugins:[{id:'exportWhiteBackground',beforeDraw(chart){
+                    const ctx=chart.ctx;ctx.save();ctx.globalCompositeOperation='destination-over';
+                    ctx.fillStyle='#ffffff';ctx.fillRect(0,0,chart.width,chart.height);ctx.restore();
+                }}]
+            });
+            exportChart.update('none');
+            return canvas.toDataURL('image/png');
+        } finally {
+            if(exportChart) exportChart.destroy();
+            canvas.remove();
+        }
+    }
+
     function executeChartAction() {
         const action = document.getElementById('chartExportOption').value;
         const canvas = document.getElementById('fuelChart');
@@ -17250,7 +17291,7 @@ window.applySyncedAdminPassword = function(value) {
         if (!canvas) return;
 
         if (action === 'print') {
-            if (printImage) printImage.src = canvas.toDataURL('image/png');
+            if (printImage) printImage.src = createChartExportImage();
             document.body.classList.add('printing-chart');
             setTimeout(() => {
                 window.print();
@@ -17258,7 +17299,7 @@ window.applySyncedAdminPassword = function(value) {
             }, 100);
         } else if (action === 'image') {
             const link = document.createElement('a');
-            link.href = canvas.toDataURL('image/png');
+            link.href = createChartExportImage();
             link.download = `Fuel_Efficiency_Chart_${new Date().toISOString().slice(0, 10)}.png`;
             document.body.appendChild(link);
             link.click();
