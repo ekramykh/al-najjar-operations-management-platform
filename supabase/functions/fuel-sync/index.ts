@@ -170,7 +170,15 @@ Deno.serve(async (req: Request) => {
       redirect.searchParams.set("project_url", url);
       redirect.searchParams.set("public_key", anonKey);
       const { error } = await admin.auth.resetPasswordForEmail(email, { redirectTo: redirect.toString() });
-      if (error) return reply(error.status === 429 ? 429 : 400, { error: "Unable to send the password reset email. Check email delivery configuration or retry later." });
+      if (error) {
+        const providerCode = typeof error.code === "string" && /^[a-z0-9_]{1,80}$/.test(error.code) ? error.code : "unknown";
+        return reply(error.status === 429 ? 429 : 400, {
+          error: error.status === 429
+            ? "Password reset email was not sent: Supabase rate limit reached. Stop retrying until the limit resets. Check Auth rate limits and configure custom SMTP for regular use."
+            : "Unable to send the password reset email. Check email delivery configuration.",
+          provider_code: providerCode,
+        });
+      }
       return reply(200, { ok: true, reset_email_sent: true });
     }
 
