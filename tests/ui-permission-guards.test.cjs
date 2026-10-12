@@ -19,6 +19,7 @@ function harness(flags = {}, ready = true) {
     isDataDirty:false, driverPhonesMap:{}, currentSortColumn:'sn',currentSortDirection:'asc',
     formatDateDisplay:x=>x, formatTitleCase:x=>x,parseFlexibleDate:()=>null,
     checkInvoiceAmountWarning(){},confirmInvoiceAmountMinimum:()=>true,
+    readTripDocuments:()=>[],loadTripDocuments(){},
     sortRecordsArray(){},filterAndRender(){},closeRecordModal(){},
     updateFormAndFilterDatalists(){},onDriverSelectionChange(){},
     promptPassword(_message,callback){context.passwordCallback=callback},
@@ -27,6 +28,7 @@ function harness(flags = {}, ready = true) {
   context.window.generateSyncId=()=>`new-${++id}`;
   context.window.saveToLocalStorage=()=>context.saves=(context.saves||0)+1;
   context.window.markFuelRecordDeleted=()=>context.deletions=(context.deletions||0)+1;
+  vm.runInNewContext(html.slice(html.indexOf('    function tripDocumentSummary'),html.indexOf('    function readTripDocuments')),context);
   const bridge = html.slice(html.indexOf('  window.hasFuelPermission ='), html.indexOf('  // All protected reads'));
   vm.runInNewContext(bridge,context);
   const start = html.indexOf('    function requireFuelPermission(action)');
@@ -97,4 +99,15 @@ test('replacement import requires all three mutation permissions',()=>{
   for(const [flags,expected] of [[adder,false],[reader,false],[admin,true]]){
     const {context:c}=harness(flags);assert.equal(c.window.hasFuelPermission('import'),expected);
   }
+});
+test('multi-invoice save and edit remain one trip; Save as New copies documents with a distinct identity',()=>{
+ const {context:c,element}=harness(admin);
+ const documents=[{invoiceNumber:'A',invoiceAmount:300,branch:'TURAYF BRANCH',deliveryNumber:'D1'},{invoiceNumber:'B',invoiceAmount:700,branch:'BARKAH BRANCH',deliveryNumber:'D2'}];
+ c.readTripDocuments=()=>structuredClone(documents);
+ c.saveRecord('new');assert.equal(c.fuelRecords.length,2);assert.equal(c.fuelRecords[0].tripDocuments.length,2);
+ assert.equal(c.fuelRecords[0].invoiceAmount,1000);const id=c.fuelRecords[0]._syncId;
+ c.editRecord(0);documents[1].invoiceAmount=800;c.saveRecord('update');
+ assert.equal(c.fuelRecords.length,2);assert.equal(c.fuelRecords[0]._syncId,id);assert.equal(c.fuelRecords[0].invoiceAmount,1100);
+ c.editRecord(0);c.saveRecordAsNew();assert.equal(c.fuelRecords.length,3);assert.notEqual(c.fuelRecords[0]._syncId,id);
+ assert.deepEqual(c.fuelRecords[0].tripDocuments,documents);assert.deepEqual(c.fuelRecords[1].tripDocuments,documents);
 });

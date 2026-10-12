@@ -2928,18 +2928,26 @@ window.toggleFleetAnalysisPanel=function(){
                         <label>Driver Phone Number</label>
                         <input type="text" id="inputDriverPhone" class="form-control" value="+96892286093" readonly="">
                     </div>
+                </div>
+            </div>
+            <div class="form-section">
+                <div class="form-section-title">📄 Trip Invoices &amp; Deliveries</div>
+                <div id="tripDocumentsEditor">
+                  <div class="trip-document-row" style="border-bottom:1px solid var(--border-color);padding-bottom:12px;margin-bottom:12px">
+                    <div class="trip-document-heading" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><strong>Document 1</strong><button type="button" class="btn" onclick="removeTripDocument(this)">Remove</button></div>
+                    <div class="form-grid-2">
                     <div class="form-group">
                         <label>Invoice No.</label>
-                        <input type="text" id="inputInvoiceNumber" class="form-control" placeholder="Invoice number" onblur="autoFormatInput(this)">
+                        <input type="text" id="inputInvoiceNumber" data-document-field="invoiceNumber" oninput="checkInvoiceAmountWarning()" class="form-control" placeholder="Invoice number" onblur="autoFormatInput(this)">
                     </div>
                     <div class="form-group">
                         <label>Invoice Amount (OMR)</label>
-                        <input type="number" step="0.001" min="0" id="inputInvoiceAmount" class="form-control" placeholder="0.000" oninput="checkInvoiceAmountWarning()">
-                            <div id="invoiceAmountWarning" style="display:none;margin-top:6px;padding:7px 10px;border-radius:6px;background:#fff7ed;color:#c2410c;border:1px solid #fdba74;font-size:12px;font-weight:600;">⚠ Warning: Invoice amount is below OMR 500.</div>
+                        <input type="number" step="0.001" min="0" id="inputInvoiceAmount" data-document-field="invoiceAmount" class="form-control" placeholder="0.000" oninput="checkInvoiceAmountWarning()">
+                            <div id="invoiceAmountWarning" data-document-warning style="display:none;margin-top:6px;padding:7px 10px;border-radius:6px;background:#fff7ed;color:#c2410c;border:1px solid #fdba74;font-size:12px;font-weight:600;">⚠ Warning: Invoice amount is below OMR 500.</div>
                     </div>
                     <div class="form-group">
                         <label>Branch</label>
-                        <select id="inputBranch" class="form-control">
+                        <select id="inputBranch" data-document-field="branch" class="form-control">
                             <option value="">-- Select Branch --</option>
                             <option value="TURAYF BRANCH">TURAYF BRANCH</option>
                             <option value="BAYTAK/GHBR BRANCH">BAYTAK/GHBR BRANCH</option>
@@ -2949,9 +2957,12 @@ window.toggleFleetAnalysisPanel=function(){
                     </div>
                     <div class="form-group">
                         <label>Delivery No.</label>
-                        <input type="text" id="inputDeliveryNumber" class="form-control" placeholder="Delivery number" onblur="autoFormatInput(this)">
+                        <input type="text" id="inputDeliveryNumber" data-document-field="deliveryNumber" class="form-control" placeholder="Delivery number" onblur="autoFormatInput(this)">
                     </div>
+                    </div>
+                  </div>
                 </div>
+                <button type="button" class="btn" onclick="addTripDocument()">+ Add Invoice / Delivery</button>
             </div>
 
             <div class="form-section">
@@ -17007,10 +17018,8 @@ window.applySyncedAdminPassword = function(value) {
         const count = document.getElementById('invoiceWarningCount');
         if (!box || !summary || !list || !more) return;
 
-        const lowInvoices = (fuelRecords || []).map((r, index) => ({ record: r, index })).filter(x => {
-            const amount = Number(x.record.invoiceAmount);
-            return Number.isFinite(amount) && amount > 0 && amount < 500;
-        });
+        const lowInvoices = (fuelRecords || []).flatMap((r,index)=>tripDocuments(r)
+            .filter(lowTripInvoice).map(document=>({record:{...r,...document},index})));
 
         if (!lowInvoices.length) {
             box.classList.remove('active');
@@ -17023,7 +17032,7 @@ window.applySyncedAdminPassword = function(value) {
 
         box.classList.add('active');
         if (count) count.textContent = String(lowInvoices.length);
-        summary.textContent = `${lowInvoices.length} record${lowInvoices.length === 1 ? '' : 's'} have an Invoice Amount below OMR 500. Click any warning to go directly to that record in the Dashboard.`;
+        summary.textContent = `${lowInvoices.length} invoice${lowInvoices.length === 1 ? '' : 's'} have an amount below OMR 500. Click any warning to go directly to that record in the Dashboard.`;
         list.innerHTML = lowInvoices.map(x => {
             const r = x.record;
             const amount = Number(r.invoiceAmount) || 0;
@@ -17119,10 +17128,10 @@ window.applySyncedAdminPassword = function(value) {
                 <td><span class="badge ${vehicleBadgeClass}">${item.car || '-'}</span></td>
                 <td>${item.driver || '-'}</td>
                 <td style="direction: ltr; text-align: left;">${currentDriverPhone || '-'}</td>
-                <td>${item.invoiceNumber || '-'}</td>
-                <td style="direction: ltr; text-align: right;">${(() => { const amt = Number(item.invoiceAmount); const low = Number.isFinite(amt) && amt > 0 && amt < 500; return low ? `<span class="invoice-warning-cell" title="Invoice amount is below OMR 500">⚠️ <span>${amt.toFixed(3)}</span></span>` : (item.invoiceAmount ? amt.toFixed(3) : '-'); })()}</td>
-                <td>${item.branch || '-'}</td>
-                <td>${item.deliveryNumber || '-'}</td>
+                <td>${escapeHtml(item.invoiceNumber || '-')}</td>
+                <td style="direction: ltr; text-align: right;">${(() => { const amt = Number(item.invoiceAmount); const low = tripDocuments(item).some(lowTripInvoice); return low ? `<span class="invoice-warning-cell" title="One or more individual invoices are below OMR 500; displayed amount is the trip total">⚠️ <span>${amt.toFixed(3)}</span></span>` : (item.invoiceAmount ? amt.toFixed(3) : '-'); })()}</td>
+                <td>${escapeHtml(item.branch || '-')}</td>
+                <td>${escapeHtml(item.deliveryNumber || '-')}</td>
                 <td>${(item.startingKm || 0).toFixed(2)}</td>
                 <td>${(item.endKm || 0).toFixed(2)}</td>
                 <td>${dayFormatted}</td>
@@ -17298,6 +17307,7 @@ window.applySyncedAdminPassword = function(value) {
             'CAR': item.car,
             'DRIVER NAME': item.driver,
             'DRIVER PHONE': item.driverPhone || driverPhonesMap[item.driver] || '',
+            'TRIP DOCUMENTS JSON': JSON.stringify(tripDocuments(item)),
             'INVOICE NO.': item.invoiceNumber || '',
             'INVOICE AMOUNT (OMR)': parseFloat((item.invoiceAmount || 0).toFixed(3)),
             'BRANCH': item.branch || '',
@@ -17527,24 +17537,93 @@ window.applySyncedAdminPassword = function(value) {
         });
     }
 
-    function checkInvoiceAmountWarning() {
-        const el = document.getElementById('inputInvoiceAmount');
-        const warning = document.getElementById('invoiceAmountWarning');
-        if (!el || !warning) return;
-        const value = parseFloat(el.value);
-        const show = Number.isFinite(value) && value > 0 && value < 500;
-        warning.style.display = show ? 'block' : 'none';
-        el.style.borderColor = show ? '#f97316' : '';
-        el.style.boxShadow = show ? '0 0 0 2px rgba(249,115,22,.12)' : '';
+    // Old records are read as one document without changing stored data.
+    function tripDocuments(record) {
+        if (Array.isArray(record.tripDocuments)) return record.tripDocuments;
+        return [{invoiceNumber:record.invoiceNumber || '', invoiceAmount:Number(record.invoiceAmount) || 0,
+            branch:record.branch || '', deliveryNumber:record.deliveryNumber || ''}];
     }
-
+    function normalizeTripDocuments(rows) {
+        if (!Array.isArray(rows)) throw new Error('Invalid trip document list.');
+        return rows.map(row => {
+            if (!row || typeof row !== 'object' || Array.isArray(row)) throw new Error('Invalid trip document.');
+            const amount = Number(row.invoiceAmount || 0);
+            if (!Number.isFinite(amount) || amount < 0) throw new Error('Invoice amounts must be zero or greater.');
+            return {invoiceNumber:String(row.invoiceNumber || '').trim(), invoiceAmount:Number(amount.toFixed(3)),
+                branch:String(row.branch || '').trim(), deliveryNumber:String(row.deliveryNumber || '').trim()};
+        });
+    }
+    function tripDocumentSummary(rows) {
+        return {tripDocuments:rows, invoiceNumber:rows.map(r=>r.invoiceNumber).filter(Boolean).join(' / '),
+            invoiceAmount:Number(rows.reduce((sum,r)=>sum+r.invoiceAmount,0).toFixed(3)),
+            branch:[...new Set(rows.map(r=>r.branch).filter(Boolean))].join(' / '),
+            deliveryNumber:rows.map(r=>r.deliveryNumber).filter(Boolean).join(' / ')};
+    }
+    function readTripDocuments() {
+        return normalizeTripDocuments(Array.from(document.querySelectorAll('#tripDocumentsEditor .trip-document-row'), row => {
+            const value = key => row.querySelector('[data-document-field="'+key+'"]').value;
+            return {invoiceNumber:value('invoiceNumber'),invoiceAmount:value('invoiceAmount'),branch:value('branch'),deliveryNumber:value('deliveryNumber')};
+        })).filter(r=>r.invoiceNumber || r.invoiceAmount || r.branch || r.deliveryNumber);
+    }
+    function renumberTripDocuments() {
+        const ids={invoiceNumber:'inputInvoiceNumber',invoiceAmount:'inputInvoiceAmount',branch:'inputBranch',deliveryNumber:'inputDeliveryNumber'};
+        const rows=document.querySelectorAll('#tripDocumentsEditor .trip-document-row');
+        rows.forEach(row=>row.querySelectorAll('[id]').forEach(el=>el.removeAttribute('id')));
+        rows.forEach((row,index)=>{
+            if(index===0) {
+                row.querySelectorAll('[data-document-field]').forEach(el=>el.id=ids[el.dataset.documentField]);
+                row.querySelector('[data-document-warning]').id='invoiceAmountWarning';
+            }
+            row.querySelector('strong').textContent='Document '+(index+1);
+        });
+    }
+    function addTripDocument(data = {}) {
+        const editor = document.getElementById('tripDocumentsEditor');
+        const row = editor.firstElementChild.cloneNode(true);
+        row.querySelectorAll('[id]').forEach(el=>el.removeAttribute('id'));
+        row.querySelectorAll('[data-document-field]').forEach(el=>{
+            const value=data[el.dataset.documentField] ?? '';
+            el.value=el.tagName==='SELECT' ? (Array.from(el.options).find(option=>option.value.toLowerCase()===String(value).toLowerCase())?.value || value) : value;
+            el.style.borderColor='';el.style.boxShadow='';
+        });
+        row.querySelector('[data-document-warning]').style.display='none';
+        editor.appendChild(row);renumberTripDocuments();checkInvoiceAmountWarning();
+    }
+    function removeTripDocument(button) {
+        const row=button.closest('.trip-document-row');
+        const editor=document.getElementById('tripDocumentsEditor');
+        if(editor.children.length===1) row.querySelectorAll('[data-document-field]').forEach(el=>el.value='');
+        else row.remove();
+        renumberTripDocuments();checkInvoiceAmountWarning();
+    }
+    function loadTripDocuments(record = {tripDocuments:[]}) {
+        const editor=document.getElementById('tripDocumentsEditor');
+        while(editor.children.length>1) editor.lastElementChild.remove();
+        const rows=normalizeTripDocuments(tripDocuments(record));
+        editor.firstElementChild.querySelectorAll('[data-document-field]').forEach(el=>{
+            const value=rows[0]?.[el.dataset.documentField] ?? '';
+            el.value=el.tagName==='SELECT' ? (Array.from(el.options).find(option=>option.value.toLowerCase()===String(value).toLowerCase())?.value || value) : value;
+        });
+        rows.slice(1).forEach(addTripDocument);
+        renumberTripDocuments();checkInvoiceAmountWarning();
+    }
+    function lowTripInvoice(row) {
+        const amount=Number(row.invoiceAmount);
+        return Number.isFinite(amount) && amount<500 && (amount>0 || !!row.invoiceNumber);
+    }
+    function checkInvoiceAmountWarning() {
+        document.querySelectorAll('#tripDocumentsEditor .trip-document-row').forEach(row=>{
+            const el=row.querySelector('[data-document-field="invoiceAmount"]');
+            const show=lowTripInvoice({invoiceAmount:el.value,invoiceNumber:row.querySelector('[data-document-field="invoiceNumber"]').value});
+            row.querySelector('[data-document-warning]').style.display=show?'block':'none';
+            el.style.borderColor=show?'#f97316':'';
+            el.style.boxShadow=show?'0 0 0 2px rgba(249,115,22,.12)':'';
+        });
+    }
     function confirmInvoiceAmountMinimum() {
-        const el = document.getElementById('inputInvoiceAmount');
-        const value = parseFloat(el?.value || 0);
-        if (Number.isFinite(value) && value > 0 && value < 500) {
-            return window.confirm('⚠ WARNING\n\nInvoice amount is OMR ' + value.toFixed(3) + ', which is below OMR 500.\n\nDo you want to save this record anyway?');
-        }
-        return true;
+        const low=readTripDocuments().filter(lowTripInvoice);
+        if(!low.length) return true;
+        return window.confirm('WARNING: These individual invoices are below OMR 500:\n\n'+low.map((r,i)=>(r.invoiceNumber || 'Invoice '+(i+1))+': OMR '+r.invoiceAmount.toFixed(3)).join('\n')+'\n\nSave this record anyway?');
     }
 
     function requireFuelPermission(action) {
@@ -17599,6 +17678,7 @@ window.applySyncedAdminPassword = function(value) {
             invoiceAmount: parseFloat(parseFloat(document.getElementById('inputInvoiceAmount').value || 0).toFixed(3)),
             branch: document.getElementById('inputBranch').value,
             deliveryNumber: document.getElementById('inputDeliveryNumber').value.trim(),
+            ...tripDocumentSummary(readTripDocuments()),
             startingKm: parseFloat(parseFloat(document.getElementById('inputStartingKm').value || 0).toFixed(2)),
             endKm: parseFloat(parseFloat(document.getElementById('inputEndKm').value || 0).toFixed(2)),
             dayVal: 0.00,
@@ -17659,6 +17739,7 @@ window.applySyncedAdminPassword = function(value) {
             invoiceAmount: parseFloat(parseFloat(document.getElementById('inputInvoiceAmount').value || 0).toFixed(3)),
             branch: formatTitleCase(document.getElementById('inputBranch').value),
             deliveryNumber: document.getElementById('inputDeliveryNumber').value.trim(),
+            ...tripDocumentSummary(readTripDocuments()),
             startingKm: parseFloat(parseFloat(document.getElementById('inputStartingKm').value || 0).toFixed(2)),
             endKm: parseFloat(parseFloat(document.getElementById('inputEndKm').value || 0).toFixed(2)),
             dayVal: 0.00,
@@ -17713,6 +17794,7 @@ window.applySyncedAdminPassword = function(value) {
         document.getElementById('inputInvoiceAmount').value = item.invoiceAmount ? Number(item.invoiceAmount).toFixed(3) : '';
         document.getElementById('inputBranch').value = item.branch || '';
         document.getElementById('inputDeliveryNumber').value = item.deliveryNumber || '';
+        loadTripDocuments(item);
 
         document.getElementById('inputStartingKm').value = (item.startingKm || 0).toFixed(2);
         document.getElementById('inputEndKm').value = (item.endKm || 0).toFixed(2);
@@ -17770,6 +17852,7 @@ window.applySyncedAdminPassword = function(value) {
 
     function resetForm() {
         document.getElementById('fuelForm').reset();
+        loadTripDocuments();
         document.getElementById('inputDateDisplay').value = '';
         document.getElementById('inputDateNative').value = '';
         document.getElementById('inputSite').value = '';
@@ -17830,6 +17913,7 @@ window.applySyncedAdminPassword = function(value) {
             if (!rows || !rows.length) throw new Error('لم يتم العثور على بيانات داخل ملف Excel.');
             const norm = value => String(value ?? '').trim().toUpperCase().replace(/[\s_]+/g, ' ').replace(/[^A-Z0-9/() -]/g, '');
             const aliases = {
+                tripDocuments:['TRIP DOCUMENTS JSON'],
                 sn:['SN','#'], date:['DATE'], car:['CAR','VEHICLE'], driver:['DRIVER NAME','DRIVER'], driverPhone:['DRIVER PHONE','PHONE'], invoiceNumber:['INVOICE NO.','INVOICE NO','INVOICE NUMBER','INVOICE'], invoiceAmount:['INVOICE AMOUNT (OMR)','INVOICE AMOUNT','AMOUNT'], branch:['BRANCH'], deliveryNumber:['DELIVERY NO.','DELIVERY NUMBER','DELIVERY'],
                 startingKm:['STARTING KM','START KM'], endKm:['END KM'], dayVal:['/DAY','DAY'], trip1:['FROM - TO (1)','FROM TO (1)','TRIP 1'], trip1Km:['KM (1)','KM 1'],
                 trip2:['FROM - TO (2)','FROM TO (2)','TRIP 2'], trip2Km:['KM (2)','KM 2'], kmDay:['KM/DAY','KM DAY'], difference:['DIFFERENCE'],
@@ -17883,6 +17967,7 @@ window.applySyncedAdminPassword = function(value) {
                     invoiceAmount: asNum(val(row,'invoiceAmount')),
                     branch: asText(val(row,'branch')),
                     deliveryNumber: asText(val(row,'deliveryNumber')),
+                    ...(asText(val(row,'tripDocuments')) ? tripDocumentSummary(normalizeTripDocuments(JSON.parse(asText(val(row,'tripDocuments'))))) : {}),
                     startingKm: asNum(val(row,'startingKm')),
                     endKm: asNum(val(row,'endKm')),
                     dayVal: calculatedDay,

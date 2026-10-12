@@ -122,3 +122,18 @@ test('two-device lifecycle retains twelve unrelated new business records and per
   assert.deepEqual(h.state().records.filter(r=>r._syncId.startsWith('today-')),protectedRows);
   assert.equal(h.state().records.length,13);
 });
+
+test('multiple invoice documents survive server add edit read and deletion with permissions',async()=>{
+ const h=harness(admin);
+ const row={sn:1,_syncId:'multi',_syncUpdatedAt:'2026-10-12T00:00:00Z',tripDocuments:[
+ {invoiceNumber:'A',invoiceAmount:300,branch:'TURAYF BRANCH',deliveryNumber:'D1'},
+ {invoiceNumber:'B',invoiceAmount:700,branch:'BARKAH BRANCH',deliveryNumber:'D2'}]};
+ assert.equal((await h.request({action:'sync',records:[row]})).status,200);
+ const changed={...row,_syncUpdatedAt:'2026-10-12T00:00:01Z',tripDocuments:structuredClone(row.tripDocuments)};
+ changed.tripDocuments[1].invoiceAmount=750;
+ assert.equal((await h.request({action:'sync',records:[changed]})).status,200);
+ const read=await h.request({action:'read'});assert.deepEqual(read.body.data.records[0].tripDocuments,changed.tripDocuments);
+ const restricted=harness(addOnly,[changed]);assert.equal((await restricted.request({action:'sync',records:[{...changed,_syncUpdatedAt:'2026-10-12T00:00:02Z',tripDocuments:[]}]})).status,403);
+ assert.equal((await h.request({action:'sync',records:[{...changed,_deleted:true,_syncUpdatedAt:'2026-10-12T00:00:02Z'}]})).status,200);
+ assert.equal(h.state().records[0]._deleted,true);
+});
