@@ -44,7 +44,7 @@ test('failed attempt retains actual error and next login succeeds',async()=>{
 
 test('sign-out terminates only this device and retains one reusable auth client',async()=>{
  let callback;const calls=[];const active={auth:{signOut:async options=>calls.push(options.scope)}};
- const c={client:active,channel:null,pollTimer:null,connectionGeneration:1,permissionsReady:true,
+ const c={resetPermissionEditor(){},client:active,channel:null,pollTimer:null,connectionGeneration:1,permissionsReady:true,
  currentPermissions:{can_add:true},cloudDirty:true,lastRemoteUpdatedAt:'revision',
  window:{refreshFuelPermissionControls(){}},$:()=>({hidden:false,addEventListener:(event,fn)=>callback=fn}),
  setCloudDirty:v=>c.cloudDirty=v,setRemoteBaseline(){},status(){},message(){}};
