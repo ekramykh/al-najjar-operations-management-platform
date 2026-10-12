@@ -36,3 +36,8 @@ test('cancelled invitation sends nothing; changed permissions prevent overwritin
  c.users[0].permissions.can_edit=true;c.window.confirm=()=>true;await c.savePermissionEditor(false);
  assert.equal(c.calls.filter(x=>x.operation==='invite_or_assign').length,0);assert.match(el('permissionAdminStatus').textContent,/changed/);
 });
+test('reset button is enabled for existing accounts including self and confirmation cancellation sends nothing',async()=>{
+ const {c,el}=harness([{email:'admin@example.com',permissions:admin}]);el('permissionAdminEmail').value='admin@example.com';await c.selectPermissionEmail();assert.equal(el('permissionAdminReset').disabled,false);
+ c.window.confirm=()=>false;await el('permissionAdminReset').handlers.click();assert.equal(c.calls.some(x=>x.operation==='reset_password'),false);
+ c.window.confirm=()=>true;await el('permissionAdminReset').handlers.click();const sent=c.calls.find(x=>x.operation==='reset_password');assert.equal(sent.email,'admin@example.com');assert.equal(sent.password,undefined);assert.equal(sent.can_read,undefined);
+});

@@ -143,6 +143,37 @@ Deno.serve(async (req: Request) => {
       });
     }
 
+    if (operation === "password_reset_status" || operation === "reset_password") {
+      // The administrator cannot supply an arbitrary redirect URL or password.
+      // Configure and allow-list the hosted recovery page on the server first.
+      const configured = Deno.env.get("FUEL_PASSWORD_RESET_REDIRECT_URL") || "";
+      let redirect: URL | null = null;
+      try {
+        const candidate = new URL(configured);
+        if (candidate.protocol === "https:" && !candidate.username && !candidate.password
+          && candidate.pathname.endsWith("/password-reset.html") && !candidate.search && !candidate.hash) redirect = candidate;
+      } catch (_) { /* Not configured: fail before sending any email. */ }
+      if (operation === "password_reset_status") return reply(200, { ready: !!redirect });
+      if (!redirect) return reply(503, { error: "Password reset is not configured. Host password-reset.html and configure the approved recovery URL before sending email." });
+      const email = typeof body.email === "string" ? body.email.trim().toLowerCase() : "";
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 254) return reply(400, { error: "Enter a valid email address." });
+      let exists = false;
+      for (let page = 1; page <= 50 && !exists; page++) {
+        const { data, error } = await admin.auth.admin.listUsers({ page, perPage: 1000 });
+        if (error) return reply(500, { error: "Unable to verify the target account." });
+        exists = (data.users || []).some(user => (user.email || "").toLowerCase() === email);
+        if ((data.users || []).length < 1000) break;
+      }
+      if (!exists) return reply(404, { error: "Account not found. Invite the new user first." });
+      // Only the public project URL/anon key reach the browser. Never use the
+      // service-role key in a redirect, email, response, or browser page.
+      redirect.searchParams.set("project_url", url);
+      redirect.searchParams.set("public_key", anonKey);
+      const { error } = await admin.auth.resetPasswordForEmail(email, { redirectTo: redirect.toString() });
+      if (error) return reply(error.status === 429 ? 429 : 400, { error: "Unable to send the password reset email. Check email delivery configuration or retry later." });
+      return reply(200, { ok: true, reset_email_sent: true });
+    }
+
     if (operation !== "invite_or_assign") {
       return reply(400, { error: "Unsupported user-management operation." });
     }

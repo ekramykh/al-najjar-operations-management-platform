@@ -18228,6 +18228,7 @@ window.applySyncedAdminPassword = function(value) {
       </div>
       <button id="permissionAdminSave" type="button" style="width:100%;padding:8px;border:0;border-radius:6px;background:#2563eb;color:white;cursor:pointer" disabled>Save Permissions</button>
       <button id="permissionAdminInvite" type="button" disabled style="width:100%;margin-top:5px;padding:8px;border:0;border-radius:6px;background:#2563eb;color:white;cursor:pointer">Send Invitation</button>
+      <button id="permissionAdminReset" type="button" disabled style="width:100%;padding:8px;margin-top:5px;border:1px solid #64748b;border-radius:6px;background:transparent;color:white;cursor:pointer">Reset Password · Send Email</button>
       <button id="permissionAdminRefresh" type="button" style="width:100%;padding:8px;margin-top:5px;border:1px solid #64748b;border-radius:6px;background:transparent;color:white;cursor:pointer">Refresh User List</button>
       <div id="permissionAdminStatus" role="status" style="font-size:12px;color:#cbd5e1;margin-top:7px"></div>
       <ul id="permissionAdminList" style="font-size:11px;color:#e2e8f0;padding-left:18px;max-height:180px;overflow:auto"></ul>
@@ -18861,6 +18862,7 @@ window.applySyncedAdminPassword = function(value) {
   function lockPermissionEditor() {
     permissionEditorTarget=null;
     for(const id of Object.values(permissionFieldIds)) { $(id).checked=false;$(id).disabled=true; }
+    $("permissionAdminReset").disabled=true;
     $("permissionAdminSave").disabled=true;
     $("permissionAdminInvite").disabled=true;
     $("permissionAdminInvite").hidden=false;
@@ -18881,6 +18883,8 @@ window.applySyncedAdminPassword = function(value) {
     $("permissionAdminSave").hidden=false;
     $("permissionAdminInvite").hidden=false;
     $("permissionAdminSave").disabled=!user || self || permissionEditorBusy;
+    $("permissionAdminReset").disabled=!user || permissionEditorBusy;
+    $("permissionAdminReset").title=user?"Email a secure link so this user can choose a new password.":"Invite the new user before resetting a password.";
     $("permissionAdminInvite").disabled=!!user || permissionEditorBusy;
     $("permissionAdminInvite").title=user?"This account already exists. Invitations are for new accounts only.":"Send an email invitation to create this account.";
     permissionStatus(self?'Your current permissions are shown. You cannot change your own permissions here. Invitations are only for new accounts.'
@@ -18956,11 +18960,32 @@ window.applySyncedAdminPassword = function(value) {
         for(const id of Object.values(permissionFieldIds))$(id).disabled=permissionEditorTarget.self;
         $("permissionAdminSave").disabled=!permissionEditorTarget.existing || permissionEditorTarget.self;
         $("permissionAdminInvite").disabled=permissionEditorTarget.existing || permissionEditorTarget.self;
+        $("permissionAdminReset").disabled=!permissionEditorTarget.existing;
       }
     }
   }
   $("permissionAdminSave").addEventListener('click',()=>savePermissionEditor(false));
   $("permissionAdminInvite").addEventListener('click',()=>savePermissionEditor(true));
+  $("permissionAdminReset").addEventListener('click',async()=>{
+    const target=permissionEditorTarget;
+    if(permissionEditorBusy || currentPermissions?.can_manage_users!==true || !target?.existing || target.email!==permissionEmail())return;
+    if(!window.confirm('Send a password reset link to '+target.email+'?\nThe user will choose a new password. Permissions will not change.'))return;
+    permissionEditorBusy=true;$("permissionAdminEmail").disabled=true;
+    for(const id of ['permissionAdminSave','permissionAdminInvite','permissionAdminReset'])$(id).disabled=true;
+    permissionStatus('Sending password reset link...');
+    try {
+      await invokeFuelSync('manage_users',undefined,{operation:'reset_password',email:target.email});
+      permissionStatus('Password reset email requested. The user must open the link and choose a new password. Check inbox and spam. Permissions were not changed.');
+    } catch(err) {permissionStatus(err.message || String(err));}
+    finally {
+      permissionEditorBusy=false;$("permissionAdminEmail").disabled=false;
+      if(permissionEditorTarget===target) {
+        $("permissionAdminSave").disabled=target.self;
+        $("permissionAdminInvite").disabled=true;
+        $("permissionAdminReset").disabled=false;
+      }
+    }
+  });
   lockPermissionEditor();
 
   $("cloudSyncNow").addEventListener("click", async () => {

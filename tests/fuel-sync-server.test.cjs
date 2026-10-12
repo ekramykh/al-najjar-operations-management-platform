@@ -6,7 +6,8 @@ const vm = require('node:vm');
 const { stripTypeScriptTypes } = require('node:module');
 
 const source = fs.readFileSync('supabase/functions/fuel-sync/index.ts', 'utf8');
-function harness(role, initial=[]) {
+function harness(role, initial=[], options={}) {
+  const resetRequests=[];
   let records = structuredClone(initial), revision = 'rev0', saves = 0;
   const user = { id: 'test-user', email: 'test@example.invalid' };
   const permissions = role;
@@ -34,20 +35,20 @@ function harness(role, initial=[]) {
   };
   const createClient = (_url,key) => key==='anon'
     ? {auth:{getUser:async token => token==='valid' ? {data:{user},error:null}:{data:{user:null},error:{message:'invalid'}}}}
-    : {from:query,auth:{admin:{}}};
+    : {from:query,auth:{admin:{listUsers:async()=>({data:{users:options.users || []},error:null})},resetPasswordForEmail:async(email,settings)=>{resetRequests.push({email,settings});return {error:options.resetError || null}}}};
   let handler;
   const stripped=stripTypeScriptTypes(source.replace(/^import \{ createClient \} from .*;\s*/m,''));
   vm.runInNewContext(stripped.replace('Deno.serve(async (req: Request) => {','Deno.serve(async (req: Request) => {'),{
     createClient,
-    Deno:{env:{get:key=>({SUPABASE_URL:'https://staging.invalid',SUPABASE_ANON_KEY:'anon',SUPABASE_SERVICE_ROLE_KEY:'service'}[key])},serve:fn=>{handler=fn;}},
-    Response,Date,Map,Set,JSON,Number,String,Array,RegExp,
+    Deno:{env:{get:key=>({SUPABASE_URL:'https://staging.invalid',SUPABASE_ANON_KEY:'anon',SUPABASE_SERVICE_ROLE_KEY:'service',FUEL_PASSWORD_RESET_REDIRECT_URL:options.resetRedirect}[key])},serve:fn=>{handler=fn;}},
+    Response,Date,Map,Set,JSON,Number,String,Array,RegExp,URL,
   });
   return {
     request:async (action,token='valid')=>{
       const res=await handler(new Request('https://staging.invalid/functions/v1/fuel-sync',{method:'POST',headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},body:JSON.stringify(action)}));
       return {status:res.status,body:await res.json()};
     },
-    state:()=>({records,saves})
+    state:()=>({records,saves,resetRequests})
   };
 }
 const admin={can_read:true,can_add:true,can_edit:true,can_delete:true,can_manage_users:true};
@@ -136,4 +137,20 @@ test('multiple invoice documents survive server add edit read and deletion with 
  const restricted=harness(addOnly,[changed]);assert.equal((await restricted.request({action:'sync',records:[{...changed,_syncUpdatedAt:'2026-10-12T00:00:02Z',tripDocuments:[]}]})).status,403);
  assert.equal((await h.request({action:'sync',records:[{...changed,_deleted:true,_syncUpdatedAt:'2026-10-12T00:00:02Z'}]})).status,200);
  assert.equal(h.state().records[0]._deleted,true);
+});
+
+test('password reset requires administrator and sends no email without approved hosting',async()=>{
+ for(const role of [reader,addOnly]){const h=harness(role);assert.equal((await h.request({action:'manage_users',operation:'reset_password',email:'user@example.com'})).status,403);assert.equal(h.state().resetRequests.length,0)}
+ const h=harness(admin);assert.equal((await h.request({action:'manage_users',operation:'password_reset_status'})).body.ready,false);
+ assert.equal((await h.request({action:'manage_users',operation:'reset_password',email:'user@example.com'})).status,503);assert.equal(h.state().resetRequests.length,0);
+});
+test('reset link uses server-approved URL and public key, never changes records or permissions or sets password',async()=>{
+ const initial=[row('a',1,time1)];const h=harness(admin,initial,{resetRedirect:'https://staging.example.com/password-reset.html',users:[{id:'target',email:'user@example.com'}]});
+ const response=await h.request({action:'manage_users',operation:'reset_password',email:' USER@example.com ',password:'never-use-this',redirect_to:'https://attacker.invalid'});
+ assert.equal(response.status,200);const state=h.state();assert.equal(state.saves,0);assert.deepEqual(state.records,initial);assert.equal(state.resetRequests.length,1);
+ const request=state.resetRequests[0];assert.equal(request.email,'user@example.com');const redirect=new URL(request.settings.redirectTo);assert.equal(redirect.origin,'https://staging.example.com');assert.equal(redirect.searchParams.get('public_key'),'anon');assert.ok(!request.settings.redirectTo.includes('service'));
+});
+test('nonexistent account and provider failure report errors instead of false reset success',async()=>{
+ const opts={resetRedirect:'https://staging.example.com/password-reset.html'};const h=harness(admin,[],opts);assert.equal((await h.request({action:'manage_users',operation:'reset_password',email:'missing@example.com'})).status,404);assert.equal(h.state().resetRequests.length,0);
+ const failed=harness(admin,[],{...opts,users:[{id:'u',email:'user@example.com'}],resetError:{status:429}});assert.equal((await failed.request({action:'manage_users',operation:'reset_password',email:'user@example.com'})).status,429);
 });
