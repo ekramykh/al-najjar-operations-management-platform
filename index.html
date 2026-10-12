@@ -17713,6 +17713,7 @@ window.applySyncedAdminPassword = function(value) {
 
         checkInvoiceAmountWarning();
         if (!confirmInvoiceAmountMinimum()) return;
+        if (updating && !window.confirm("هل تريد حفظ التعديلات؟\nDo you want to save the changes?")) return;
 
         const index = parseInt(document.getElementById('editIndex').value);
         let rawDate = document.getElementById('inputDateDisplay').value.trim();

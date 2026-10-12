@@ -25,6 +25,7 @@ function harness(flags = {}, ready = true) {
     promptPassword(_message,callback){context.passwordCallback=callback},
     confirm:()=>true,adminPassword:'unchanged',
   };
+  context.window.confirm=()=>true;
   context.window.generateSyncId=()=>`new-${++id}`;
   context.window.saveToLocalStorage=()=>context.saves=(context.saves||0)+1;
   context.window.markFuelRecordDeleted=()=>context.deletions=(context.deletions||0)+1;
@@ -110,4 +111,15 @@ test('multi-invoice save and edit remain one trip; Save as New copies documents 
  assert.equal(c.fuelRecords.length,2);assert.equal(c.fuelRecords[0]._syncId,id);assert.equal(c.fuelRecords[0].invoiceAmount,1100);
  c.editRecord(0);c.saveRecordAsNew();assert.equal(c.fuelRecords.length,3);assert.notEqual(c.fuelRecords[0]._syncId,id);
  assert.deepEqual(c.fuelRecords[0].tripDocuments,documents);assert.deepEqual(c.fuelRecords[1].tripDocuments,documents);
+});
+
+test('cancelling update confirmation preserves original record and performs no save',()=>{
+ const {context:c}=harness(admin);c.editRecord(0);const before=JSON.stringify(c.fuelRecords);let prompts=0;
+ c.window.confirm=message=>{prompts++;assert.match(message,/هل تريد حفظ التعديلات/);return false};
+ c.saveRecord('update');assert.equal(prompts,1);assert.equal(JSON.stringify(c.fuelRecords),before);assert.equal(c.saves,undefined);
+});
+test('accepted update saves once while new and copy actions do not ask update confirmation',()=>{
+ const {context:c}=harness(admin);let prompts=0;c.window.confirm=()=>{prompts++;return true};
+ c.editRecord(0);c.saveRecord('update');assert.equal(prompts,1);assert.equal(c.saves,1);
+ c.saveRecord('new');c.saveRecordAsNew();assert.equal(prompts,1);assert.equal(c.saves,3);
 });
