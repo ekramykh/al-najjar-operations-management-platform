@@ -800,6 +800,61 @@
             padding-bottom: 6px;
         }
 
+        /* Only the multi-document editor uses these compact controls. */
+        #tripDocumentsEditor .trip-document-row {
+            padding: 12px;
+            margin-bottom: 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            background: var(--bg-main, #0f172a);
+        }
+        #tripDocumentsEditor .trip-document-heading {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+        #tripDocumentsEditor .trip-document-heading strong {
+            font-size: 12px;
+            font-weight: 600;
+            white-space: nowrap;
+            color: var(--text-muted);
+        }
+        #tripDocumentsEditor .trip-document-remove {
+            width: auto;
+            flex: 0 0 auto;
+            min-width: 0;
+            padding: 4px 9px;
+            border: 1px solid #7f3541;
+            border-radius: 6px;
+            background: transparent;
+            color: #fca5a5;
+            font-size: 11px;
+            line-height: 1.4;
+            cursor: pointer;
+        }
+        #tripDocumentsEditor .trip-document-remove:hover { background: #7f1d1d33; }
+        #tripDocumentsEditor .form-group { margin-bottom: 0; }
+        #recordModal .trip-document-add {
+            display: block;
+            width: 100%;
+            padding: 9px 12px;
+            border: 1px dashed var(--accent-primary);
+            border-radius: 7px;
+            background: transparent;
+            color: var(--accent-primary);
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        #recordModal .trip-document-add:hover { background: #3b82f611; }
+        #recordModal .trip-document-add:focus-visible,
+        #tripDocumentsEditor .trip-document-remove:focus-visible {
+            outline: 2px solid var(--accent-primary);
+            outline-offset: 2px;
+        }
+
         .form-grid-2 {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -2931,10 +2986,10 @@ window.toggleFleetAnalysisPanel=function(){
                 </div>
             </div>
             <div class="form-section">
-                <div class="form-section-title">📄 Trip Invoices &amp; Deliveries</div>
+                <div class="form-section-title">📄 2. Trip Invoices &amp; Deliveries</div>
                 <div id="tripDocumentsEditor">
-                  <div class="trip-document-row" style="border-bottom:1px solid var(--border-color);padding-bottom:12px;margin-bottom:12px">
-                    <div class="trip-document-heading" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><strong>Document 1</strong><button type="button" class="btn" onclick="removeTripDocument(this)">Remove</button></div>
+                  <div class="trip-document-row">
+                    <div class="trip-document-heading"><strong>Invoice / Delivery 1</strong><button type="button" class="trip-document-remove" onclick="removeTripDocument(this)">Clear</button></div>
                     <div class="form-grid-2">
                     <div class="form-group">
                         <label>Invoice No.</label>
@@ -2962,11 +3017,11 @@ window.toggleFleetAnalysisPanel=function(){
                     </div>
                   </div>
                 </div>
-                <button type="button" class="btn" onclick="addTripDocument()">+ Add Invoice / Delivery</button>
+                <button type="button" class="trip-document-add" onclick="addTripDocument()">+ Add Invoice / Delivery</button>
             </div>
 
             <div class="form-section">
-                <div class="form-section-title">🛣️ 2. Trips &amp; Odometer Details</div>
+                <div class="form-section-title">🛣️ 3. Trips &amp; Odometer Details</div>
                 <div class="form-grid-2">
                     <div class="form-group">
                         <label>Starting KM</label>
@@ -2996,7 +3051,7 @@ window.toggleFleetAnalysisPanel=function(){
             </div>
 
             <div class="form-section">
-                <div class="form-section-title">⛽ 3. Fuel &amp; Refueling Meters</div>
+                <div class="form-section-title">⛽ 4. Fuel &amp; Refueling Meters</div>
                 <div class="form-grid-2">
                     <div class="form-group">
                         <label>TNX Auth / Reference</label>
@@ -17574,7 +17629,8 @@ window.applySyncedAdminPassword = function(value) {
                 row.querySelectorAll('[data-document-field]').forEach(el=>el.id=ids[el.dataset.documentField]);
                 row.querySelector('[data-document-warning]').id='invoiceAmountWarning';
             }
-            row.querySelector('strong').textContent='Document '+(index+1);
+            row.querySelector('strong').textContent='Invoice / Delivery '+(index+1);
+            row.querySelector('.trip-document-remove').textContent=rows.length===1?'Clear':'Remove';
         });
     }
     function addTripDocument(data = {}) {
