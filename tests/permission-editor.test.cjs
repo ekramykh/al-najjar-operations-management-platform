@@ -14,10 +14,10 @@ test('existing email loads actual permissions, and another email clears stale ch
  const {c,el}=harness([{email:'add@example.com',permissions:{can_read:true,can_add:true,can_edit:false}}]);
  el('permissionAdminEmail').value=' ADD@example.com ';await c.selectPermissionEmail();
  assert.equal(el('permissionCanAdd').checked,true);assert.equal(el('permissionCanEdit').checked,false);
- assert.equal(el('permissionAdminSave').disabled,false);assert.equal(el('permissionAdminInvite').hidden,true);
+ assert.equal(el('permissionAdminSave').disabled,false);assert.equal(el('permissionAdminInvite').hidden,false);assert.equal(el('permissionAdminInvite').disabled,true);
  el('permissionAdminEmail').value='new@example.com';await c.selectPermissionEmail();
  assert.equal(el('permissionCanAdd').checked,false);assert.equal(el('permissionCanRead').checked,true);
- assert.equal(el('permissionAdminSave').hidden,true);assert.equal(el('permissionAdminInvite').disabled,false);
+ assert.equal(el('permissionAdminSave').hidden,false);assert.equal(el('permissionAdminSave').disabled,true);assert.equal(el('permissionAdminInvite').disabled,false);
 });
 test('own administrator permissions display in full but cannot be changed or invited',async()=>{
  const {c,el}=harness([{email:'admin@example.com',permissions:admin}]);el('permissionAdminEmail').value='admin@example.com';await c.selectPermissionEmail();

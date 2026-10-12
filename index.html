@@ -18164,6 +18164,8 @@ window.applySyncedAdminPassword = function(value) {
   transition: opacity .12s ease .03s;
 }
 
+#cloudSyncPanel button:disabled { opacity: .5; cursor: not-allowed !important; }
+
 #cloudSyncPanel .cloud-sync-header {
   min-height: 24px;
   display: flex;
@@ -18225,7 +18227,7 @@ window.applySyncedAdminPassword = function(value) {
         <label style="grid-column:1/-1"><input id="permissionCanManage" type="checkbox"> Manage users and permissions</label>
       </div>
       <button id="permissionAdminSave" type="button" style="width:100%;padding:8px;border:0;border-radius:6px;background:#2563eb;color:white;cursor:pointer" disabled>Save Permissions</button>
-      <button id="permissionAdminInvite" type="button" hidden disabled style="width:100%;padding:8px;border:0;border-radius:6px;background:#2563eb;color:white;cursor:pointer">Send Invitation</button>
+      <button id="permissionAdminInvite" type="button" disabled style="width:100%;margin-top:5px;padding:8px;border:0;border-radius:6px;background:#2563eb;color:white;cursor:pointer">Send Invitation</button>
       <button id="permissionAdminRefresh" type="button" style="width:100%;padding:8px;margin-top:5px;border:1px solid #64748b;border-radius:6px;background:transparent;color:white;cursor:pointer">Refresh User List</button>
       <div id="permissionAdminStatus" role="status" style="font-size:12px;color:#cbd5e1;margin-top:7px"></div>
       <ul id="permissionAdminList" style="font-size:11px;color:#e2e8f0;padding-left:18px;max-height:180px;overflow:auto"></ul>
@@ -18861,7 +18863,7 @@ window.applySyncedAdminPassword = function(value) {
     for(const id of Object.values(permissionFieldIds)) { $(id).checked=false;$(id).disabled=true; }
     $("permissionAdminSave").disabled=true;
     $("permissionAdminInvite").disabled=true;
-    $("permissionAdminInvite").hidden=true;
+    $("permissionAdminInvite").hidden=false;
     $("permissionAdminSave").hidden=false;
   }
   function resetPermissionEditor() {
@@ -18876,12 +18878,13 @@ window.applySyncedAdminPassword = function(value) {
       $(id).checked=user ? user.permissions?.[flag]===true : flag==='can_read';
       $(id).disabled=self || permissionEditorBusy;
     }
-    $("permissionAdminSave").hidden=!user;
-    $("permissionAdminInvite").hidden=!!user;
+    $("permissionAdminSave").hidden=false;
+    $("permissionAdminInvite").hidden=false;
     $("permissionAdminSave").disabled=!user || self || permissionEditorBusy;
     $("permissionAdminInvite").disabled=!!user || permissionEditorBusy;
-    permissionStatus(self?'Your current permissions are shown. You cannot change your own permissions here.'
-      :user?'Current permissions loaded. Review them before saving.'
+    $("permissionAdminInvite").title=user?"This account already exists. Invitations are for new accounts only.":"Send an email invitation to create this account.";
+    permissionStatus(self?'Your current permissions are shown. You cannot change your own permissions here. Invitations are only for new accounts.'
+      :user?'Current permissions loaded. Send Invitation is unavailable because this account already exists. Review permissions before saving.'
       :'New account. Select permissions, then Send Invitation.');
   }
   async function fetchPermissionAccounts() {
