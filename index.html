@@ -1775,6 +1775,23 @@ html.cloud-login-locked,html.cloud-login-locked body{overflow:hidden!important}
 #recordModal .btn-group-form .btn{min-height:42px}
 @media(max-width:600px){#recordModal .record-form-scroll{padding:12px}#recordModal .record-section-nav{padding:6px 10px}#recordModal .btn-group-form{padding:10px;flex-wrap:wrap}#recordModal .btn-group-form .btn{min-width:110px}}
 </style>
+<style>
+.record-design-switch{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:16px 0;color:var(--text-muted);font-size:14px}
+.record-design-switch button,.record-invoice-toggle{width:auto;margin:0;padding:9px 13px;border:1px solid #475569;border-radius:8px;background:#111827;color:#cbd5e1;cursor:pointer;font:inherit}
+.record-design-switch button[aria-pressed="true"]{border-color:#3b82f6;background:#2563eb22;color:#93c5fd}
+#recordDesignTable{scrollbar-width:thin;scrollbar-color:#64748b #0b1220;scrollbar-gutter:stable;overscroll-behavior:contain}
+#recordDesignTable::-webkit-scrollbar{width:9px;height:9px}#recordDesignTable::-webkit-scrollbar-track{background:#0b1220}#recordDesignTable::-webkit-scrollbar-thumb{background:#64748b;border:2px solid #0b1220;border-radius:9px}
+#recordDesignTable>table>tbody>tr>td{padding:13px 16px}#recordDesignTable>table>tbody>tr:hover{background:#3b82f610}
+#recordDesignLayout[data-design="2"]{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(300px,1fr);gap:16px}
+#recordDesignLayout:not([data-design="1"]) #recordDesignTable>table{min-width:700px}
+#recordDesignLayout:not([data-design="1"]) #recordDesignTable>table>thead>tr>th:nth-child(n+8):not(:last-child),#recordDesignLayout:not([data-design="1"]) #recordDesignTable>table>tbody>tr:not(.record-expanded-detail)>td:nth-child(n+8):not(:last-child),#recordDesignLayout:not([data-design="1"]) #recordDesignTable>table>thead>tr>th:nth-child(5),#recordDesignLayout:not([data-design="1"]) #recordDesignTable>table>tbody>tr:not(.record-expanded-detail)>td:nth-child(5){display:none}
+#recordDesignDetails{padding:18px;border:1px solid #334155;border-radius:10px;background:#111827;max-height:520px;overflow:auto;scrollbar-width:thin;color:#e2e8f0}
+#recordDesignDetails[hidden]{display:none}.record-detail-doc{margin:12px 0;padding:14px;border:1px solid #334155;border-radius:8px;background:#0b1220}
+.record-detail-doc p{margin:7px 0;overflow-wrap:anywhere}.record-detail-warning{color:#fbbf24;font-weight:600}.record-detail-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.record-detail-fields div{overflow-wrap:anywhere}.record-detail-fields small{display:block;color:#94a3b8;margin-bottom:4px}
+.record-expanded-detail>td{white-space:normal!important;background:#0b1220;padding:18px!important}.record-invoice-toggle{padding:5px 9px;color:#93c5fd;white-space:nowrap}
+.record-selected{background:#2563eb22!important}
+@media(max-width:900px){#recordDesignLayout[data-design="2"]{grid-template-columns:minmax(0,1fr)}#recordDesignDetails{max-height:400px}}
+</style>
 </head>
 <body class="">
 
@@ -2165,7 +2182,14 @@ window.toggleFleetAnalysisPanel=function(){
             <button type="button" class="btn-clear-filters" onclick="clearAllFilters()">Clear Filters</button>
         </div>
 
-        <div class="table-container">
+        <div class="record-design-switch" aria-label="Record display design">
+          <strong>Display design</strong>
+          <button type="button" data-log-design="1" aria-pressed="true">1 · Table</button>
+          <button type="button" data-log-design="2" aria-pressed="false">2 · Table + Details</button>
+          <button type="button" data-log-design="3" aria-pressed="false">3 · Expandable Rows</button>
+        </div>
+        <div id="recordDesignLayout" data-design="1">
+        <div class="table-container" id="recordDesignTable">
             <table>
                 <thead>
                     <tr>
@@ -2924,6 +2948,8 @@ window.toggleFleetAnalysisPanel=function(){
                 </td>
             </tr></tbody>
             </table>
+        </div>
+        <aside id="recordDesignDetails" aria-label="Record details" hidden></aside>
         </div>
         <div class="pagination-footer">
             <div id="paginationInfo">Showing 25 of 430 records (Total System Records: 430)</div>
@@ -17241,6 +17267,7 @@ window.applySyncedAdminPassword = function(value) {
             tbody.appendChild(row);
         });
 
+        if (window.refreshRecordDesign) window.refreshRecordDesign();
         const displayedCount = paginatedRecords.length;
         document.getElementById('paginationInfo').textContent = 
             `Showing ${displayedCount} of ${totalRecords} records (Total System Records: ${fuelRecords.length})`;
@@ -19178,6 +19205,26 @@ window.applySyncedAdminPassword = function(value) {
  for(const button of buttons)button.addEventListener('click',()=>{const section=document.getElementById(button.dataset.recordSection);scroller.scrollTop+=section.getBoundingClientRect().top-scroller.getBoundingClientRect().top-12;updateSection();});
  scroller.addEventListener('scroll',updateSection,{passive:true});
  new MutationObserver(()=>{if(modal.classList.contains('active')){scroller.scrollTop=0;markSection(sections[0].id);}}).observe(modal,{attributes:true,attributeFilter:['class']});
+})();
+</script>
+
+<script>
+(()=>{
+ const layout=document.getElementById('recordDesignLayout'),body=document.getElementById('tableBody'),pane=document.getElementById('recordDesignDetails');
+ const switches=[...document.querySelectorAll('[data-log-design]')];let design='1';
+ function details(item){
+  const docs=tripDocuments(item);const fields=[['Date',item.date],['Vehicle',item.car],['Driver',item.driver],['Driver phone',item.driverPhone],['Site',item.site],['Fuel (L)',item.fuel],['Last KM',item.lastKm],['Current KM',item.currentKm],['Starting KM',item.startingKm],['End KM',item.endKm],['Trip 1',item.trip1],['Trip 1 KM',item.trip1Km],['Trip 2',item.trip2],['Trip 2 KM',item.trip2Km],['Reference',item.tnxAuth]];
+  return '<h3>Record '+escapeHtml(item.sn)+'</h3><div class="record-detail-fields">'+fields.map(([label,value])=>'<div><small>'+label+'</small>'+escapeHtml(value ?? '-')+'</div>').join('')+'</div><h4>Invoices &amp; Deliveries</h4>'+docs.map((doc,i)=>'<article class="record-detail-doc"><strong>Invoice / Delivery '+(i+1)+'</strong><p>Invoice: '+escapeHtml(doc.invoiceNumber||'-')+'</p><p>Branch: '+escapeHtml(doc.branch||'-')+'</p><p>Delivery: '+escapeHtml(doc.deliveryNumber||'-')+'</p><p>Amount: OMR '+Number(doc.invoiceAmount||0).toFixed(3)+'</p>'+(lowTripInvoice(doc)?'<p class="record-detail-warning">⚠ Invoice below OMR 500</p>':'')+'</article>').join('');
+ }
+ function clearDetails(){body.querySelectorAll('.record-expanded-detail').forEach(el=>el.remove());body.querySelectorAll('.record-selected').forEach(el=>el.classList.remove('record-selected'));body.querySelectorAll('.record-invoice-toggle').forEach(el=>el.setAttribute('aria-expanded','false'));pane.innerHTML='Select an invoice count to view record details.';pane.hidden=design!=='2';}
+ window.refreshRecordDesign=function(){
+  clearDetails();for(const row of [...body.children]){const match=row.id.match(/^fuel-record-row-(\d+)$/);if(!match)continue;const item=fuelRecords[Number(match[1])];if(!item)continue;
+   const cell=row.children[5];if(!cell)continue;cell.textContent='';const button=document.createElement('button');button.type='button';button.className='record-invoice-toggle';button.textContent='▸ '+tripDocuments(item).length+' documents';button.setAttribute('aria-expanded','false');
+   button.addEventListener('dblclick',event=>event.stopPropagation());button.addEventListener('click',event=>{event.stopPropagation();const wasOpen=button.getAttribute('aria-expanded')==='true';clearDetails();if(wasOpen)return;button.setAttribute('aria-expanded','true');row.classList.add('record-selected');if(design==='2'){pane.innerHTML=details(item);}else{const expanded=document.createElement('tr');expanded.className='record-expanded-detail';const td=document.createElement('td');td.colSpan=row.children.length;td.innerHTML=details(item);expanded.appendChild(td);row.after(expanded);}});cell.appendChild(button);
+  }
+ };
+ for(const button of switches)button.addEventListener('click',()=>{design=button.dataset.logDesign;layout.dataset.design=design;for(const control of switches)control.setAttribute('aria-pressed',String(control===button));window.refreshRecordDesign();});
+ window.refreshRecordDesign();
 })();
 </script>
 </body></html>
