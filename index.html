@@ -1761,7 +1761,8 @@ html.cloud-login-locked,html.cloud-login-locked body{overflow:hidden!important}
 #recordModal .record-modal-box{padding:0;display:flex;flex-direction:column;overflow:hidden;max-height:85vh;max-height:85dvh}
 #recordModal .form-panel-title{flex:none;margin:0;padding:16px 22px;min-height:56px}
 #recordModal .record-section-nav{display:flex;flex:none;gap:6px;padding:8px 18px;border-bottom:1px solid var(--border-color);background:var(--bg-surface)}
-#recordModal .record-section-nav button{flex:1;width:auto;min-height:40px;margin:0;padding:8px;border:1px solid transparent;border-radius:7px;background:transparent;color:var(--text-muted);font:inherit;font-size:13px;cursor:pointer}
+#recordModal .record-section-nav button{flex:1;width:auto;min-height:40px;margin:0;padding:8px;border:1px solid transparent;border-radius:7px;background:transparent;color:var(--text-muted);font:inherit;font-size:16px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer}
+#recordModal .record-section-nav svg{width:20px;height:20px;flex:none}
 #recordModal .record-section-nav button[aria-current="true"]{background:#2563eb22;border-color:#3b82f666;color:#93c5fd;font-weight:700}
 #recordModal .record-section-nav button:focus-visible{outline:2px solid #60a5fa;outline-offset:2px}
 #recordModal #fuelForm{display:flex;flex-direction:column;min-height:0;overflow:hidden}
@@ -2971,10 +2972,10 @@ window.toggleFleetAnalysisPanel=function(){
             <button type="button" class="close-modal-x" onclick="closeRecordModal()">×</button>
         </div>
         <nav class="record-section-nav" aria-label="Record sections">
-            <button type="button" data-record-section="recordGeneral" aria-current="true">General</button>
-            <button type="button" data-record-section="recordInvoices">Invoices</button>
-            <button type="button" data-record-section="recordTrip">Trip</button>
-            <button type="button" data-record-section="recordFuel">Fuel</button>
+            <button type="button" data-record-section="recordGeneral" aria-current="true"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V2h6v2M9 10h6M9 14h6"/></svg><span>General</span></button>
+            <button type="button" data-record-section="recordInvoices"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h9l4 4v14H6zM14 3v5h5M9 12h7M9 16h7"/></svg><span>Invoices</span></button>
+            <button type="button" data-record-section="recordTrip"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="6" r="2"/><circle cx="19" cy="18" r="2"/><path d="M5 8v6a4 4 0 0 0 4 4h8M7 6h8a4 4 0 0 1 0 8h-4"/></svg><span>Trip</span></button>
+            <button type="button" data-record-section="recordFuel"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 21V4h9v17M4 10h9M2 21h13M13 12h2a2 2 0 0 1 2 2v3a2 2 0 0 0 4 0V8l-4-4M18 5v4h3"/></svg><span>Fuel</span></button>
         </nav>
         <form id="fuelForm">
             <input type="hidden" id="editIndex" value="-1">
