@@ -1756,7 +1756,25 @@ html.cloud-login-locked,html.cloud-login-locked body{overflow:hidden!important}
   #requiredCloudLoginGate button{margin-top:13px}
   #requiredCloudLoginGate details{margin-top:11px}
 }
-</style></head>
+</style><style>
+/* Record editor: fixed title, section navigation and actions; fields scroll. */
+#recordModal .record-modal-box{padding:0;display:flex;flex-direction:column;overflow:hidden;max-height:85vh;max-height:85dvh}
+#recordModal .form-panel-title{flex:none;margin:0;padding:16px 22px;min-height:56px}
+#recordModal .record-section-nav{display:flex;flex:none;gap:6px;padding:8px 18px;border-bottom:1px solid var(--border-color);background:var(--bg-surface)}
+#recordModal .record-section-nav button{flex:1;width:auto;min-height:40px;margin:0;padding:8px;border:1px solid transparent;border-radius:7px;background:transparent;color:var(--text-muted);font:inherit;font-size:13px;cursor:pointer}
+#recordModal .record-section-nav button[aria-current="true"]{background:#2563eb22;border-color:#3b82f666;color:#93c5fd;font-weight:700}
+#recordModal .record-section-nav button:focus-visible{outline:2px solid #60a5fa;outline-offset:2px}
+#recordModal #fuelForm{display:flex;flex-direction:column;min-height:0;overflow:hidden}
+#recordModal .record-form-scroll{min-height:0;overflow-y:auto;overscroll-behavior:contain;padding:18px 22px;scrollbar-width:thin;scrollbar-color:#64748b #111827;scrollbar-gutter:stable}
+#recordModal .record-form-scroll::-webkit-scrollbar{width:8px}
+#recordModal .record-form-scroll::-webkit-scrollbar-track{background:#111827}
+#recordModal .record-form-scroll::-webkit-scrollbar-thumb{background:#64748b;border-radius:8px}
+#recordModal .form-section{scroll-margin-top:12px}
+#recordModal .btn-group-form{flex:none;margin:0;padding:14px 22px;border-top:1px solid var(--border-color);background:var(--bg-surface)}
+#recordModal .btn-group-form .btn{min-height:42px}
+@media(max-width:600px){#recordModal .record-form-scroll{padding:12px}#recordModal .record-section-nav{padding:6px 10px}#recordModal .btn-group-form{padding:10px;flex-wrap:wrap}#recordModal .btn-group-form .btn{min-width:110px}}
+</style>
+</head>
 <body class="">
 
 <div class="container">
@@ -2952,10 +2970,17 @@ window.toggleFleetAnalysisPanel=function(){
             <span>➕ Add Refueling Entry</span>
             <button type="button" class="close-modal-x" onclick="closeRecordModal()">×</button>
         </div>
+        <nav class="record-section-nav" aria-label="Record sections">
+            <button type="button" data-record-section="recordGeneral" aria-current="true">General</button>
+            <button type="button" data-record-section="recordInvoices">Invoices</button>
+            <button type="button" data-record-section="recordTrip">Trip</button>
+            <button type="button" data-record-section="recordFuel">Fuel</button>
+        </nav>
         <form id="fuelForm">
             <input type="hidden" id="editIndex" value="-1">
+            <div class="record-form-scroll" tabindex="0" aria-label="Record fields">
 
-            <div class="form-section">
+            <div class="form-section" id="recordGeneral">
                 <div class="form-section-title">📋 1. General Information</div>
                 <div class="form-grid-2">
                     <div class="form-group">
@@ -2985,7 +3010,7 @@ window.toggleFleetAnalysisPanel=function(){
                     </div>
                 </div>
             </div>
-            <div class="form-section">
+            <div class="form-section" id="recordInvoices">
                 <div class="form-section-title">📄 2. Trip Invoices &amp; Deliveries</div>
                 <div id="tripDocumentsEditor">
                   <div class="trip-document-row">
@@ -3020,7 +3045,7 @@ window.toggleFleetAnalysisPanel=function(){
                 <button type="button" class="trip-document-add" onclick="addTripDocument()">+ Add Invoice / Delivery</button>
             </div>
 
-            <div class="form-section">
+            <div class="form-section" id="recordTrip">
                 <div class="form-section-title">🛣️ 3. Trips &amp; Odometer Details</div>
                 <div class="form-grid-2">
                     <div class="form-group">
@@ -3050,7 +3075,7 @@ window.toggleFleetAnalysisPanel=function(){
                 </div>
             </div>
 
-            <div class="form-section">
+            <div class="form-section" id="recordFuel">
                 <div class="form-section-title">⛽ 4. Fuel &amp; Refueling Meters</div>
                 <div class="form-grid-2">
                     <div class="form-group">
@@ -3085,6 +3110,7 @@ window.toggleFleetAnalysisPanel=function(){
                 </div>
             </div>
 
+            </div>
             <div class="btn-group-form" style="display: flex; gap: 10px;">
                 <button type="submit" id="btnModalSubmit" class="btn" style="flex: 1;">Save Record</button>
                 <button type="button" id="btnModalSaveAsNew" class="btn" style="flex: 1; background-color: var(--success); display: none;" onclick="saveRecordAsNew()">Save as New</button>
@@ -19140,4 +19166,17 @@ window.applySyncedAdminPassword = function(value) {
   };
   btn.addEventListener("click",login);[email,pass,url,key].forEach(el=>el?.addEventListener("keydown",e=>{if(e.key==="Enter")login()}));document.getElementById("cloudSignOut")?.addEventListener("click",()=>setTimeout(()=>{lock()},100));lock();
 })();
-</script></body></html>
+</script>
+<script>
+(()=>{
+ const modal=document.getElementById('recordModal'),scroller=modal.querySelector('.record-form-scroll');
+ const buttons=[...modal.querySelectorAll('[data-record-section]')];
+ const sections=buttons.map(button=>document.getElementById(button.dataset.recordSection));
+ function markSection(id){for(const button of buttons){if(button.dataset.recordSection===id)button.setAttribute('aria-current','true');else button.removeAttribute('aria-current');}}
+ function updateSection(){const top=scroller.getBoundingClientRect().top;let active=sections[0];for(const section of sections){if(section.getBoundingClientRect().top<=top+32)active=section;}if(scroller.scrollTop>0&&scroller.scrollTop+scroller.clientHeight>=scroller.scrollHeight-2)active=sections.at(-1);markSection(active.id);}
+ for(const button of buttons)button.addEventListener('click',()=>{const section=document.getElementById(button.dataset.recordSection);scroller.scrollTop+=section.getBoundingClientRect().top-scroller.getBoundingClientRect().top-12;updateSection();});
+ scroller.addEventListener('scroll',updateSection,{passive:true});
+ new MutationObserver(()=>{if(modal.classList.contains('active')){scroller.scrollTop=0;markSection(sections[0].id);}}).observe(modal,{attributes:true,attributeFilter:['class']});
+})();
+</script>
+</body></html>
