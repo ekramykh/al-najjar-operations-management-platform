@@ -1867,6 +1867,18 @@ html.cloud-login-locked,html.cloud-login-locked body{overflow:hidden!important}
 #recordLogsPanel .record-detail-section h4::before{content:' ';display:inline-block;width:17px;height:17px;background:#85bce9;mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='M5 2h10l5 5v15H5V2zm9 2v5h4M8 12h9v2H8zm0 5h9v2H8z'/%3E%3C/svg%3E") center/contain no-repeat}
 #recordLogsPanel .record-invoice-table{border:1px solid #2a435c;border-radius:7px;overflow:hidden}
 </style>
+<style>
+/* Invoice cards follow the selected reference; preserve full fields below. */
+#recordDesignDetails .record-detail-summary{display:grid;grid-template-columns:.9fr 1.5fr 1fr .8fr 1fr;gap:12px;font-size:12px}
+#recordDesignDetails .record-invoice-grid{grid-template-columns:.6fr 1.2fr 1.4fr 1.2fr .8fr;gap:10px;align-items:start}
+#recordDesignDetails .record-invoice-grid strong{font-size:12px;padding-top:18px}
+#recordDesignDetails .record-detail-doc{padding:12px;background:linear-gradient(#10253b,#0b1d30);border-color:#2a435c}
+#recordDesignDetails .record-invoices-title{font-size:15px;color:#eef4ff;border-bottom:1px solid #294159;padding-bottom:10px;margin:18px 0 10px}
+#recordDesignDetails .record-invoice-low,#recordDesignDetails .record-detail-summary .record-detail-warning{color:#ff3535;font-weight:700}
+/* Allow wheel scrolling to continue into the page at list boundaries. */
+#recordLogsPanel #recordDesignTable,#recordLogsPanel #recordDesignDetails,#recordLogsPanel .record-invoice-table-wrap{overscroll-behavior:auto}
+@media(max-width:700px){#recordDesignDetails .record-detail-summary{grid-template-columns:repeat(2,minmax(0,1fr))}#recordDesignDetails .record-invoice-grid{grid-template-columns:repeat(2,minmax(0,1fr))}#recordDesignDetails .record-invoice-grid strong{grid-column:1/-1;padding-top:0}}
+</style>
 </head>
 <body class="">
 
@@ -19295,8 +19307,9 @@ window.applySyncedAdminPassword = function(value) {
   function group(title,fields){return '<section class="record-detail-section"><h4>'+title+'</h4><dl>'+fields.map(([label,value])=>'<div><dt>'+label+'</dt><dd>'+(label==='Vehicle'?brand(item):escapeHtml(value===undefined||value===null||value===''?'-':value))+'</dd></div>').join('')+'</dl></section>';}
   const km=calculateVariantKm(item.lastKm,item.currentKm),eff=calculateAverageKmPerLiter(km,item.fuel);
   return '<div class="record-details-title"><strong>Record '+escapeHtml(item.sn)+'</strong><button type="button" data-close-record-details aria-label="Close record details">×</button></div>'
-   +group('General Information',[['SN',item.sn],['Date',item.date],['Vehicle',item.car],['Driver',item.driver],['Driver Phone',item.driverPhone]])
-   +'<section class="record-detail-section"><h4>Trip Invoices &amp; Deliveries</h4>'+invoiceTable(item)+'<p class="record-detail-total">Total invoice amount: OMR '+Number(item.invoiceAmount||0).toFixed(3)+'</p></section>'
+   +'<div class="record-detail-summary"><div><small>Date</small>'+escapeHtml(item.date||'-')+'</div><div><small>Vehicle</small>'+brand(item)+'</div><div><small>Driver</small>'+escapeHtml(item.driver||'-')+'</div><div><small>Total Invoices</small><span class="record-count">'+tripDocuments(item).filter(doc=>doc.invoiceNumber).length+'</span></div><div><small>Total Amount</small><span class="'+(tripDocuments(item).some(lowTripInvoice)?'record-detail-warning':'')+'">'+(tripDocuments(item).some(lowTripInvoice)?'⚠ ':'')+Number(item.invoiceAmount||0).toFixed(3)+'</span></div></div>'
+   +'<h4 class="record-invoices-title">Invoices</h4>'+tripDocuments(item).map((doc,i)=>'<article class="record-detail-doc"><div class="record-invoice-grid"><strong>Invoice '+(i+1)+'</strong><div><small>Invoice No.</small>'+escapeHtml(doc.invoiceNumber||'-')+'</div><div><small>Branch</small>'+escapeHtml(doc.branch||'-')+'</div><div><small>Delivery</small>'+escapeHtml(doc.deliveryNumber||'-')+'</div><div class="'+(lowTripInvoice(doc)?'record-invoice-low':'')+'"><small>Amount</small>'+Number(doc.invoiceAmount||0).toFixed(3)+'</div></div>'+(lowTripInvoice(doc)?'<p class="record-warning-banner">⚠ Invoice amount below OMR 500</p>':'')+'</article>').join('')
+   +group('Additional General Information',[['SN',item.sn],['Driver Phone',item.driverPhone]])
    +group('Trips &amp; Odometer',[['Starting KM',item.startingKm],['End KM',item.endKm],['/Day',item.dayVal],['Trip 1 (From–To)',item.trip1],['Trip 1 KM',item.trip1Km],['Trip 2 (From–To)',item.trip2],['Trip 2 KM',item.trip2Km],['KM/Day',item.kmDay],['Difference',item.difference]])
    +group('Fuel &amp; Refueling',[['TNX Auth / Reference',item.tnxAuth],['Site / Location',item.site],['Fuel (Liters)',item.fuel],['Last KM',item.lastKm],['Current KM',item.currentKm],['Variant KM',km.toFixed(2)],['Average KM/L',eff.toFixed(2)]])
    +group('Notes',[['Notes',item.notes]]);
