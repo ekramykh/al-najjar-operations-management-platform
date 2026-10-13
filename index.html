@@ -1893,6 +1893,13 @@ html.cloud-login-locked,html.cloud-login-locked body{overflow:hidden!important}
 .record-row-chevron{display:inline-grid;place-items:center;width:24px;height:24px;padding:0;margin:0 7px 0 0;border:0;background:transparent;color:#a7c2df;font-size:23px;cursor:pointer}
 @media(max-width:700px){#recordDesignTable .record-expanded-detail .record-invoice-table-wrap{width:calc(100vw - 85px)}}
 </style>
+<style>
+/* Size expanded details from their actual viewport, including browser zoom. */
+#recordDesignTable .record-expanded-detail .record-invoice-table-wrap{width:var(--record-detail-width,100%);max-width:none;min-width:0}
+#recordLogsPanel .record-expanded-detail .record-invoice-table{min-width:0!important;width:100%!important}
+#recordLogsPanel .record-expanded-detail .record-invoice-table td,#recordLogsPanel .record-expanded-detail .record-invoice-table th{overflow-wrap:anywhere!important}
+#recordLogsPanel .record-expanded-detail .record-invoice-table td:last-child{white-space:nowrap!important}
+</style>
 </head>
 <body class="">
 
@@ -19314,6 +19321,11 @@ window.applySyncedAdminPassword = function(value) {
 (()=>{
  const layout=document.getElementById('recordDesignLayout'),body=document.getElementById('tableBody'),pane=document.getElementById('recordDesignDetails');
  const switches=[...document.querySelectorAll('[data-log-design]')];let design='1',recordCount=0,pageCount=1;
+ const tableViewport=document.getElementById('recordDesignTable');
+ function fitExpandedDetails(){tableViewport.style.setProperty('--record-detail-width',Math.max(0,tableViewport.clientWidth-36)+'px');}
+ if(typeof ResizeObserver!=='undefined')new ResizeObserver(fitExpandedDetails).observe(tableViewport);
+ window.addEventListener('resize',fitExpandedDetails,{passive:true});fitExpandedDetails();
+
  const names={'1':['Refined Table','Clean table with filters, invoice counts and pagination.'],'2':['Table + Details','Open an invoice count to see complete details in a side panel.'],'3':['Expandable Rows','View invoice details inline within the table.']};
  function brand(item){const mercedes=/merc/i.test(item.car||'');const drawing=mercedes?'<circle cx="12" cy="12" r="9"/><path d="M12 3v9l-8 5M12 12l8 5"/>':'<circle cx="11" cy="13" r="8"/><path d="M16 7l5-5M16 2h5v5M4 13h14"/>';return '<span class="record-vehicle '+(mercedes?'record-mercedes':'record-volvo')+'"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">'+drawing+'</svg>'+escapeHtml(item.car||'-')+'</span>';}
  function invoiceTable(item){return '<div class="record-invoice-table-wrap"><table class="record-invoice-table"><thead><tr><th>Invoice</th><th>Branch</th><th>Delivery</th><th>Amount (OMR)</th></tr></thead><tbody>'+tripDocuments(item).map(doc=>'<tr><td>'+escapeHtml(doc.invoiceNumber||'-')+'</td><td>'+escapeHtml(doc.branch||'-')+'</td><td>'+escapeHtml(doc.deliveryNumber||'-')+'</td><td class="'+(lowTripInvoice(doc)?'record-detail-warning':'')+'">'+(lowTripInvoice(doc)?'⚠ ':'')+Number(doc.invoiceAmount||0).toFixed(3)+'</td></tr>').join('')+'</tbody></table></div>';}
