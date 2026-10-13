@@ -1879,6 +1879,20 @@ html.cloud-login-locked,html.cloud-login-locked body{overflow:hidden!important}
 #recordLogsPanel #recordDesignTable,#recordLogsPanel #recordDesignDetails,#recordLogsPanel .record-invoice-table-wrap{overscroll-behavior:auto}
 @media(max-width:700px){#recordDesignDetails .record-detail-summary{grid-template-columns:repeat(2,minmax(0,1fr))}#recordDesignDetails .record-invoice-grid{grid-template-columns:repeat(2,minmax(0,1fr))}#recordDesignDetails .record-invoice-grid strong{grid-column:1/-1;padding-top:0}}
 </style>
+<style>
+/* Isolate invoice subtable from the main table's frozen columns. */
+#recordLogsPanel .record-invoice-table th,#recordLogsPanel .record-invoice-table td{position:static!important;left:auto!important;right:auto!important;z-index:auto!important;box-shadow:none!important;width:auto!important;min-width:0!important;max-width:none!important;white-space:normal!important;overflow-wrap:normal!important;word-break:normal!important;text-align:left!important;background:#0c1d30!important}
+#recordLogsPanel .record-invoice-table th{background:#142b40!important}
+#recordLogsPanel .record-invoice-table td:last-child,#recordLogsPanel .record-invoice-table th:last-child{text-align:right!important;white-space:nowrap!important}
+#recordLogsPanel .record-invoice-table{table-layout:fixed;min-width:650px!important;width:100%!important}
+#recordLogsPanel .record-invoice-table th:nth-child(1){width:26%!important}#recordLogsPanel .record-invoice-table th:nth-child(2){width:34%!important}#recordLogsPanel .record-invoice-table th:nth-child(3){width:25%!important}#recordLogsPanel .record-invoice-table th:nth-child(4){width:15%!important}
+#recordDesignTable .record-expanded-detail>td{position:static!important;left:auto!important;box-shadow:none!important;padding:14px 18px!important}
+#recordDesignTable .record-expanded-detail .record-invoice-table-wrap{width:calc(100vw - 150px);max-width:1200px;min-width:0}
+.record-expanded-brand{margin-bottom:10px}
+.record-cell-summary{display:block;max-width:250px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.record-row-chevron{display:inline-grid;place-items:center;width:24px;height:24px;padding:0;margin:0 7px 0 0;border:0;background:transparent;color:#a7c2df;font-size:23px;cursor:pointer}
+@media(max-width:700px){#recordDesignTable .record-expanded-detail .record-invoice-table-wrap{width:calc(100vw - 85px)}}
+</style>
 </head>
 <body class="">
 
@@ -19320,8 +19334,13 @@ window.applySyncedAdminPassword = function(value) {
  window.refreshRecordDesign=function(count,totalPages){if(typeof count==='number')recordCount=count;if(typeof totalPages==='number')pageCount=totalPages;clearDetails();
   const th=document.getElementById('th-car');th.childNodes[0].textContent='Vehicle ';document.getElementById('th-invoiceNumber').childNodes[0].textContent='Invoices ';document.getElementById('th-invoiceAmount').childNodes[0].textContent='Total (OMR) ';
   for(const row of [...body.children]){const match=row.id.match(/^fuel-record-row-(\d+)$/);if(!match)continue;const item=fuelRecords[Number(match[1])];if(!item)continue;
-   row.children[2].innerHTML=brand(item);const cell=row.children[5];cell.textContent='';const button=document.createElement('button');button.type='button';button.className='record-invoice-toggle';button.textContent=tripDocuments(item).length;button.title='View invoices and deliveries';button.setAttribute('aria-label','View invoices for record '+item.sn);button.setAttribute('aria-expanded','false');
+   row.children[2].innerHTML=brand(item);
+   for(const col of [7,8,12,14]){const textCell=row.children[col];if(textCell){textCell.title=textCell.textContent;const text=textCell.textContent;textCell.textContent='';const span=document.createElement('span');span.className='record-cell-summary';span.textContent=text;textCell.appendChild(span);}}
+   const numberCell=row.children[0];numberCell.textContent=item.sn || '-';
+   const cell=row.children[5];cell.textContent='';const button=document.createElement('button');button.type='button';button.className='record-invoice-toggle';button.textContent=tripDocuments(item).length;button.title='View invoices and deliveries';button.setAttribute('aria-label','View invoices for record '+item.sn);button.setAttribute('aria-expanded','false');
    button.addEventListener('dblclick',event=>event.stopPropagation());button.addEventListener('click',event=>{event.stopPropagation();const wasOpen=button.getAttribute('aria-expanded')==='true';clearDetails();if(wasOpen)return;button.setAttribute('aria-expanded','true');row.classList.add('record-selected');if(design==='2'){pane.innerHTML=details(item);pane.querySelector('[data-close-record-details]').addEventListener('click',clearDetails);}else{const expanded=document.createElement('tr');expanded.className='record-expanded-detail';const td=document.createElement('td');td.colSpan=row.children.length;td.innerHTML='<div class="record-expanded-brand">'+brand(item)+'</div>'+invoiceTable(item);expanded.appendChild(td);row.after(expanded);}});cell.appendChild(button);
+   if(design==='3'){const expand=document.createElement('button');expand.type='button';expand.className='record-row-chevron';expand.textContent='›';expand.setAttribute('aria-label','Expand invoices for record '+item.sn);expand.addEventListener('click',event=>{event.stopPropagation();button.click();expand.textContent=button.getAttribute('aria-expanded')==='true'?'⌄':'›';});expand.addEventListener('dblclick',event=>event.stopPropagation());numberCell.prepend(expand);}
+
   }
   document.getElementById('paginationInfo').textContent=recordCount+' records';pages();
  };
