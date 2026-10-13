@@ -1832,6 +1832,41 @@ html.cloud-login-locked,html.cloud-login-locked body{overflow:hidden!important}
 .record-detail-section .record-invoice-table{min-width:500px}.record-detail-total{text-align:right;color:#e2e8f0;font-size:13px;font-weight:600;margin:14px 0 0}
 @media(max-width:1000px){#recordDesignLayout[data-design="2"]{grid-template-columns:minmax(0,1fr)}}
 </style>
+<style>
+/* Reference palette, scoped to record design comparisons. */
+#recordLogsPanel{--records-base:#06111f;--records-panel:#091827;--records-head:#142b40;--records-line:#2a435c;--records-text:#eef4ff;--records-muted:#a7c2df;--records-accent:#168dff;background:linear-gradient(110deg,#081726,#06111f);border-color:var(--records-line);color:var(--records-text)}
+#recordLogsPanel .panel-title,.record-design-heading{color:var(--records-text)}
+#recordLogsPanel .record-design-heading>small,#recordLogsPanel .filter-item label,#recordLogsPanel .pagination-footer{color:var(--records-muted)}
+#recordLogsPanel .record-design-heading>span,#recordLogsPanel #recordPageButtons [aria-current="page"]{background:linear-gradient(135deg,#25a6ff,#0877ed);border-color:#36adff;color:white}
+#recordLogsPanel .record-design-switch button{background:#081727;color:#a7c2df;border-color:#2a435c}#recordLogsPanel .record-design-switch button[aria-pressed="true"]{background:#123e68;color:#eaf5ff;border-color:#168dff}
+#recordLogsPanel .filter-item input,#recordLogsPanel .filter-item select,#recordLogsPanel .select-pagesize{background:linear-gradient(#0b1d30,#071320);border-color:#2a435c;color:#eef4ff}#recordLogsPanel input::placeholder{color:#98b6d3;opacity:1}
+#recordLogsPanel .btn-clear-filters{background:#071827;border-color:#168dff;color:#54bcff}
+#recordDesignTable{background:#071320;border-color:#2a435c;scrollbar-color:#506b8d #071320}
+#recordDesignTable::-webkit-scrollbar-track{background:#071320}#recordDesignTable::-webkit-scrollbar-thumb{background:#506b8d;border-color:#071320}
+#recordDesignTable>table>thead>tr>th{background:linear-gradient(#173047,#11263a);color:#b2cce8;border-color:#2a435c}
+#recordDesignTable>table>tbody>tr:not(.record-expanded-detail){background:#071320}#recordDesignTable>table>tbody>tr:not(.record-expanded-detail):nth-child(even){background:#0b1b2d}
+#recordDesignTable>table>tbody>tr:not(.record-expanded-detail)>td{color:#eef4ff!important;border-color:#1c334b}
+#recordDesignTable>table>tbody>tr.record-selected{background:#123f73!important}#recordDesignTable>table>tbody>tr:hover{background:#102d4b!important}
+#recordLogsPanel .record-mercedes{background:linear-gradient(#3c2416,#291b13);border-color:#84502c;color:#ff9634}#recordLogsPanel .record-volvo{background:linear-gradient(#103759,#08213c);border-color:#2268a1;color:#6ec6ff}
+#recordLogsPanel .record-invoice-toggle,#recordLogsPanel .record-count{background:linear-gradient(#213b54,#13263a);border-color:#34516d;color:#eef4ff}
+#recordLogsPanel .invoice-warning-cell,#recordLogsPanel .invoice-warning-cell span{color:#ff3535!important}
+#recordDesignDetails{background:linear-gradient(#071523,#06111f);border-color:#2a435c;color:#eef4ff}
+#recordLogsPanel .record-detail-section{background:linear-gradient(#0d2134,#091a2c);border-color:#2a435c}#recordLogsPanel .record-detail-section h4{color:#eef4ff;border-color:#2a435c}#recordLogsPanel .record-detail-section dt{color:#a7c2df}#recordLogsPanel .record-detail-section dd{color:#eef4ff}
+#recordLogsPanel .record-invoice-table th{background:#142b40;color:#b2cce8;border-color:#2a435c}#recordLogsPanel .record-invoice-table td{color:#eef4ff;border-color:#1c334b;background:#0b1b2d}#recordLogsPanel .record-invoice-table td.record-detail-warning{color:#ff3535}
+#recordLogsPanel .record-expanded-detail>td{background:#081827!important}#recordLogsPanel .record-warning-banner{background:#402914;color:#ffca29;border-color:#996022}
+#recordLogsPanel .pagination-btn{background:linear-gradient(#0d2134,#071320);color:#c8dff7;border-color:#2a435c}#recordLogsPanel .pagination-btn:disabled{opacity:.45}
+</style>
+<style>
+/* Shared brand, icon and scroll treatment for primary and detail lists. */
+#recordLogsPanel #recordDesignDetails,#recordLogsPanel .record-invoice-table-wrap{scrollbar-width:thin;scrollbar-color:#506b8d #071320;scrollbar-gutter:stable;overscroll-behavior:contain}
+#recordLogsPanel #recordDesignDetails::-webkit-scrollbar,#recordLogsPanel .record-invoice-table-wrap::-webkit-scrollbar{width:9px;height:9px}
+#recordLogsPanel #recordDesignDetails::-webkit-scrollbar-track,#recordLogsPanel .record-invoice-table-wrap::-webkit-scrollbar-track{background:#071320;border-radius:9px}
+#recordLogsPanel #recordDesignDetails::-webkit-scrollbar-thumb,#recordLogsPanel .record-invoice-table-wrap::-webkit-scrollbar-thumb{background:#506b8d;border:2px solid #071320;border-radius:9px}
+#recordLogsPanel #recordDesignDetails::-webkit-scrollbar-thumb:hover,#recordLogsPanel .record-invoice-table-wrap::-webkit-scrollbar-thumb:hover,#recordDesignTable::-webkit-scrollbar-thumb:hover{background:#7694b7}
+#recordLogsPanel .record-detail-section h4{display:flex;align-items:center;gap:9px}
+#recordLogsPanel .record-detail-section h4::before{content:' ';display:inline-block;width:17px;height:17px;background:#85bce9;mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='M5 2h10l5 5v15H5V2zm9 2v5h4M8 12h9v2H8zm0 5h9v2H8z'/%3E%3C/svg%3E") center/contain no-repeat}
+#recordLogsPanel .record-invoice-table{border:1px solid #2a435c;border-radius:7px;overflow:hidden}
+</style>
 </head>
 <body class="">
 
@@ -19257,7 +19292,7 @@ window.applySyncedAdminPassword = function(value) {
  function brand(item){const mercedes=/merc/i.test(item.car||'');const drawing=mercedes?'<circle cx="12" cy="12" r="9"/><path d="M12 3v9l-8 5M12 12l8 5"/>':'<circle cx="11" cy="13" r="8"/><path d="M16 7l5-5M16 2h5v5M4 13h14"/>';return '<span class="record-vehicle '+(mercedes?'record-mercedes':'record-volvo')+'"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">'+drawing+'</svg>'+escapeHtml(item.car||'-')+'</span>';}
  function invoiceTable(item){return '<div class="record-invoice-table-wrap"><table class="record-invoice-table"><thead><tr><th>Invoice</th><th>Branch</th><th>Delivery</th><th>Amount (OMR)</th></tr></thead><tbody>'+tripDocuments(item).map(doc=>'<tr><td>'+escapeHtml(doc.invoiceNumber||'-')+'</td><td>'+escapeHtml(doc.branch||'-')+'</td><td>'+escapeHtml(doc.deliveryNumber||'-')+'</td><td class="'+(lowTripInvoice(doc)?'record-detail-warning':'')+'">'+(lowTripInvoice(doc)?'⚠ ':'')+Number(doc.invoiceAmount||0).toFixed(3)+'</td></tr>').join('')+'</tbody></table></div>';}
  function details(item){
-  function group(title,fields){return '<section class="record-detail-section"><h4>'+title+'</h4><dl>'+fields.map(([label,value])=>'<div><dt>'+label+'</dt><dd>'+escapeHtml(value===undefined||value===null||value===''?'-':value)+'</dd></div>').join('')+'</dl></section>';}
+  function group(title,fields){return '<section class="record-detail-section"><h4>'+title+'</h4><dl>'+fields.map(([label,value])=>'<div><dt>'+label+'</dt><dd>'+(label==='Vehicle'?brand(item):escapeHtml(value===undefined||value===null||value===''?'-':value))+'</dd></div>').join('')+'</dl></section>';}
   const km=calculateVariantKm(item.lastKm,item.currentKm),eff=calculateAverageKmPerLiter(km,item.fuel);
   return '<div class="record-details-title"><strong>Record '+escapeHtml(item.sn)+'</strong><button type="button" data-close-record-details aria-label="Close record details">×</button></div>'
    +group('General Information',[['SN',item.sn],['Date',item.date],['Vehicle',item.car],['Driver',item.driver],['Driver Phone',item.driverPhone]])
@@ -19273,7 +19308,7 @@ window.applySyncedAdminPassword = function(value) {
   const th=document.getElementById('th-car');th.childNodes[0].textContent='Vehicle ';document.getElementById('th-invoiceNumber').childNodes[0].textContent='Invoices ';document.getElementById('th-invoiceAmount').childNodes[0].textContent='Total (OMR) ';
   for(const row of [...body.children]){const match=row.id.match(/^fuel-record-row-(\d+)$/);if(!match)continue;const item=fuelRecords[Number(match[1])];if(!item)continue;
    row.children[2].innerHTML=brand(item);const cell=row.children[5];cell.textContent='';const button=document.createElement('button');button.type='button';button.className='record-invoice-toggle';button.textContent=tripDocuments(item).length;button.title='View invoices and deliveries';button.setAttribute('aria-label','View invoices for record '+item.sn);button.setAttribute('aria-expanded','false');
-   button.addEventListener('dblclick',event=>event.stopPropagation());button.addEventListener('click',event=>{event.stopPropagation();const wasOpen=button.getAttribute('aria-expanded')==='true';clearDetails();if(wasOpen)return;button.setAttribute('aria-expanded','true');row.classList.add('record-selected');if(design==='2'){pane.innerHTML=details(item);pane.querySelector('[data-close-record-details]').addEventListener('click',clearDetails);}else{const expanded=document.createElement('tr');expanded.className='record-expanded-detail';const td=document.createElement('td');td.colSpan=row.children.length;td.innerHTML=invoiceTable(item);expanded.appendChild(td);row.after(expanded);}});cell.appendChild(button);
+   button.addEventListener('dblclick',event=>event.stopPropagation());button.addEventListener('click',event=>{event.stopPropagation();const wasOpen=button.getAttribute('aria-expanded')==='true';clearDetails();if(wasOpen)return;button.setAttribute('aria-expanded','true');row.classList.add('record-selected');if(design==='2'){pane.innerHTML=details(item);pane.querySelector('[data-close-record-details]').addEventListener('click',clearDetails);}else{const expanded=document.createElement('tr');expanded.className='record-expanded-detail';const td=document.createElement('td');td.colSpan=row.children.length;td.innerHTML='<div class="record-expanded-brand">'+brand(item)+'</div>'+invoiceTable(item);expanded.appendChild(td);row.after(expanded);}});cell.appendChild(button);
   }
   document.getElementById('paginationInfo').textContent=recordCount+' records';pages();
  };
