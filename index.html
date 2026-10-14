@@ -1941,6 +1941,12 @@ html.cloud-login-locked,html.cloud-login-locked body{overflow:hidden!important}
 #recordLogsPanel .select-pagesize option{background-color:#0b1d30;color:#eef4ff;font-size:14px}
 #recordLogsPanel .select-pagesize:focus-visible{outline:2px solid #38bdf8;outline-offset:2px}
 </style>
+<style>
+/* Do not reserve an extra strip beside the records scrollbar. */
+#recordLogsPanel #recordDesignTable{scrollbar-gutter:auto}
+#recordDesignTable>table{margin:0;width:100%;}
+#recordDesignTable .record-expanded-detail>td{width:auto!important;min-width:0!important;max-width:none!important}
+</style>
 </head>
 <body class="">
 
