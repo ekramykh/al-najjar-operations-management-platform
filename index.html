@@ -1912,6 +1912,22 @@ html.cloud-login-locked,html.cloud-login-locked body{overflow:hidden!important}
 #recordLogsPanel .record-design-switch svg{width:19px;height:19px}
 #recordLogsPanel .record-design-heading{display:none}
 </style>
+<style>
+/* Center details within their visible host, including horizontal scroll/zoom. */
+#recordDesignLayout{min-width:0;width:100%}
+#recordDesignLayout[data-design="2"]{grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);align-items:start}
+#recordDesignTable,#recordDesignDetails{min-width:0;box-sizing:border-box}
+#recordDesignDetails{width:100%;container-type:inline-size;padding:16px}
+#recordDesignDetails .record-detail-doc,#recordDesignDetails .record-detail-section,#recordDesignDetails .record-detail-summary{width:100%;box-sizing:border-box;margin-left:auto;margin-right:auto}
+#recordDesignDetails .record-detail-summary>div,#recordDesignDetails .record-invoice-grid>div{min-width:0;overflow-wrap:anywhere}
+#recordDesignDetails .record-vehicle{max-width:100%;white-space:normal}
+#recordDesignDetails .record-invoice-grid{grid-template-columns:minmax(48px,.6fr) minmax(0,1.2fr) minmax(0,1.4fr) minmax(0,1.2fr) minmax(65px,.8fr)}
+#recordDesignTable .record-expanded-content{position:sticky;left:18px;width:var(--record-detail-width,100%);max-width:var(--record-detail-width,100%);box-sizing:border-box}
+#recordDesignTable .record-expanded-detail .record-invoice-table-wrap{width:100%;max-width:100%;box-sizing:border-box;margin-inline:auto}
+#recordDesignDetails .record-invoice-table-wrap{max-width:100%}
+@container(max-width:520px){#recordDesignDetails .record-detail-summary{grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}#recordDesignDetails .record-invoice-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}#recordDesignDetails .record-invoice-grid strong{grid-column:1/-1;padding-top:0}#recordDesignDetails .record-invoice-grid>div:last-child{text-align:left}}
+@media(max-width:1000px){#recordDesignLayout[data-design="2"]{grid-template-columns:minmax(0,1fr)}#recordDesignDetails{max-height:460px}}
+</style>
 </head>
 <body class="">
 
@@ -19357,7 +19373,7 @@ window.applySyncedAdminPassword = function(value) {
    for(const col of [7,8,12,14]){const textCell=row.children[col];if(textCell){textCell.title=textCell.textContent;const text=textCell.textContent;textCell.textContent='';const span=document.createElement('span');span.className='record-cell-summary';span.textContent=text;textCell.appendChild(span);}}
    const numberCell=row.children[0];numberCell.textContent=item.sn || '-';
    const cell=row.children[5];cell.textContent='';const button=document.createElement('button');button.type='button';button.className='record-invoice-toggle';button.textContent=tripDocuments(item).length;button.title='View invoices and deliveries';button.setAttribute('aria-label','View invoices for record '+item.sn);button.setAttribute('aria-expanded','false');
-   button.addEventListener('dblclick',event=>event.stopPropagation());button.addEventListener('click',event=>{event.stopPropagation();const wasOpen=button.getAttribute('aria-expanded')==='true';clearDetails();if(wasOpen)return;button.setAttribute('aria-expanded','true');row.classList.add('record-selected');if(design==='2'){pane.innerHTML=details(item);pane.querySelector('[data-close-record-details]').addEventListener('click',clearDetails);}else{const expanded=document.createElement('tr');expanded.className='record-expanded-detail';const td=document.createElement('td');td.colSpan=row.children.length;td.innerHTML='<div class="record-expanded-brand">'+brand(item)+'</div>'+invoiceTable(item);expanded.appendChild(td);row.after(expanded);}});cell.appendChild(button);
+   button.addEventListener('dblclick',event=>event.stopPropagation());button.addEventListener('click',event=>{event.stopPropagation();const wasOpen=button.getAttribute('aria-expanded')==='true';clearDetails();if(wasOpen)return;button.setAttribute('aria-expanded','true');row.classList.add('record-selected');if(design==='2'){pane.innerHTML=details(item);pane.querySelector('[data-close-record-details]').addEventListener('click',clearDetails);}else{const expanded=document.createElement('tr');expanded.className='record-expanded-detail';const td=document.createElement('td');td.colSpan=row.children.length;td.innerHTML='<div class="record-expanded-content"><div class="record-expanded-brand">'+brand(item)+'</div>'+invoiceTable(item)+'</div>';expanded.appendChild(td);row.after(expanded);}});cell.appendChild(button);
    if(design==='3'){const expand=document.createElement('button');expand.type='button';expand.className='record-row-chevron';expand.textContent='›';expand.setAttribute('aria-label','Expand invoices for record '+item.sn);expand.addEventListener('click',event=>{event.stopPropagation();button.click();expand.textContent=button.getAttribute('aria-expanded')==='true'?'⌄':'›';});expand.addEventListener('dblclick',event=>event.stopPropagation());numberCell.prepend(expand);}
 
   }
