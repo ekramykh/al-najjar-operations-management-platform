@@ -1922,7 +1922,7 @@ html.cloud-login-locked,html.cloud-login-locked body{overflow:hidden!important}
 #recordDesignDetails .record-detail-summary>div,#recordDesignDetails .record-invoice-grid>div{min-width:0;overflow-wrap:anywhere}
 #recordDesignDetails .record-vehicle{max-width:100%;white-space:normal}
 #recordDesignDetails .record-invoice-grid{grid-template-columns:minmax(48px,.6fr) minmax(0,1.2fr) minmax(0,1.4fr) minmax(0,1.2fr) minmax(65px,.8fr)}
-#recordDesignTable .record-expanded-content{position:sticky;left:0;width:var(--record-detail-width,100%);max-width:var(--record-detail-width,100%);box-sizing:border-box;padding:14px 18px}
+#recordDesignTable .record-expanded-content{position:sticky;left:18px;width:var(--record-detail-width,100%);max-width:var(--record-detail-width,100%);box-sizing:border-box}
 #recordDesignTable .record-expanded-detail .record-invoice-table-wrap{width:100%;max-width:100%;box-sizing:border-box;margin-inline:auto}
 #recordDesignDetails .record-invoice-table-wrap{max-width:100%}
 @container(max-width:520px){#recordDesignDetails .record-detail-summary{grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}#recordDesignDetails .record-invoice-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}#recordDesignDetails .record-invoice-grid strong{grid-column:1/-1;padding-top:0}#recordDesignDetails .record-invoice-grid>div:last-child{text-align:left}}
@@ -1942,10 +1942,9 @@ html.cloud-login-locked,html.cloud-login-locked body{overflow:hidden!important}
 #recordLogsPanel .select-pagesize:focus-visible{outline:2px solid #38bdf8;outline-offset:2px}
 </style>
 <style>
-/* Do not reserve an extra strip beside the records scrollbar. */
-#recordLogsPanel #recordDesignTable{scrollbar-gutter:auto}
-#recordDesignTable>table{margin:0;width:100%;}
-#recordDesignTable .record-expanded-detail>td{width:auto!important;min-width:0!important;max-width:none!important;padding:0!important}
+/* Keep action tooltips inside the table; hidden pseudo-elements also affect scroll width. */
+#recordDesignTable>table>tbody>tr:not(.record-expanded-detail)>td:last-child .btn-icon::after{left:auto;right:0;transform:translateY(4px)}
+#recordDesignTable>table>tbody>tr:not(.record-expanded-detail)>td:last-child .btn-icon:hover::after{transform:translateY(0)}
 </style>
 </head>
 <body class="">
@@ -19364,7 +19363,7 @@ window.applySyncedAdminPassword = function(value) {
  const layout=document.getElementById('recordDesignLayout'),body=document.getElementById('tableBody'),pane=document.getElementById('recordDesignDetails');
  const switches=[...document.querySelectorAll('[data-log-design]')];let design='1',recordCount=0,pageCount=1;
  const tableViewport=document.getElementById('recordDesignTable');
- function fitExpandedDetails(){tableViewport.style.setProperty('--record-detail-width',Math.max(0,tableViewport.clientWidth)+'px');}
+ function fitExpandedDetails(){tableViewport.style.setProperty('--record-detail-width',Math.max(0,tableViewport.clientWidth-36)+'px');}
  if(typeof ResizeObserver!=='undefined')new ResizeObserver(fitExpandedDetails).observe(tableViewport);
  window.addEventListener('resize',fitExpandedDetails,{passive:true});fitExpandedDetails();
 
