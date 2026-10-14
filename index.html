@@ -1966,15 +1966,8 @@ select{color-scheme:dark}
 select option,select optgroup{background-color:var(--bg-card,#1f2937);color:var(--text-main,#f9fafb)}
 </style>
 <style>
-/* Consistent scrollbar appearance only; scroll behavior and containers stay intact. */
-:root{--scrollbar-track:#0b1422;--scrollbar-thumb:#506b8d;--scrollbar-hover:#7b99bb}
-html,body,*{scrollbar-width:thin!important;scrollbar-color:var(--scrollbar-thumb) var(--scrollbar-track)!important}
-*::-webkit-scrollbar{width:10px!important;height:10px!important}
-*::-webkit-scrollbar-track{background:var(--scrollbar-track)!important;border-radius:10px!important}
-*::-webkit-scrollbar-thumb{background:var(--scrollbar-thumb)!important;border:2px solid var(--scrollbar-track)!important;border-radius:10px!important}
-*::-webkit-scrollbar-thumb:hover{background:var(--scrollbar-hover)!important}
-*::-webkit-scrollbar-corner{background:var(--scrollbar-track)!important}
-@supports selector(::-webkit-scrollbar){html,body,*{scrollbar-width:auto!important;scrollbar-color:auto!important}}
+/* Match the existing record editor's thin native scrollbar, including native arrows. */
+html,body,*{scrollbar-width:thin!important;scrollbar-color:#64748b #111827!important}
 /* Compact, readable invoice warnings with aligned fields. */
 #invoiceWarningDashboard{background:#171b25;border-color:#6c4d22;border-left:3px solid #f59e0b;border-radius:12px}
 #invoiceWarningDashboard .warning-dropdown-toggle{padding:14px 18px;gap:12px}
