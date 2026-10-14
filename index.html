@@ -1965,6 +1965,32 @@ html.cloud-login-locked,html.cloud-login-locked body{overflow:hidden!important}
 select{color-scheme:dark}
 select option,select optgroup{background-color:var(--bg-card,#1f2937);color:var(--text-main,#f9fafb)}
 </style>
+<style>
+/* Consistent scrollbar appearance only; scroll behavior and containers stay intact. */
+:root{--scrollbar-track:#0b1422;--scrollbar-thumb:#506b8d;--scrollbar-hover:#7b99bb}
+html,body,*{scrollbar-width:thin!important;scrollbar-color:var(--scrollbar-thumb) var(--scrollbar-track)!important}
+*::-webkit-scrollbar{width:10px!important;height:10px!important}
+*::-webkit-scrollbar-track{background:var(--scrollbar-track)!important;border-radius:10px!important}
+*::-webkit-scrollbar-thumb{background:var(--scrollbar-thumb)!important;border:2px solid var(--scrollbar-track)!important;border-radius:10px!important}
+*::-webkit-scrollbar-thumb:hover{background:var(--scrollbar-hover)!important}
+*::-webkit-scrollbar-corner{background:var(--scrollbar-track)!important}
+@supports selector(::-webkit-scrollbar){html,body,*{scrollbar-width:auto!important;scrollbar-color:auto!important}}
+/* Compact, readable invoice warnings with aligned fields. */
+#invoiceWarningDashboard{background:#171b25;border-color:#6c4d22;border-left:3px solid #f59e0b;border-radius:12px}
+#invoiceWarningDashboard .warning-dropdown-toggle{padding:14px 18px;gap:12px}
+#invoiceWarningDashboard .warning-title,#invoiceWarningDashboard .warning-chevron{color:#fbbf24}
+#invoiceWarningDashboard .warning-dropdown-content{padding:0 18px 18px}
+#invoiceWarningDashboard .warning-summary{color:#b7c9df;font-size:13px;line-height:1.6;margin-bottom:12px}
+#invoiceWarningDashboard .warning-list{gap:8px;max-height:300px;padding-right:6px}
+#invoiceWarningDashboard .warning-item{display:grid;grid-template-columns:minmax(130px,.8fr) minmax(150px,1fr) minmax(150px,.8fr) minmax(180px,1.2fr) minmax(150px,1fr);gap:12px;padding:13px 14px;background:#111c2c;border:1px solid #304156;border-radius:8px;color:#eef4ff;align-items:start;transform:none}
+#invoiceWarningDashboard .warning-item>span{min-width:0;overflow-wrap:anywhere;font-size:13px;line-height:1.5}
+#invoiceWarningDashboard .warning-item strong{display:block;color:#9eb3cb;font-size:11px;font-weight:600;margin-bottom:4px}
+#invoiceWarningDashboard .warning-item .warning-amount{color:#fb7185;font-size:14px}
+#invoiceWarningDashboard .warning-item:hover{background:#1a2e46;border-color:#5683b0;transform:none}
+#invoiceWarningDashboard .warning-item:focus-visible{outline:2px solid #38bdf8;outline-offset:-2px}
+@media(max-width:1100px){#invoiceWarningDashboard .warning-item{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:650px){#invoiceWarningDashboard .warning-item{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}}
+</style>
 </head>
 <body class="">
 
@@ -2067,6 +2093,30 @@ window.toggleFleetAnalysisPanel=function(){
 .fleet-analysis-toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:12px}.fleet-analysis-toolbar select,.fleet-analysis-toolbar input,.fleet-profile-form input,.fleet-profile-form select{padding:8px 10px;border:1px solid #cbd5e1;border-radius:7px;background:var(--bg-card,#fff);color:inherit;box-sizing:border-box}.fleet-analysis-toolbar button,.fleet-profile-form button{padding:8px 12px;border:0;border-radius:7px;cursor:pointer;background:#2563eb;color:#fff}.fleet-profile-form{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px;padding:12px;background:#f8fafc;border-radius:10px;margin-bottom:14px}.fleet-profile-form label{font-size:11px;color:#64748b;display:flex;flex-direction:column;gap:4px}.fleet-profile-form .wide{grid-column:span 2}.fleet-analysis-table{width:100%;border-collapse:collapse;font-size:12px}.fleet-alerts-table th:first-child,.fleet-alerts-table td:first-child{min-width:105px;width:105px;white-space:nowrap}.fleet-analysis-table th,.fleet-analysis-table td{padding:8px;border-bottom:1px solid #e2e8f0;text-align:left;white-space:nowrap}.fleet-analysis-table th{background:#f8fafc}.fleet-status{display:inline-block;padding:3px 7px;border-radius:999px;font-size:11px}.fleet-status.normal{background:#dcfce7;color:#166534}.fleet-status.review{background:#fef3c7;color:#92400e}.fleet-status.high{background:#fee2e2;color:#991b1b}.fleet-status.info{background:#e0f2fe;color:#075985}.fleet-empty{padding:20px;text-align:center;color:#64748b}.fleet-section-hidden{display:none}
 @media(max-width:900px){.fleet-analysis-grid,.fleet-profile-form{grid-template-columns:repeat(2,minmax(0,1fr))}.fleet-profile-form .wide{grid-column:span 2}}
 @media(max-width:600px){.fleet-analysis-grid,.fleet-profile-form{grid-template-columns:1fr}.fleet-profile-form .wide{grid-column:span 1}.fleet-analysis-table{display:block;overflow:auto}}
+</style>
+
+<style id="fleet-analysis-review-style">
+#fleetAnalysisPanel{background:#091827;border-color:#2a435c;padding:20px;color:#eef4ff}
+#fleetAnalysisPanel .fleet-analysis-title{padding-bottom:14px;border-bottom:1px solid #2a435c;flex-wrap:wrap}
+#fleetAnalysisPanel .fleet-analysis-title span{color:#a7bdd5;line-height:1.5;max-width:480px}
+#fleetAnalysisPanel .fleet-analysis-card{background:#101f32;border-color:#2a435c;padding:16px;min-width:0}
+#fleetAnalysisPanel .fleet-analysis-card small{color:#a7bdd5;font-size:12px}
+#fleetAnalysisPanel .fleet-analysis-card b{color:#eef4ff;font-size:23px;margin-top:8px;overflow-wrap:anywhere}
+#fleetAnalysisPanel .fleet-analysis-toolbar{gap:10px;margin:16px 0 22px}
+#fleetAnalysisPanel .fleet-analysis-toolbar select,#fleetAnalysisPanel .fleet-analysis-toolbar input,#fleetAnalysisPanel .fleet-profile-form input,#fleetAnalysisPanel .fleet-profile-form select{min-height:38px;padding:8px 12px;background:#101f32;color:#eef4ff;border-color:#3a536d;font-size:13px;border-radius:7px}
+#fleetAnalysisPanel .fleet-analysis-toolbar button,#fleetAnalysisPanel .fleet-profile-form button{min-height:38px;padding:9px 14px;border-radius:7px;font-size:13px;font-weight:600}
+#fleetAnalysisPanel .fleet-profile-form{background:#101f32;border:1px solid #2a435c;gap:14px;padding:16px}
+#fleetAnalysisPanel .fleet-profile-form label{color:#a7bdd5;font-size:12px;gap:7px}
+#fleetAnalysisPanel .fleet-analysis-table{min-width:880px;width:100%;font-size:13px;border-collapse:separate;border-spacing:0;border:1px solid #2a435c;border-radius:8px;overflow:hidden}
+#fleetAnalysisPanel .fleet-analysis-table th,#fleetAnalysisPanel .fleet-analysis-table td{position:static!important;left:auto!important;width:auto!important;min-width:0!important;max-width:none!important;z-index:auto!important;box-shadow:none!important;padding:12px 14px;border-color:#2a435c;color:#eef4ff;white-space:nowrap}
+#fleetAnalysisPanel .fleet-analysis-table th{background:#142b40!important;color:#a7c2df!important;font-size:11px;font-weight:600}
+#fleetAnalysisPanel .fleet-analysis-table td{background:#0b192b!important}
+#fleetAnalysisPanel .fleet-analysis-table tr:nth-child(even) td{background:#102034!important}
+#fleetAnalysisPanel .fleet-analysis-table tr:hover td{background:#17314d!important}
+#fleetAnalysisPanel .fleet-analysis-table th:first-child,#fleetAnalysisPanel .fleet-analysis-table td:first-child{min-width:175px!important}
+#fleetAnalysisPanel h3{color:#dceaff;margin-top:20px!important;margin-bottom:12px!important}
+#fleetAnalysisPanel .fleet-empty{color:#a7bdd5}
+@media(max-width:650px){#fleetAnalysisPanel{padding:14px}.fleet-analysis-title h2{font-size:16px}}
 </style>
 
 <section class="fleet-analysis-panel" id="fleetAnalysisPanel">
