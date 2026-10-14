@@ -18580,7 +18580,11 @@ window.applySyncedAdminPassword = function(value) {
     if (records !== undefined) body.records = records;
     const requestGeneration = connectionGeneration;
     const { data, error } = await client.functions.invoke("fuel-sync", { body });
-    if (requestGeneration !== connectionGeneration) throw new Error('Account changed while a server request was pending.');
+    if (requestGeneration !== connectionGeneration) {
+      const superseded = new Error('Account changed while a server request was pending.');
+      superseded.code = 'FUEL_CONNECTION_SUPERSEDED';
+      throw superseded;
+    }
     if (error) {
       let detail = error.message || "Secure server request failed.";
       try {
@@ -18990,6 +18994,8 @@ window.applySyncedAdminPassword = function(value) {
 
   async function connect() {
     connectionGeneration++;
+    // Stop old polling before authentication; its pending response is obsolete.
+    if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
     resetPermissionEditor();
     permissionsReady = false;
     currentPermissions = null;
@@ -19067,7 +19073,15 @@ window.applySyncedAdminPassword = function(value) {
     if (pollTimer) clearInterval(pollTimer);
     pollTimer = setInterval(() => {
       if (!client || !permissionsReady || cloudDirty || busy || document.hidden) return;
-      pullCloud().catch(err => {
+      const pollGeneration = connectionGeneration;
+      const pollClient = client;
+      pullCloud().then(() => {
+        if (pollGeneration === connectionGeneration && pollClient === client && permissionsReady && !cloudDirty) {
+          status("Connected & Synced", "#34d399");
+        }
+      }).catch(err => {
+        // A read from the previous connection must not overwrite the new status.
+        if (pollGeneration !== connectionGeneration || pollClient !== client || err?.code === 'FUEL_CONNECTION_SUPERSEDED') return;
         status("Connection lost", "#f87171");
         message(err?.message || String(err));
       });
