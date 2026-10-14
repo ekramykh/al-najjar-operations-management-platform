@@ -1,7 +1,7 @@
 name: Secure sync regression tests
 on:
   push:
-    branches: [security-server-side-auth-2026-10-10, review-ui-permission-guards-2026-10-11, feature-trip-invoices-2026-10-12]
+    branches: [security-server-side-auth-2026-10-10, review-ui-permission-guards-2026-10-11, feature-trip-invoices-2026-10-12, fix-pre-main-audit-2026-10-14]
   workflow_dispatch:
 jobs:
   test:

@@ -2124,7 +2124,7 @@ window.toggleFleetAnalysisPanel=function(){
   window.deleteVehicleProfile=car=>{const p=getProfiles();delete p[car];saveProfiles(p);renderFleetAnalysis();renderFleetProfilesTable();};
   window.exportFleetProfiles=()=>{const blob=new Blob([JSON.stringify(getProfiles(),null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='vehicle-settings.json';a.click();URL.revokeObjectURL(a.href)};
   window.importFleetProfiles=e=>{const f=e.target.files?.[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{const x=JSON.parse(r.result);if(!x||typeof x!=='object')throw new Error();saveProfiles(x);refreshSelectors();renderFleetAnalysis();renderFleetProfilesTable();alert('Vehicle settings imported.')}catch(err){alert('Invalid vehicle settings file.')}};r.readAsText(f);e.target.value=''};
-  function renderFleetProfilesTable(){const tb=document.getElementById('fleetProfilesTable');if(!tb)return;const p=getProfiles();tb.innerHTML=Object.entries(p).map(([car,x])=>`<tr><td>${esc(car)}</td><td>${esc(x.type)}</td><td>${esc(x.model)}</td><td>${esc(x.fuelType)}</td><td>${fmt(x.tankCapacity)}</td><td>${fmt(x.expectedKmL)}</td><td>${fmt(x.targetKmL)}</td><td>${fmt(x.allowedVariance)}%</td><td>${x.lastServiceKm?fmt(x.lastServiceKm)+' / '+fmt(x.serviceIntervalKm):'Not set'}</td><td><button onclick="document.getElementById('fpCar').value=${JSON.stringify(car)};document.getElementById('fpCar').dispatchEvent(new Event('change'))" style="padding:4px 7px">Edit</button> <button onclick="deleteVehicleProfile(${JSON.stringify(car)})" style="padding:4px 7px">Delete</button></td></tr>`).join('')||'<tr><td colspan="10" class="fleet-empty">No vehicle settings entered yet.</td></tr>'}
+  function renderFleetProfilesTable(){const tb=document.getElementById('fleetProfilesTable');if(!tb)return;const p=getProfiles();tb.innerHTML=Object.entries(p).map(([car,x])=>`<tr><td>${esc(car)}</td><td>${esc(x.type)}</td><td>${esc(x.model)}</td><td>${esc(x.fuelType)}</td><td>${fmt(x.tankCapacity)}</td><td>${fmt(x.expectedKmL)}</td><td>${fmt(x.targetKmL)}</td><td>${fmt(x.allowedVariance)}%</td><td>${x.lastServiceKm?fmt(x.lastServiceKm)+' / '+fmt(x.serviceIntervalKm):'Not set'}</td><td><button onclick="document.getElementById('fpCar').value=${esc(JSON.stringify(car))};document.getElementById('fpCar').dispatchEvent(new Event('change'))" style="padding:4px 7px">Edit</button> <button onclick="deleteVehicleProfile(${esc(JSON.stringify(car))})" style="padding:4px 7px">Delete</button></td></tr>`).join('')||'<tr><td colspan="10" class="fleet-empty">No vehicle settings entered yet.</td></tr>'}
   window.renderFleetAnalysis=()=>{
     refreshSelectors();const rec=currentRecords().slice();const cf=document.getElementById('fleetAnalysisCarFilter')?.value||'',df=document.getElementById('fleetAnalysisDriverFilter')?.value||'';const rows=rec.filter(r=>(!cf||r.car===cf)&&(!df||r.driver===df));const profiles=getProfiles();
     const totalKm=rows.reduce((a,r)=>a+kmOf(r),0), totalFuel=rows.reduce((a,r)=>a+n(r.fuel),0), fuelRows=rows.filter(r=>n(r.fuel)>0&&kmOf(r)>0), actual=totalFuel>0?totalKm/totalFuel:0;
@@ -17051,7 +17051,7 @@ window.applySyncedAdminPassword = function(value) {
             const currentCarVal = carSelect.value;
             let carOptionsHtml = `<option value="">-- Select Vehicle --</option>`;
             vehicleChoices.forEach(c => {
-                carOptionsHtml += `<option value="${c}">${c}</option>`;
+                carOptionsHtml += `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`;
             });
             carSelect.innerHTML = carOptionsHtml;
             if (currentCarVal) carSelect.value = currentCarVal;
@@ -17062,7 +17062,7 @@ window.applySyncedAdminPassword = function(value) {
             if (sel) {
                 const currentVal = sel.value;
                 sel.innerHTML = `<option value="">${defaultLabel}</option>` + 
-                    items.map(item => `<option value="${item}">${item}</option>`).join('');
+                    items.map(item => `<option value="${escapeHtml(item)}">${escapeHtml(item)}</option>`).join('');
                 sel.value = currentVal;
             }
         };
@@ -17401,11 +17401,11 @@ window.applySyncedAdminPassword = function(value) {
             row.setAttribute('ondblclick', `openRowActionModal(event, ${originalIndex})`);
 
             row.innerHTML = `
-                <td style="text-align: center; font-weight: 600; color: var(--text-muted);">${item.sn || (startIndex + index + 1)}</td>
-                <td class="date-cell">${item.date || '-'}</td>
-                <td><span class="badge ${vehicleBadgeClass}">${item.car || '-'}</span></td>
-                <td>${item.driver || '-'}</td>
-                <td style="direction: ltr; text-align: left;">${currentDriverPhone || '-'}</td>
+                <td style="text-align: center; font-weight: 600; color: var(--text-muted);">${escapeHtml(item.sn || (startIndex + index + 1))}</td>
+                <td class="date-cell">${escapeHtml(item.date || '-')}</td>
+                <td><span class="badge ${vehicleBadgeClass}">${escapeHtml(item.car || '-')}</span></td>
+                <td>${escapeHtml(item.driver || '-')}</td>
+                <td style="direction: ltr; text-align: left;">${escapeHtml(currentDriverPhone || '-')}</td>
                 <td>${escapeHtml(item.invoiceNumber || '-')}</td>
                 <td style="direction: ltr; text-align: right;">${(() => { const amt = Number(item.invoiceAmount); const low = tripDocuments(item).some(lowTripInvoice); return low ? `<span class="invoice-warning-cell" title="One or more individual invoices are below OMR 500; displayed amount is the trip total">⚠️ <span>${amt.toFixed(3)}</span></span>` : (item.invoiceAmount ? amt.toFixed(3) : '-'); })()}</td>
                 <td>${escapeHtml(item.branch || '-')}</td>
@@ -17413,14 +17413,14 @@ window.applySyncedAdminPassword = function(value) {
                 <td>${(item.startingKm || 0).toFixed(2)}</td>
                 <td>${(item.endKm || 0).toFixed(2)}</td>
                 <td>${dayFormatted}</td>
-                <td>${item.trip1 || '-'}</td>
+                <td>${escapeHtml(item.trip1 || '-')}</td>
                 <td>${(item.trip1Km || 0).toFixed(2)}</td>
-                <td>${item.trip2 || '-'}</td>
+                <td>${escapeHtml(item.trip2 || '-')}</td>
                 <td>${(item.trip2Km || 0).toFixed(2)}</td>
                 <td>${(item.kmDay || 0).toFixed(2)}</td>
                 <td>${(item.difference || 0).toFixed(2)}</td>
-                <td>${item.tnxAuth || '-'}</td>
-                <td>${item.site || '-'}</td>
+                <td>${escapeHtml(item.tnxAuth || '-')}</td>
+                <td>${escapeHtml(item.site || '-')}</td>
                 <td>${(item.fuel || 0).toFixed(2)}</td>
                 <td>${(item.lastKm || 0).toFixed(2)}</td>
                 <td>${(item.currentKm || 0).toFixed(2)}</td>
@@ -17430,10 +17430,15 @@ window.applySyncedAdminPassword = function(value) {
                     <div class="action-btns">
                         <button class="btn-icon btn-icon-edit" onclick="editRecord(${originalIndex})" data-tooltip="Edit Record">${iconPencil}</button>
                         <button class="btn-icon btn-icon-delete" onclick="deleteRecord(${originalIndex})" data-tooltip="Delete Record">${iconTrash}</button>
-                        ${isHigherThanAverage ? `<button type="button" class="btn-icon btn-icon-wa" onclick="openWhatsAppDirect('${currentDriverPhone}', '${item.car}', '${item.driver}', '${item.date}', ${(item.fuel || 0).toFixed(2)}, ${avrgKm.toFixed(2)}, ${variantKm.toFixed(2)})" data-tooltip="High Fuel Alert (WhatsApp)">${iconWhatsApp}</button>` : ''}
+                        ${isHigherThanAverage ? `<button type="button" class="btn-icon btn-icon-wa" data-fuel-alert data-tooltip="High Fuel Alert (WhatsApp)">${iconWhatsApp}</button>` : ''}
                     </div>
                 </td>
             `;
+            // Record text is data, never JavaScript in an inline attribute.
+            row.querySelector('[data-fuel-alert]')?.addEventListener('click', () => {
+                openWhatsAppDirect(currentDriverPhone, item.car, item.driver, item.date,
+                    (item.fuel || 0).toFixed(2), avrgKm.toFixed(2), variantKm.toFixed(2));
+            });
             tbody.appendChild(row);
         });
 

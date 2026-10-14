@@ -13,6 +13,7 @@ function render(records,selected=''){
  const defaults=[{car:'Mercedes - 8245 BA'},{car:'Volvo - 8797 AK'},{car:'Mercedes - 8245 BA'}];
  const before=JSON.stringify({records,defaults});
  const c={fuelRecords:records,defaultInitialRecords:defaults,formatTitleCase:x=>x,document:{getElementById:get}};
+ vm.runInNewContext(html.slice(html.indexOf('    function escapeHtml(value)'),html.indexOf('    function renderDashboard(')),c);
  vm.runInNewContext(html.slice(start,end),c);c.updateFormAndFilterDatalists();
  assert.equal(JSON.stringify({records,defaults}),before,'lookup must not restore or change business records');
  return get;
@@ -32,4 +33,9 @@ test('new cloud vehicle is available and selected choice remains selected',()=>{
 test('deleting the final record does not remove known vehicle choices',()=>{
  const records=[{car:'Volvo - 8797 AK'}];render(records);records.splice(0);const get=render(records);
  assert.ok(get('inputCar').innerHTML.includes('Volvo - 8797 AK'));assert.equal(records.length,0);
+});
+
+test('cloud option names remain text even with quotes and HTML markup',()=>{
+ const value='x" ><img src=x onerror=alert(1)>';const get=render([{car:value,driver:value,site:value}]);
+ for(const id of ['inputCar','filterCar','filterDriver','filterSite']){assert.ok(!get(id).innerHTML.includes('<img'));assert.ok(get(id).innerHTML.includes('&lt;img'));}
 });
