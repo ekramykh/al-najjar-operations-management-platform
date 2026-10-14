@@ -1984,6 +1984,20 @@ html,body,*{scrollbar-width:thin!important;scrollbar-color:#64748b #111827!impor
 @media(max-width:1100px){#invoiceWarningDashboard .warning-item{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media(max-width:650px){#invoiceWarningDashboard .warning-item{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}}
 </style>
+<style>
+.app-select-menu{position:fixed;z-index:10000;overflow-y:auto;overscroll-behavior:contain;padding:4px;background:#111827;color:#f9fafb;border:1px solid #506b8d;border-radius:6px;box-shadow:0 10px 28px #0007;scrollbar-width:auto!important;scrollbar-color:auto!important}
+.app-select-menu button{display:block;width:100%;min-height:32px;padding:7px 10px;border:0;border-radius:3px;background:transparent;color:#eef4ff;font-size:13px;text-align:left;cursor:pointer;white-space:normal;overflow-wrap:anywhere}
+.app-select-menu button[aria-selected="true"]{background:#23466b;color:#fff}
+.app-select-menu button:hover,.app-select-menu button:focus{background:#1d3854;outline:none}
+.app-select-menu button:disabled{color:#7b8798;cursor:default}
+.app-select-menu::-webkit-scrollbar{width:8px!important;height:8px!important}
+.app-select-menu::-webkit-scrollbar-track{background:#111827!important}
+.app-select-menu::-webkit-scrollbar-thumb{background:#64748b!important;border:0!important;border-radius:8px!important}
+.app-select-menu::-webkit-scrollbar-button{display:block!important;height:12px!important;width:8px!important;background-color:#111827;background-position:center;background-repeat:no-repeat;background-size:7px 5px}
+.app-select-menu::-webkit-scrollbar-button:vertical:decrement{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='5'%3E%3Cpath d='M0 5L4 0L8 5' fill='%2394a3b8'/%3E%3C/svg%3E")}
+.app-select-menu::-webkit-scrollbar-button:vertical:increment{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='5'%3E%3Cpath d='M0 0L4 5L8 0' fill='%2394a3b8'/%3E%3C/svg%3E")}
+.app-select-menu::-webkit-scrollbar-button:start:increment,.app-select-menu::-webkit-scrollbar-button:end:decrement{display:none!important}
+</style>
 </head>
 <body class="">
 
@@ -19518,6 +19532,23 @@ window.applySyncedAdminPassword = function(value) {
  };
  for(const button of switches)button.addEventListener('click',()=>{design=button.dataset.logDesign;layout.dataset.design=design;for(const control of switches)control.setAttribute('aria-pressed',String(control===button));document.getElementById('recordDesignNumber').textContent=design;document.getElementById('recordDesignName').textContent=names[design][0];document.getElementById('recordDesignCaption').textContent=names[design][1];window.refreshRecordDesign();});
  recordCount=fuelRecords.length;pageCount=Math.max(1,Math.ceil(recordCount/(pageSize==='all'?Math.max(1,recordCount):pageSize)));window.refreshRecordDesign();buildColumnsMenu();
+})();
+</script>
+<script>
+// Enhance popup presentation only; original selects own values and change handlers.
+(()=>{
+ let activeSelect=null,menu=null;
+ function closeMenu(focus=false){const previous=activeSelect;menu?.remove();menu=null;activeSelect=null;if(previous){previous.setAttribute('aria-expanded','false');if(focus)previous.focus();}}
+ function positionMenu(){if(!menu||!activeSelect)return;const r=activeSelect.getBoundingClientRect();if(r.bottom<0||r.top>innerHeight){closeMenu();return;}const width=Math.min(Math.max(r.width,200),innerWidth-16),below=innerHeight-r.bottom-12,above=r.top-12,up=below<160&&above>below,max=Math.max(80,Math.min(300,up?above:below));menu.style.width=width+'px';menu.style.maxHeight=max+'px';menu.style.left=Math.max(8,Math.min(r.left,innerWidth-width-8))+'px';menu.style.top=(up?Math.max(8,r.top-Math.min(menu.scrollHeight,max)-4):r.bottom+4)+'px';}
+ function openMenu(select){if(select.disabled)return;if(activeSelect===select){closeMenu();return;}closeMenu();activeSelect=select;menu=document.createElement('div');menu.className='app-select-menu';menu.setAttribute('role','listbox');menu.setAttribute('aria-label',select.getAttribute('aria-label')||document.querySelector('label[for="'+select.id+'"]')?.textContent||'Select option');select.setAttribute('aria-expanded','true');
+ for(const option of select.options){if(option.hidden)continue;const row=document.createElement('button');row.type='button';row.setAttribute('role','option');row.setAttribute('aria-selected',String(option.selected));row.textContent=option.label;row.disabled=option.disabled||option.parentElement.disabled===true;row.addEventListener('click',()=>{if(select.disabled)return;const changed=select.selectedIndex!==option.index;select.selectedIndex=option.index;if(changed)select.dispatchEvent(new Event('change',{bubbles:true}));closeMenu(true);});menu.appendChild(row);}
+ document.body.appendChild(menu);positionMenu();const selected=menu.querySelector('[aria-selected="true"]')||menu.querySelector('button:not(:disabled)');selected?.focus({preventScroll:true});selected?.scrollIntoView({block:'nearest'});
+ }
+ document.addEventListener('pointerdown',event=>{const select=event.target.closest('select');if(select&&!select.multiple&&select.size<=1&&!select.disabled&&event.button===0){event.preventDefault();openMenu(select);}else if(menu&&!menu.contains(event.target))closeMenu();});
+ document.addEventListener('mousedown',event=>{const select=event.target.closest('select');if(select&&!select.multiple&&select.size<=1)event.preventDefault();});
+ document.addEventListener('keydown',event=>{if(menu){if(event.key==='Escape'||event.key==='Tab'){if(event.key==='Escape')event.preventDefault();closeMenu(true);return;}if(['ArrowDown','ArrowUp','Home','End'].includes(event.key)){event.preventDefault();const rows=[...menu.querySelectorAll('button:not(:disabled)')],index=rows.indexOf(document.activeElement);const next=event.key==='Home'?0:event.key==='End'?rows.length-1:Math.max(0,Math.min(rows.length-1,index+(event.key==='ArrowDown'?1:-1)));rows[next]?.focus();return;}}
+ const select=event.target.closest('select');if(select&&!select.multiple&&select.size<=1&&['ArrowDown','ArrowUp',' ','Enter'].includes(event.key)){event.preventDefault();openMenu(select);}});
+ window.addEventListener('resize',positionMenu);window.addEventListener('scroll',event=>{if(menu&&event.target!==menu)positionMenu();},true);
 })();
 </script>
 </body></html>
