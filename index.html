@@ -1946,6 +1946,20 @@ html.cloud-login-locked,html.cloud-login-locked body{overflow:hidden!important}
 #recordDesignTable>table>tbody>tr:not(.record-expanded-detail)>td:last-child .btn-icon::after{left:auto;right:0;transform:translateY(4px)}
 #recordDesignTable>table>tbody>tr:not(.record-expanded-detail)>td:last-child .btn-icon:hover::after{transform:translateY(0)}
 </style>
+<style>
+#recordLogsPanel .record-table-host{position:relative;min-width:0}
+#recordLogsPanel .record-column-controls{position:absolute;right:14px;top:6px;z-index:65}
+#recordLogsPanel .record-columns-button{display:grid;place-items:center;width:28px;height:28px;padding:4px;border:1px solid #506b8d;border-radius:4px;background:#142b40;color:#b2cce8;cursor:pointer}
+#recordLogsPanel .record-columns-button svg{width:18px;height:18px}
+#recordLogsPanel .record-columns-button[aria-expanded="true"]{border-color:#22d3ee;color:#22d3ee}
+#recordLogsPanel .record-columns-menu{position:absolute;right:0;top:34px;width:min(260px,calc(100vw - 70px));max-height:min(360px,60vh);overflow:auto;padding:8px;border:1px solid #506b8d;border-radius:6px;background:#142033;box-shadow:0 8px 24px #0006;color:#eef4ff}
+#recordLogsPanel .record-columns-menu[hidden]{display:none}
+#recordLogsPanel .record-columns-menu label{display:flex;align-items:center;gap:9px;padding:6px 8px;font-size:13px;cursor:pointer;white-space:normal}
+#recordLogsPanel .record-columns-menu label:hover{background:#23415d;border-radius:4px}
+#recordLogsPanel .record-columns-menu input{accent-color:#22d3ee;width:14px;height:14px;flex-shrink:0}
+#recordLogsPanel .record-columns-reset{width:100%;padding:7px;border:0;border-bottom:1px solid #506b8d;background:transparent;color:#7dd3fc;text-align:left;cursor:pointer;margin-bottom:6px;font-size:13px}
+#recordDesignTable>table>thead>tr>th:last-child{padding-right:48px}
+</style>
 </head>
 <body class="">
 
@@ -2339,6 +2353,11 @@ window.toggleFleetAnalysisPanel=function(){
 
         <div class="record-design-heading"><span id="recordDesignNumber">1</span><strong id="recordDesignName">Refined Table</strong><small id="recordDesignCaption">Clean table with filters, invoice counts and pagination.</small></div>
         <div id="recordDesignLayout" data-design="1">
+        <div class="record-table-host">
+        <div class="record-column-controls">
+          <button type="button" id="recordColumnsButton" class="record-columns-button" title="Choose columns" aria-label="Choose visible columns" aria-expanded="false" aria-controls="recordColumnsMenu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M5 3v18M12 3v18M19 3v18"/><rect x="2" y="6" width="6" height="4" rx="1" fill="#142b40"/><rect x="9" y="14" width="6" height="4" rx="1" fill="#142b40"/><rect x="16" y="8" width="6" height="4" rx="1" fill="#142b40"/></svg></button>
+          <div id="recordColumnsMenu" class="record-columns-menu" hidden aria-label="Visible columns"></div>
+        </div>
         <div class="table-container" id="recordDesignTable">
             <table>
                 <thead>
@@ -3098,6 +3117,7 @@ window.toggleFleetAnalysisPanel=function(){
                 </td>
             </tr></tbody>
             </table>
+        </div>
         </div>
         <aside id="recordDesignDetails" aria-label="Record details" hidden></aside>
         </div>
@@ -19363,9 +19383,34 @@ window.applySyncedAdminPassword = function(value) {
  const layout=document.getElementById('recordDesignLayout'),body=document.getElementById('tableBody'),pane=document.getElementById('recordDesignDetails');
  const switches=[...document.querySelectorAll('[data-log-design]')];let design='1',recordCount=0,pageCount=1;
  const tableViewport=document.getElementById('recordDesignTable');
+ const columnStorageKey='najjar-record-visible-columns-v1';
+ let hiddenColumns=new Set();try{const saved=JSON.parse(localStorage.getItem(columnStorageKey)||'[]');if(Array.isArray(saved))hiddenColumns=new Set(saved.filter(id=>typeof id==='string'));}catch(_){}
+ const columnsButton=document.getElementById('recordColumnsButton'),columnsMenu=document.getElementById('recordColumnsMenu');
+ const columnHeaders=()=>[...tableViewport.querySelector(':scope>table>thead>tr').children];
+ const columnKey=(header)=>header.id||'record-actions';
+ function visibleColumnCount(){return Math.max(1,columnHeaders().filter(h=>!hiddenColumns.has(columnKey(h))).length);}
+ function applyColumnVisibility(){
+  const headers=columnHeaders();const known=new Set(headers.map(columnKey));hiddenColumns=new Set([...hiddenColumns].filter(key=>known.has(key)));
+  if(headers.every(h=>hiddenColumns.has(columnKey(h))))hiddenColumns.delete(columnKey(headers[0]));
+  for(const row of [headers,...[...body.children].filter(r=>!r.classList.contains('record-expanded-detail')).map(r=>[...r.children])])row.forEach((cell,i)=>{if(hiddenColumns.has(columnKey(headers[i])))cell.style.setProperty('display','none','important');else cell.style.removeProperty('display');});
+  const table=tableViewport.querySelector(':scope>table');if(hiddenColumns.size)table.style.setProperty('min-width','0','important');else table.style.removeProperty('min-width');
+  let left=0;headers.slice(0,4).forEach((header,i)=>{header.style.left=left+'px';for(const row of body.children)if(!row.classList.contains('record-expanded-detail')&&row.children[i])row.children[i].style.left=left+'px';if(!hiddenColumns.has(columnKey(header)))left+=header.offsetWidth;});
+  body.querySelectorAll('.record-expanded-detail>td').forEach(td=>td.colSpan=visibleColumnCount());
+  columnsMenu.querySelectorAll('input[data-column-key]').forEach(input=>input.checked=!hiddenColumns.has(input.dataset.columnKey));
+ }
+ function saveColumnPreference(){try{localStorage.setItem(columnStorageKey,JSON.stringify([...hiddenColumns]));}catch(_){} }
+ function closeColumnsMenu(){columnsMenu.hidden=true;columnsButton.setAttribute('aria-expanded','false');}
+ function buildColumnsMenu(){
+  columnsMenu.textContent='';const reset=document.createElement('button');reset.type='button';reset.className='record-columns-reset';reset.textContent='Show all columns';reset.addEventListener('click',()=>{hiddenColumns.clear();applyColumnVisibility();saveColumnPreference();});columnsMenu.appendChild(reset);
+  for(const header of columnHeaders()){const label=document.createElement('label'),input=document.createElement('input'),text=document.createElement('span');input.type='checkbox';input.dataset.columnKey=columnKey(header);input.checked=!hiddenColumns.has(columnKey(header));text.textContent=header.textContent.replace(/⇅|▲|▼/g,'').trim();label.append(input,text);columnsMenu.appendChild(label);input.addEventListener('change',()=>{if(!input.checked&&visibleColumnCount()===1){input.checked=true;return;}if(input.checked)hiddenColumns.delete(input.dataset.columnKey);else hiddenColumns.add(input.dataset.columnKey);applyColumnVisibility();saveColumnPreference();});}
+ }
+ columnsButton.addEventListener('click',()=>{const open=columnsMenu.hidden;columnsMenu.hidden=!open;columnsButton.setAttribute('aria-expanded',String(open));if(open)columnsMenu.querySelector('input')?.focus();});
+ document.addEventListener('click',event=>{if(!event.target.closest('.record-column-controls'))closeColumnsMenu();});
+ document.addEventListener('keydown',event=>{if(event.key==='Escape'&&!columnsMenu.hidden){closeColumnsMenu();columnsButton.focus();}});
+
  function fitExpandedDetails(){tableViewport.style.setProperty('--record-detail-width',Math.max(0,tableViewport.clientWidth-36)+'px');}
- if(typeof ResizeObserver!=='undefined')new ResizeObserver(fitExpandedDetails).observe(tableViewport);
- window.addEventListener('resize',fitExpandedDetails,{passive:true});fitExpandedDetails();
+ if(typeof ResizeObserver!=='undefined')new ResizeObserver(()=>{fitExpandedDetails();applyColumnVisibility();}).observe(tableViewport);
+ window.addEventListener('resize',()=>{fitExpandedDetails();applyColumnVisibility();},{passive:true});fitExpandedDetails();
 
  const names={'1':['Refined Table','Clean table with filters, invoice counts and pagination.'],'2':['Table + Details','Open an invoice count to see complete details in a side panel.'],'3':['Expandable Rows','View invoice details inline within the table.']};
  function brand(item){const mercedes=/merc/i.test(item.car||'');const drawing=mercedes?'<circle cx="12" cy="12" r="9"/><path d="M12 3v9l-8 5M12 12l8 5"/>':'<circle cx="11" cy="13" r="8"/><path d="M16 7l5-5M16 2h5v5M4 13h14"/>';return '<span class="record-vehicle '+(mercedes?'record-mercedes':'record-volvo')+'"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">'+drawing+'</svg>'+escapeHtml(item.car||'-')+'</span>';}
@@ -19396,16 +19441,16 @@ window.applySyncedAdminPassword = function(value) {
    for(const col of [7,8,12,14]){const textCell=row.children[col];if(textCell){textCell.title=textCell.textContent;const text=textCell.textContent;textCell.textContent='';const span=document.createElement('span');span.className='record-cell-summary';span.textContent=text;textCell.appendChild(span);}}
    const numberCell=row.children[0];numberCell.textContent=item.sn || '-';
    const cell=row.children[5];cell.textContent='';const button=document.createElement('button');button.type='button';button.className='record-invoice-toggle';button.textContent=tripDocuments(item).length;button.title='View invoices and deliveries';button.setAttribute('aria-label','View invoices for record '+item.sn);button.setAttribute('aria-expanded','false');
-   button.addEventListener('dblclick',event=>event.stopPropagation());button.addEventListener('click',event=>{event.stopPropagation();const wasOpen=button.getAttribute('aria-expanded')==='true';clearDetails();if(wasOpen)return;button.setAttribute('aria-expanded','true');row.classList.add('record-selected');if(design==='2'){pane.innerHTML=details(item);pane.querySelector('[data-close-record-details]').addEventListener('click',clearDetails);}else{const expanded=document.createElement('tr');expanded.className='record-expanded-detail';const td=document.createElement('td');td.colSpan=row.children.length;td.innerHTML='<div class="record-expanded-content"><div class="record-expanded-brand">'+brand(item)+'</div>'+invoiceTable(item)+'</div>';expanded.appendChild(td);row.after(expanded);}});cell.appendChild(button);
+   button.addEventListener('dblclick',event=>event.stopPropagation());button.addEventListener('click',event=>{event.stopPropagation();const wasOpen=button.getAttribute('aria-expanded')==='true';clearDetails();if(wasOpen)return;button.setAttribute('aria-expanded','true');row.classList.add('record-selected');if(design==='2'){pane.innerHTML=details(item);pane.querySelector('[data-close-record-details]').addEventListener('click',clearDetails);}else{const expanded=document.createElement('tr');expanded.className='record-expanded-detail';const td=document.createElement('td');td.colSpan=visibleColumnCount();td.innerHTML='<div class="record-expanded-content"><div class="record-expanded-brand">'+brand(item)+'</div>'+invoiceTable(item)+'</div>';expanded.appendChild(td);row.after(expanded);}});cell.appendChild(button);
    if(design==='3'){const expand=document.createElement('button');expand.type='button';expand.className='record-row-chevron';expand.textContent='›';expand.setAttribute('aria-label','Expand invoices for record '+item.sn);expand.addEventListener('click',event=>{event.stopPropagation();button.click();expand.textContent=button.getAttribute('aria-expanded')==='true'?'⌄':'›';});expand.addEventListener('dblclick',event=>event.stopPropagation());numberCell.prepend(expand);}
    const efficiencyCell=row.children[24];efficiencyCell.dataset.recordEfficiency='true';const distance=calculateVariantKm(item.lastKm,item.currentKm),fuel=Number(item.fuel),actual=calculateAverageKmPerLiter(distance,fuel);const total=vehicleTotals.get((item.car||'').trim().toUpperCase());const average=total&&total.fuel>0?total.km/total.fuel:0;const below=actual>0&&average>0&&actual<average;efficiencyCell.innerHTML='<span class="record-efficiency '+(below?'record-efficiency-low':actual>0?'record-efficiency-normal':'record-efficiency-missing')+'">'+(actual>0?actual.toFixed(2)+' KM/L':'—')+'</span>';efficiencyCell.title=average>0?'Vehicle average: '+average.toFixed(2)+' KM/L. '+(below?'Below vehicle average.':''):'Insufficient valid vehicle data';row.insertBefore(efficiencyCell,row.children[3]);
 
 
   }
-  document.getElementById('paginationInfo').textContent=recordCount+' records';pages();
+  applyColumnVisibility();document.getElementById('paginationInfo').textContent=recordCount+' records';pages();
  };
  for(const button of switches)button.addEventListener('click',()=>{design=button.dataset.logDesign;layout.dataset.design=design;for(const control of switches)control.setAttribute('aria-pressed',String(control===button));document.getElementById('recordDesignNumber').textContent=design;document.getElementById('recordDesignName').textContent=names[design][0];document.getElementById('recordDesignCaption').textContent=names[design][1];window.refreshRecordDesign();});
- recordCount=fuelRecords.length;pageCount=Math.max(1,Math.ceil(recordCount/(pageSize==='all'?Math.max(1,recordCount):pageSize)));window.refreshRecordDesign();
+ recordCount=fuelRecords.length;pageCount=Math.max(1,Math.ceil(recordCount/(pageSize==='all'?Math.max(1,recordCount):pageSize)));window.refreshRecordDesign();buildColumnsMenu();
 })();
 </script>
 </body></html>
