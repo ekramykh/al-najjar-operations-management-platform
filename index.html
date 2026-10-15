@@ -2096,7 +2096,7 @@ html,body,*{scrollbar-width:thin!important;scrollbar-color:#64748b #111827!impor
 :is(#recordDesignDetails,#recordDesignTable .record-expanded-content) .record-detail-section dl>div{background:#091a2a;border:1px solid #20394e;border-radius:6px;padding:10px 12px;min-width:0}
 :is(#recordDesignDetails,#recordDesignTable .record-expanded-content) .record-detail-section dt{color:#a7bed3;font-size:12px;line-height:1.4;margin:0 0 5px}
 :is(#recordDesignDetails,#recordDesignTable .record-expanded-content) .record-detail-section dd{color:#f1f6fc;font-size:14px;font-weight:500;line-height:1.6;white-space:pre-wrap;overflow-wrap:anywhere}
-:is(#recordDesignDetails,#recordDesignTable .record-expanded-content) .record-detail-section:last-child dl{grid-template-columns:minmax(0,1fr)}
+:is(#recordDesignDetails,#recordDesignTable .record-expanded-content) .record-detail-section.record-notes-section dl{grid-template-columns:minmax(0,1fr)}
 :is(#recordDesignDetails,#recordDesignTable .record-expanded-content) .record-invoices-title{font-family:inherit;font-size:14px;color:#e9f4ff;margin:18px 0 10px;padding-bottom:9px;border-bottom:1px solid #2b455e}
 :is(#recordDesignDetails,#recordDesignTable .record-expanded-content) .record-invoice-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;align-items:stretch}
 :is(#recordDesignDetails,#recordDesignTable .record-expanded-content) .record-invoice-grid>strong{grid-column:1/-1;color:#8ecbff;font-size:13px;padding-bottom:9px;border-bottom:1px solid #2b455e}
@@ -2112,16 +2112,16 @@ html,body,*{scrollbar-width:thin!important;scrollbar-color:#64748b #111827!impor
 :is(#recordDesignDetails,#recordDesignTable .record-expanded-content) .record-detail-summary>div:last-child{grid-column:1/-1}
 :is(#recordDesignDetails,#recordDesignTable .record-expanded-content) .record-detail-summary small{font-size:12px;font-weight:400;color:#a7bed3;margin-bottom:5px}
 :is(#recordDesignDetails,#recordDesignTable .record-expanded-content) .record-detail-summary .record-vehicle{max-width:100%;white-space:normal;overflow-wrap:anywhere}
-:is(#recordDesignDetails,#recordDesignTable .record-expanded-content) .record-detail-section:last-child dd{min-height:48px;font-weight:400}
+:is(#recordDesignDetails,#recordDesignTable .record-expanded-content) .record-detail-section.record-notes-section dd{min-height:48px;font-weight:400}
 :is(#recordDesignDetails,#recordDesignTable .record-expanded-content) .record-detail-section:nth-of-type(2) h4::before{content:'↗';mask:none;background:none;color:#85bce9;font-size:19px;line-height:17px}
 :is(#recordDesignDetails,#recordDesignTable .record-expanded-content) .record-detail-section:nth-of-type(3) h4::before{content:'⛽';mask:none;background:none;font-size:16px;line-height:17px}
-:is(#recordDesignDetails,#recordDesignTable .record-expanded-content) .record-detail-section:last-child h4::before{content:'✎';mask:none;background:none;color:#85bce9;font-size:19px;line-height:17px}
+:is(#recordDesignDetails,#recordDesignTable .record-expanded-content) .record-detail-section.record-notes-section h4::before{content:'✎';mask:none;background:none;color:#85bce9;font-size:19px;line-height:17px}
 
 /* Wide inline details use the approved grid; sidebar layout stays stacked. */
 #recordDesignTable .record-expanded-content{container-type:inline-size;text-align:left;white-space:normal}
 #recordDesignTable .record-expanded-content .record-detail-card-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;align-items:start}
 #recordDesignTable .record-expanded-content .record-detail-card-grid>.record-detail-section{margin:0;width:100%;box-sizing:border-box;min-width:0}
-#recordDesignTable .record-expanded-content .record-detail-card-grid>.record-detail-section:last-child{grid-column:1/-1}
+#recordDesignTable .record-expanded-content .record-detail-card-grid>.record-detail-section.record-notes-section{grid-column:1/-1}
 #recordDesignTable .record-expanded-content .record-detail-summary{grid-template-columns:repeat(5,minmax(0,1fr));box-sizing:border-box;width:100%}
 #recordDesignTable .record-expanded-content .record-detail-summary>div:last-child{grid-column:auto}
 #recordDesignTable .record-expanded-content .record-invoices-card{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;padding:16px;margin:0 0 14px;border:1px solid #304b65;border-radius:10px;background:#0d2032}
@@ -2142,8 +2142,8 @@ html,body,*{scrollbar-width:thin!important;scrollbar-color:#64748b #111827!impor
 #recordDesignTable .record-expanded-content .record-detail-section dl>div{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px;background:transparent;border:0;padding:5px 0;align-items:start}
 #recordDesignTable .record-expanded-content .record-detail-section dt{font-size:13px;line-height:1.6;margin:0;color:#b5d4eb}
 #recordDesignTable .record-expanded-content .record-detail-section dd{font-size:14px;line-height:1.6;color:white}
-#recordDesignTable .record-expanded-content .record-detail-section:last-child dl>div{display:block;background:#0a2033;border:1px solid #315b78;padding:12px;border-radius:6px}
-#recordDesignTable .record-expanded-content .record-detail-section:last-child dt{display:none}
+#recordDesignTable .record-expanded-content .record-detail-section.record-notes-section dl>div{display:block;background:#0a2033;border:1px solid #315b78;padding:12px;border-radius:6px}
+#recordDesignTable .record-expanded-content .record-detail-section.record-notes-section dt{display:none}
 #recordDesignTable .record-expanded-content .record-invoice-grid{grid-template-columns:minmax(0,1fr);gap:4px}
 #recordDesignTable .record-expanded-content .record-invoice-grid>strong{border:0;padding:0 0 7px;font-size:16px;color:#eef6ff}
 #recordDesignTable .record-expanded-content .record-invoice-grid>div{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.4fr);gap:10px;border:0;background:transparent;padding:2px 0;font-size:14px}
@@ -2173,8 +2173,8 @@ html,body,*{scrollbar-width:thin!important;scrollbar-color:#64748b #111827!impor
 #recordDesignTable .record-expanded-content .record-detail-section dl{gap:1px}
 #recordDesignTable .record-expanded-content .record-detail-section dl>div{padding:2px 0;gap:8px}
 #recordDesignTable .record-expanded-content .record-detail-section dt,#recordDesignTable .record-expanded-content .record-detail-section dd{font-size:12px;line-height:1.35}
-#recordDesignTable .record-expanded-content .record-detail-section:last-child dl>div{padding:7px 9px}
-#recordDesignTable .record-expanded-content .record-detail-section:last-child dd{min-height:0}
+#recordDesignTable .record-expanded-content .record-detail-section.record-notes-section dl>div{padding:7px 9px}
+#recordDesignTable .record-expanded-content .record-detail-section.record-notes-section dd{min-height:0}
 @container(max-width:700px){#recordDesignTable .record-expanded-content .record-detail-summary{grid-template-columns:repeat(2,minmax(0,1fr))}}
 
 /* Match the supplied card-grid reference: larger cyan line icons. */
@@ -2200,12 +2200,25 @@ html,body,*{scrollbar-width:thin!important;scrollbar-color:#64748b #111827!impor
 #recordDesignTable .record-expanded-content .record-detail-card-grid>.record-detail-section:nth-child(1){grid-column:2;grid-row:3}
 #recordDesignTable .record-expanded-content .record-detail-card-grid>.record-detail-section:nth-child(2){grid-column:2;grid-row:4}
 #recordDesignTable .record-expanded-content .record-detail-card-grid>.record-detail-section:nth-child(3){grid-column:2;grid-row:5}
-#recordDesignTable .record-expanded-content .record-detail-card-grid>.record-detail-section:last-child{grid-column:1;grid-row:5;align-self:stretch}
+#recordDesignTable .record-expanded-content .record-detail-card-grid>.record-detail-section.record-notes-section{grid-column:1;grid-row:5;align-self:stretch}
 #recordDesignTable .record-expanded-content .record-detail-section h4{font-size:12px;line-height:1.4;overflow-wrap:anywhere}
 #recordDesignTable .record-expanded-content .record-detail-summary .record-vehicle{font-size:11px}
 #recordDesignTable .record-expanded-content .record-detail-summary>div{padding:3px;min-width:0}
-#recordDesignTable .record-expanded-content .record-detail-section:last-child dd{white-space:pre-wrap;overflow-wrap:anywhere}
+#recordDesignTable .record-expanded-content .record-detail-section.record-notes-section dd{white-space:pre-wrap;overflow-wrap:anywhere}
 @container(max-width:430px){#recordDesignTable .record-expanded-content .record-centered-card{grid-template-columns:minmax(0,1fr)}#recordDesignTable .record-expanded-content .record-detail-summary{grid-template-columns:repeat(2,minmax(0,1fr))}#recordDesignTable .record-expanded-content .record-invoices-card,#recordDesignTable .record-expanded-content .record-detail-card-grid>.record-detail-section:nth-child(n){grid-column:1;grid-row:auto}}
+
+/* Independent vertical columns prevent invoice count from spacing other sections. */
+#recordDesignTable .record-expanded-content .record-centered-card{display:block}
+#recordDesignTable .record-expanded-content .record-details-title{margin:0}
+#recordDesignTable .record-expanded-content .record-detail-summary{margin:0 0 8px}
+#recordDesignTable .record-expanded-content .record-independent-columns{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;align-items:start}
+#recordDesignTable .record-expanded-content .record-card-column{display:flex;flex-direction:column;gap:8px;min-width:0}
+#recordDesignTable .record-expanded-content .record-card-column>.record-detail-section{margin:0;padding:10px;box-sizing:border-box;min-width:0;width:100%}
+#recordDesignTable .record-expanded-content .record-card-column>.record-invoices-card{margin:0;min-width:0}
+#recordDesignTable .record-expanded-content .record-details-title strong{font-size:18px;line-height:1.4}
+#recordDesignTable .record-expanded-content .record-invoices-title,#recordDesignTable .record-expanded-content .record-detail-section h4{font-size:16px;line-height:1.4;margin-bottom:8px}
+#recordDesignTable .record-expanded-content .record-invoice-grid>strong{font-size:15px;line-height:1.4;padding-bottom:5px}
+@container(max-width:430px){#recordDesignTable .record-expanded-content .record-independent-columns{grid-template-columns:minmax(0,1fr)}}
 </style>
 <style id="fleet-analysis-header-style">
 .btn-fleet-analysis{width:100%;min-width:0;box-sizing:border-box;border:0;border-radius:20px;padding:10px 14px;background:#334155;color:#fff;font-weight:600;cursor:pointer;transition:background .15s ease}
@@ -19640,7 +19653,7 @@ window.applySyncedAdminPassword = function(value) {
   return '<svg class="record-card-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">'+(paths[kind]||paths.record)+'</svg>';
  }
  function details(item){
-  function group(title,fields){return '<section class="record-detail-section"><h4>'+recordCardIcon(title==='Notes'?'notes':title.startsWith('Trips')?'truck':title.startsWith('Fuel')?'fuel':'info')+title+'</h4><dl>'+fields.map(([label,value])=>'<div><dt>'+((label==='SN'||label==='Driver Phone')?recordCardIcon(label==='SN'?'record':'phone'):'')+label+'</dt><dd>'+(label==='Vehicle'?brand(item):escapeHtml(value===undefined||value===null||value===''?'-':value))+'</dd></div>').join('')+'</dl></section>';}
+  function group(title,fields){return '<section class="record-detail-section'+(title==='Notes'?' record-notes-section':'')+'"><h4>'+recordCardIcon(title==='Notes'?'notes':title.startsWith('Trips')?'truck':title.startsWith('Fuel')?'fuel':'info')+title+'</h4><dl>'+fields.map(([label,value])=>'<div><dt>'+((label==='SN'||label==='Driver Phone')?recordCardIcon(label==='SN'?'record':'phone'):'')+label+'</dt><dd>'+(label==='Vehicle'?brand(item):escapeHtml(value===undefined||value===null||value===''?'-':value))+'</dd></div>').join('')+'</dl></section>';}
   const km=calculateVariantKm(item.lastKm,item.currentKm),eff=calculateAverageKmPerLiter(km,item.fuel);
   return '<div class="record-details-title"><strong>'+recordCardIcon('record')+'Record '+escapeHtml(item.sn)+'</strong><button type="button" data-close-record-details aria-label="Close record details">×</button></div>'
    +'<div class="record-detail-summary"><div>'+recordCardIcon('date')+'<small>Date</small>'+escapeHtml(item.date||'-')+'</div><div><small>Vehicle</small>'+brand(item)+'</div><div>'+recordCardIcon('user')+'<small>Driver</small>'+escapeHtml(item.driver||'-')+'</div><div>'+recordCardIcon('record')+'<small>Total Invoices</small><span class="record-count">'+tripDocuments(item).filter(doc=>doc.invoiceNumber).length+'</span></div><div>'+recordCardIcon('amount')+'<small>Total Amount</small><span class="'+(tripDocuments(item).some(lowTripInvoice)?'record-detail-warning':'')+'">'+(tripDocuments(item).some(lowTripInvoice)?'⚠ ':'')+Number(item.invoiceAmount||0).toFixed(3)+'</span></div></div>'
@@ -19651,6 +19664,16 @@ window.applySyncedAdminPassword = function(value) {
    +group('Notes',[['Notes',item.notes]])+'</div>';
  }
 
+ function arrangeRecordCardColumns(card){
+  const groups=card.querySelector('.record-detail-card-grid');
+  const sections=[...groups.children];
+  const columns=document.createElement('div');columns.className='record-independent-columns';
+  const left=document.createElement('div'),right=document.createElement('div');
+  left.className=right.className='record-card-column';
+  left.append(card.querySelector('.record-invoices-card'),sections[3]);
+  right.append(...sections.slice(0,3));
+  columns.append(left,right);groups.replaceWith(columns);
+ }
  function clearDetails(){body.querySelectorAll('.record-expanded-detail').forEach(el=>el.remove());body.querySelectorAll('.record-selected').forEach(el=>el.classList.remove('record-selected'));body.querySelectorAll('.record-invoice-toggle').forEach(el=>{el.setAttribute('aria-expanded','false');});pane.innerHTML='<div class="record-detail-empty">Select an invoice count to view details.</div>';pane.hidden=design!=='2';}
  function pages(){const container=document.getElementById('recordPageButtons');container.textContent='';let first=Math.max(1,Math.min(currentPage-1,pageCount-2));for(let n=first;n<=Math.min(pageCount,first+2);n++){const button=document.createElement('button');button.type='button';button.className='pagination-btn';button.textContent=n;button.setAttribute('aria-current',n===currentPage?'page':'false');button.addEventListener('click',()=>{currentPage=n;filterAndRender();});container.appendChild(button);}}
  window.refreshRecordDesign=function(count,totalPages){if(typeof count==='number')recordCount=count;if(typeof totalPages==='number')pageCount=totalPages;clearDetails();
@@ -19665,7 +19688,7 @@ window.applySyncedAdminPassword = function(value) {
    for(const col of [7,8,12,14]){const textCell=row.children[col];if(textCell){textCell.title=textCell.textContent;const text=textCell.textContent;textCell.textContent='';const span=document.createElement('span');span.className='record-cell-summary';span.textContent=text;textCell.appendChild(span);}}
    const numberCell=row.children[0];numberCell.textContent=item.sn || '-';
    const cell=row.children[5];cell.textContent='';const button=document.createElement('button');button.type='button';button.className='record-invoice-toggle';button.textContent=tripDocuments(item).length;button.title='View invoices and deliveries';button.setAttribute('aria-label','View invoices for record '+item.sn);button.setAttribute('aria-expanded','false');
-   button.addEventListener('dblclick',event=>event.stopPropagation());button.addEventListener('click',event=>{event.stopPropagation();const wasOpen=button.getAttribute('aria-expanded')==='true';clearDetails();if(wasOpen)return;button.setAttribute('aria-expanded','true');row.classList.add('record-selected');if(design==='2'){pane.innerHTML=details(item);pane.querySelector('[data-close-record-details]').addEventListener('click',clearDetails);}else{const expanded=document.createElement('tr');expanded.className='record-expanded-detail';const td=document.createElement('td');td.colSpan=visibleColumnCount();td.innerHTML='<div class="record-expanded-content"><div class="record-centered-card">'+details(item)+'</div></div>';expanded.appendChild(td);row.after(expanded);td.querySelector('[data-close-record-details]').addEventListener('click',clearDetails);}});cell.appendChild(button);
+   button.addEventListener('dblclick',event=>event.stopPropagation());button.addEventListener('click',event=>{event.stopPropagation();const wasOpen=button.getAttribute('aria-expanded')==='true';clearDetails();if(wasOpen)return;button.setAttribute('aria-expanded','true');row.classList.add('record-selected');if(design==='2'){pane.innerHTML=details(item);pane.querySelector('[data-close-record-details]').addEventListener('click',clearDetails);}else{const expanded=document.createElement('tr');expanded.className='record-expanded-detail';const td=document.createElement('td');td.colSpan=visibleColumnCount();td.innerHTML='<div class="record-expanded-content"><div class="record-centered-card">'+details(item)+'</div></div>';arrangeRecordCardColumns(td.querySelector('.record-centered-card'));expanded.appendChild(td);row.after(expanded);td.querySelector('[data-close-record-details]').addEventListener('click',clearDetails);}});cell.appendChild(button);
    if(design==='3'){const expand=document.createElement('button');expand.type='button';expand.className='record-row-chevron';expand.textContent='›';expand.setAttribute('aria-label','Expand invoices for record '+item.sn);expand.addEventListener('click',event=>{event.stopPropagation();button.click();expand.textContent=button.getAttribute('aria-expanded')==='true'?'⌄':'›';});expand.addEventListener('dblclick',event=>event.stopPropagation());numberCell.prepend(expand);}
    const efficiencyCell=row.children[24];efficiencyCell.dataset.recordEfficiency='true';const distance=calculateVariantKm(item.lastKm,item.currentKm),fuel=Number(item.fuel),actual=calculateAverageKmPerLiter(distance,fuel);const total=vehicleTotals.get((item.car||'').trim().toUpperCase());const average=total&&total.fuel>0?total.km/total.fuel:0;const below=actual>0&&average>0&&actual<average;efficiencyCell.innerHTML='<span class="record-efficiency '+(below?'record-efficiency-low':actual>0?'record-efficiency-normal':'record-efficiency-missing')+'">'+(actual>0?actual.toFixed(2)+' KM/L':'—')+'</span>';efficiencyCell.title=average>0?'Vehicle average: '+average.toFixed(2)+' KM/L. '+(below?'Below vehicle average.':''):'Insufficient valid vehicle data';row.insertBefore(efficiencyCell,row.children[3]);
 
