@@ -19798,10 +19798,24 @@ window.applySyncedAdminPassword = function(value) {
 // Enhance popup presentation only; original selects own values and change handlers.
 (()=>{
  let activeSelect=null,menu=null;
+ const vehicleSelectIds=new Set(['filterCar','inputCar','fleetAnalysisCarFilter','fpCar']);
+ function vehicleBrandArtwork(value){
+  const mercedes=/merc/i.test(value),volvo=/volvo/i.test(value);
+  if(!mercedes&&!volvo)return '';
+  const paths=mercedes?'<circle cx="12" cy="12" r="9"/><path d="M12 3v9l-8 5M12 12l8 5"/>':'<circle cx="11" cy="13" r="8"/><path d="M16 7l5-5M16 2h5v5M4 13h14"/>';
+  return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="'+(mercedes?'#ffb300':'#55c7eb')+'" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+paths+'</svg>';
+ }
+ function updateVehicleSelectBrand(select){
+  const artwork=vehicleBrandArtwork(select.value);
+  if(artwork){select.style.backgroundImage='url("data:image/svg+xml,'+encodeURIComponent(artwork)+'")';select.style.backgroundRepeat='no-repeat';select.style.backgroundPosition='10px center';select.style.backgroundSize='22px 22px';select.style.paddingLeft='40px';}
+  else{for(const property of ['background-image','background-repeat','background-position','background-size','padding-left'])select.style.removeProperty(property);}
+ }
+ for(const id of vehicleSelectIds){const select=document.getElementById(id);if(!select)continue;updateVehicleSelectBrand(select);select.addEventListener('change',()=>updateVehicleSelectBrand(select));new MutationObserver(()=>updateVehicleSelectBrand(select)).observe(select,{childList:true,subtree:true,attributes:true,attributeFilter:['selected']});}
+
  function closeMenu(focus=false){const previous=activeSelect;menu?.remove();menu=null;activeSelect=null;if(previous){previous.setAttribute('aria-expanded','false');if(focus)previous.focus();}}
  function positionMenu(){if(!menu||!activeSelect)return;const r=activeSelect.getBoundingClientRect();if(r.bottom<0||r.top>innerHeight){closeMenu();return;}const width=Math.min(Math.max(r.width,activeSelect.id==='pageSizeSelect'?64:200),innerWidth-16),below=innerHeight-r.bottom-12,above=r.top-12,up=below<160&&above>below,max=Math.max(80,Math.min(300,up?above:below));menu.style.width=width+'px';menu.style.maxHeight=max+'px';menu.style.left=Math.max(8,Math.min(r.left,innerWidth-width-8))+'px';menu.style.top=(up?Math.max(8,r.top-Math.min(menu.scrollHeight,max)-4):r.bottom+4)+'px';}
  function openMenu(select){if(select.disabled)return;if(activeSelect===select){closeMenu();return;}closeMenu();activeSelect=select;menu=document.createElement('div');menu.className='app-select-menu';menu.setAttribute('role','listbox');menu.setAttribute('aria-label',select.getAttribute('aria-label')||document.querySelector('label[for="'+select.id+'"]')?.textContent||'Select option');select.setAttribute('aria-expanded','true');
- for(const option of select.options){if(option.hidden)continue;const row=document.createElement('button');row.type='button';row.setAttribute('role','option');row.setAttribute('aria-selected',String(option.selected));row.textContent=option.label;row.disabled=option.disabled||option.parentElement.disabled===true;row.addEventListener('click',()=>{if(select.disabled)return;const changed=select.selectedIndex!==option.index;select.selectedIndex=option.index;if(changed)select.dispatchEvent(new Event('change',{bubbles:true}));closeMenu(true);});menu.appendChild(row);}
+ for(const option of select.options){if(option.hidden)continue;const row=document.createElement('button');row.type='button';row.setAttribute('role','option');row.setAttribute('aria-selected',String(option.selected));row.textContent=option.label;if(vehicleSelectIds.has(select.id)){const artwork=vehicleBrandArtwork(option.value);if(artwork){const icon=document.createElement('span');icon.innerHTML=artwork;icon.style.cssText='display:inline-flex;vertical-align:middle;margin-right:8px';row.prepend(icon);}}row.disabled=option.disabled||option.parentElement.disabled===true;row.addEventListener('click',()=>{if(select.disabled)return;const changed=select.selectedIndex!==option.index;select.selectedIndex=option.index;if(changed)select.dispatchEvent(new Event('change',{bubbles:true}));closeMenu(true);});menu.appendChild(row);}
  document.body.appendChild(menu);positionMenu();const selected=menu.querySelector('[aria-selected="true"]')||menu.querySelector('button:not(:disabled)');selected?.focus({preventScroll:true});selected?.scrollIntoView({block:'nearest'});
  }
  document.addEventListener('pointerdown',event=>{const select=event.target.closest('select');if(select&&!select.multiple&&select.size<=1&&!select.disabled&&event.button===0){event.preventDefault();openMenu(select);}else if(menu&&!menu.contains(event.target))closeMenu();});
