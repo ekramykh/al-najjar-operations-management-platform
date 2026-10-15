@@ -1999,8 +1999,15 @@ html,body,*{scrollbar-width:thin!important;scrollbar-color:#64748b #111827!impor
 .app-select-menu::-webkit-scrollbar-button:start:increment,.app-select-menu::-webkit-scrollbar-button:end:decrement{display:none!important}
 </style>
 <style>
-/* Keep the existing header structure; center only its developer credit. */
-.designer-credit{display:flex;justify-content:center;width:100%;text-align:center;color:#34d399}
+/* Keep branding and actions side by side when browser zoom reduces the viewport. */
+@media screen {
+  .container > header{display:grid;grid-template-columns:minmax(240px,1fr) minmax(460px,580px);flex-wrap:nowrap}
+  .container > header .header-title-wrapper{min-width:0}
+  .container > header .header-title-wrapper > div:last-child{min-width:0;overflow-wrap:break-word}
+  .container > header .header-right{min-width:0;width:100%;max-width:580px;justify-self:end}
+  .container > header .actions-bar{width:100%!important;box-sizing:border-box}
+}
+.designer-credit{display:inline-flex;justify-content:flex-start;text-align:left;color:#34d399}
 #requiredCloudLoginGate .gate-developer-credit{color:#34d399;text-align:center}
 .system-designer-credit{width:100%;text-align:center;color:#34d399;font-weight:600}
 </style>
