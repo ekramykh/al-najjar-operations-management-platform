@@ -2011,6 +2011,11 @@ html,body,*{scrollbar-width:thin!important;scrollbar-color:#64748b #111827!impor
 #requiredCloudLoginGate .gate-developer-credit{color:#34d399;text-align:center}
 .system-designer-credit{width:100%;text-align:center;color:#34d399;font-weight:600;font-size:0.8rem}
 </style>
+<style id="dashboard-section-heading-style">
+.dashboard-section-heading{display:inline-flex;align-items:center;gap:12px;font:700 16px/1.4 Arial,sans-serif}
+#invoiceWarningDashboard .warning-title.dashboard-section-heading{font:700 16px/1.4 Arial,sans-serif}
+.dashboard-section-heading>.dashboard-heading-icon{width:30px;height:30px;min-width:30px;flex-shrink:0}
+</style>
 </head>
 <body class="">
 
@@ -2536,7 +2541,7 @@ const r=new FileReader();r.onload=()=>{if(!requireFuelPermission('import'))retur
 
     <div id="invoiceWarningDashboard" class="invoice-warning-dashboard" role="alert" aria-live="polite">
         <button type="button" class="warning-dropdown-toggle" onclick="toggleInvoiceWarningDropdown()" aria-expanded="false">
-            <span class="warning-title">⚠️ Invoice Amount Warning</span>
+            <span class="warning-title dashboard-section-heading"><svg class="dashboard-heading-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 2 21h20L12 3Z"/><path d="M12 9v5M12 18h.01"/></svg>Invoice Amount Warning</span>
             <span id="invoiceWarningCount" class="warning-count-badge">0</span>
             <span class="warning-chevron">▾</span>
         </button>
@@ -2550,7 +2555,7 @@ const r=new FileReader();r.onload=()=>{if(!requireFuelPermission('import'))retur
     <div class="main-grid">
         <div class="panel">
             <div class="panel-header-financial">
-                <span style="font-weight: 600; font-size: 0.95rem; color: var(--accent-primary);">Fuel Efficiency Trend (KM/L)</span>
+                <span class="dashboard-section-heading" style="color:var(--accent-primary)"><svg class="dashboard-heading-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18M6 15l5-5 4 3 5-7"/></svg>Fuel Efficiency Trend (KM/L)</span>
                 <div class="chart-controls-wrapper">
                     <div class="chart-export-group">
                         <select id="chartExportOption" class="select-chart-export">
@@ -2583,7 +2588,7 @@ const r=new FileReader();r.onload=()=>{if(!requireFuelPermission('import'))retur
 
     <div class="panel" id="recordLogsPanel">
         <div class="panel-title" style="font-size: 1.05rem; font-weight: 600; margin-bottom: 4px;">
-            <span>Fuel Refueling Logs</span>
+            <span class="dashboard-section-heading"><svg class="dashboard-heading-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="13" height="18" rx="2"/><path d="M6 7h7M6 11h7M6 15h4M16 8h2l3 3v7a2 2 0 0 1-4 0v-4h-1"/></svg>Fuel Refueling Logs</span>
             <div class="record-design-switch" role="group" aria-label="Display design"><button type="button" data-log-design="1" aria-pressed="false" aria-label="Refined Table" title="Refined Table"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16M4 10h16M4 15h16M4 20h16"/></svg></button><button type="button" data-log-design="2" aria-pressed="false" aria-label="Table + Details" title="Table + Details"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="1"/><path d="M14 4v16M6 8h5M6 12h5M6 16h5M17 8h1M17 12h1"/></svg></button><button type="button" data-log-design="3" aria-pressed="true" aria-label="Expandable Rows" title="Expandable Rows"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16M4 10h16M4 20h16M4 14l3 3 3-3M13 15h7"/></svg></button></div>
         </div>
 
