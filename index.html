@@ -2219,6 +2219,14 @@ html,body,*{scrollbar-width:thin!important;scrollbar-color:#64748b #111827!impor
 #recordDesignTable .record-expanded-content .record-invoices-title,#recordDesignTable .record-expanded-content .record-detail-section h4{font-size:16px;line-height:1.4;margin-bottom:8px}
 #recordDesignTable .record-expanded-content .record-invoice-grid>strong{font-size:15px;line-height:1.4;padding-bottom:5px}
 @container(max-width:430px){#recordDesignTable .record-expanded-content .record-independent-columns{grid-template-columns:minmax(0,1fr)}}
+
+/* Design 2 only: match icons and heading typography, preserve its card layout. */
+#recordDesignDetails .record-card-icon{display:inline-block;width:30px;height:30px;min-width:30px;margin-right:9px;vertical-align:middle;color:#68cfff;stroke-width:1.8}
+#recordDesignDetails .record-details-title strong{font-family:Arial,sans-serif;font-size:18px;font-weight:700;line-height:1.4}
+#recordDesignDetails .record-invoices-title,#recordDesignDetails .record-detail-section h4{font-family:Arial,sans-serif;font-size:16px;font-weight:700;line-height:1.4}
+#recordDesignDetails .record-invoice-grid>strong{font-family:Arial,sans-serif;font-size:15px;line-height:1.4}
+#recordDesignDetails .record-detail-section h4::before{display:none}
+#recordDesignDetails .record-detail-section dt>.record-card-icon{width:21px;height:21px;min-width:21px;margin-right:6px}
 </style>
 <style id="fleet-analysis-header-style">
 .btn-fleet-analysis{width:100%;min-width:0;box-sizing:border-box;border:0;border-radius:20px;padding:10px 14px;background:#334155;color:#fff;font-weight:600;cursor:pointer;transition:background .15s ease}
