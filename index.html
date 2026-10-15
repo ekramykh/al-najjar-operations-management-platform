@@ -2335,6 +2335,16 @@ window.toggleFleetAnalysisPanel=function(){
 #fleetAnalysisPanel .fleet-status.normal,#fleetAnalysisPanel .fleet-status.info{background:#06532c;color:#d9ffe9;border-radius:4px;padding:3px 8px}
 @media(max-width:650px){#fleetAnalysisPanel .fleet-analysis-title h2{font-size:18px}#fleetAnalysisPanel .fleet-analysis-title>span{margin:0 0 0 70px}}
 </style>
+<style id="consistent-dashboard-spacing">
+/* Spacing and alignment only; preserve each section's visual design. */
+@media screen {
+.container>header,.container>#fleetAnalysisLauncher,.container>.kpi-grid,.container>#invoiceWarningDashboard,.container>.main-grid{margin:0 0 20px!important}
+.container>#fleetAnalysisPanel{margin:0 0 20px;width:100%;padding:20px}
+.container>.main-grid>.panel{padding:20px}
+.container>#recordLogsPanel{margin-left:0;margin-right:0;width:100%}
+#fleetAnalysisPanel .fleet-section-card{margin-top:20px}
+}
+</style>
 <section class="fleet-analysis-panel" id="fleetAnalysisPanel">
   <div class="fleet-analysis-title"><h2><svg class="fleet-ui-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 5h12v12H2zM14 10h4l4 4v3h-8"/><circle cx="6" cy="18" r="2"/><circle cx="18" cy="18" r="2"/></svg> Fleet Analysis &amp; Vehicle Settings</h2><span>Vehicle standards are configurable and are not assumed by the system.</span></div>
   <div class="fleet-analysis-grid" id="fleetAnalysisKpis"></div>
