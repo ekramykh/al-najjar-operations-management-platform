@@ -2335,6 +2335,12 @@ window.toggleFleetAnalysisPanel=function(){
 #fleetAnalysisPanel .fleet-status.normal,#fleetAnalysisPanel .fleet-status.info{background:#06532c;color:#d9ffe9;border-radius:4px;padding:3px 8px}
 @media(max-width:650px){#fleetAnalysisPanel .fleet-analysis-title h2{font-size:18px}#fleetAnalysisPanel .fleet-analysis-title>span{margin:0 0 0 70px}}
 </style>
+<style id="fleet-toolbar-equal-widths">
+#fleetAnalysisPanel .fleet-analysis-toolbar{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px}
+#fleetAnalysisPanel .fleet-analysis-toolbar>select,#fleetAnalysisPanel .fleet-analysis-toolbar>button{width:100%;min-width:0;justify-content:center;white-space:normal}
+@media(max-width:1100px){#fleetAnalysisPanel .fleet-analysis-toolbar{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:650px){#fleetAnalysisPanel .fleet-analysis-toolbar{grid-template-columns:repeat(2,minmax(0,1fr))}}
+</style>
 <style id="consistent-dashboard-spacing">
 /* Spacing and alignment only; preserve each section's visual design. */
 @media screen {
