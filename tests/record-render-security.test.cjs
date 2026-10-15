@@ -11,6 +11,7 @@ test('record renderer escapes shared text and passes alert data through a callba
 test('vehicle profile actions preserve names containing quotes',()=>{
  const car='Mercedes "A" & O\'Neil';let markup,selected={value:'',dispatchEvent(){}},deleted;
  const c={getProfiles:()=>({[car]:{}}),esc:v=>String(v??'').replace(/[&<>"]/g,x=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[x])),fmt:()=>0,document:{getElementById:id=>id==='fleetProfilesTable'?{set innerHTML(v){markup=v}}:selected},deleteVehicleProfile:x=>deleted=x,Event:class{}};
+ const brandStart=html.indexOf('  const fleetBrand=');vm.runInNewContext(html.slice(brandStart,html.indexOf('\n',brandStart)),c);
  const start=html.indexOf('  function renderFleetProfilesTable()');vm.runInNewContext(html.slice(start,html.indexOf('\n',start)),c);c.renderFleetProfilesTable();
  const actions=[...markup.matchAll(/onclick="([^"]*)"/g)].map(x=>x[1].replace(/&quot;/g,'"').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&amp;/g,'&'));assert.equal(actions.length,2);for(const action of actions)vm.runInNewContext(action,c);assert.equal(selected.value,car);assert.equal(deleted,car);
 });
