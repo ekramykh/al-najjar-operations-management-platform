@@ -2346,13 +2346,13 @@ window.toggleFleetAnalysisPanel=function(){
                     <div class="chart-controls-filter">
                         <button class="filter-btn" onclick="filterTimeRange('1D', this)">1D</button>
                         <button class="filter-btn" onclick="filterTimeRange('5D', this)">5D</button>
-                        <button class="filter-btn active" onclick="filterTimeRange('1M', this)" id="btn-range-1m">1M</button>
+                        <button class="filter-btn" onclick="filterTimeRange('1M', this)" id="btn-range-1m">1M</button>
                         <button class="filter-btn" onclick="filterTimeRange('3M', this)">3M</button>
                         <button class="filter-btn" onclick="filterTimeRange('YTD', this)">YTD</button>
                         <button class="filter-btn" onclick="filterTimeRange('1Y', this)">1Y</button>
                         <button class="filter-btn" onclick="filterTimeRange('3Y', this)">3Y</button>
                         <button class="filter-btn" onclick="filterTimeRange('5Y', this)">5Y</button>
-                        <button class="filter-btn" onclick="filterTimeRange('Max', this)">Max</button>
+                        <button class="filter-btn active" onclick="filterTimeRange('Max', this)" id="btn-range-max">Max</button>
                     </div>
                 </div>
             </div>
@@ -2366,7 +2366,7 @@ window.toggleFleetAnalysisPanel=function(){
     <div class="panel" id="recordLogsPanel">
         <div class="panel-title" style="font-size: 1.05rem; font-weight: 600; margin-bottom: 4px;">
             <span>Fuel Refueling Logs</span>
-            <div class="record-design-switch" role="group" aria-label="Display design"><button type="button" data-log-design="1" aria-pressed="true" aria-label="Refined Table" title="Refined Table"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16M4 10h16M4 15h16M4 20h16"/></svg></button><button type="button" data-log-design="2" aria-pressed="false" aria-label="Table + Details" title="Table + Details"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="1"/><path d="M14 4v16M6 8h5M6 12h5M6 16h5M17 8h1M17 12h1"/></svg></button><button type="button" data-log-design="3" aria-pressed="false" aria-label="Expandable Rows" title="Expandable Rows"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16M4 10h16M4 20h16M4 14l3 3 3-3M13 15h7"/></svg></button></div>
+            <div class="record-design-switch" role="group" aria-label="Display design"><button type="button" data-log-design="1" aria-pressed="false" aria-label="Refined Table" title="Refined Table"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16M4 10h16M4 15h16M4 20h16"/></svg></button><button type="button" data-log-design="2" aria-pressed="false" aria-label="Table + Details" title="Table + Details"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="1"/><path d="M14 4v16M6 8h5M6 12h5M6 16h5M17 8h1M17 12h1"/></svg></button><button type="button" data-log-design="3" aria-pressed="true" aria-label="Expandable Rows" title="Expandable Rows"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16M4 10h16M4 20h16M4 14l3 3 3-3M13 15h7"/></svg></button></div>
         </div>
 
         <div class="filter-bar-container">
@@ -2413,8 +2413,8 @@ window.toggleFleetAnalysisPanel=function(){
             <button type="button" class="btn-clear-filters" onclick="clearAllFilters()">Clear Filters</button>
         </div>
 
-        <div class="record-design-heading"><span id="recordDesignNumber">1</span><strong id="recordDesignName">Refined Table</strong><small id="recordDesignCaption">Clean table with filters, invoice counts and pagination.</small></div>
-        <div id="recordDesignLayout" data-design="1">
+        <div class="record-design-heading"><span id="recordDesignNumber">3</span><strong id="recordDesignName">Expandable Rows</strong><small id="recordDesignCaption">View invoice details inline within the table.</small></div>
+        <div id="recordDesignLayout" data-design="3">
         <div class="record-table-host">
         <div class="record-column-controls">
           <button type="button" id="recordColumnsButton" class="record-columns-button" title="Choose columns" aria-label="Choose visible columns" aria-expanded="false" aria-controls="recordColumnsMenu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M5 3v18M12 3v18M19 3v18"/><rect x="2" y="6" width="6" height="4" rx="1" fill="#142b40"/><rect x="9" y="14" width="6" height="4" rx="1" fill="#142b40"/><rect x="16" y="8" width="6" height="4" rx="1" fill="#142b40"/></svg></button>
@@ -16726,7 +16726,7 @@ window.applySyncedAdminPassword = function(value) {
     });
 
     let myChart = null;
-    let currentSelectedRange = '1M';
+    let currentSelectedRange = 'Max';
     let currentSortColumn = 'sn';
     let currentSortDirection = 'desc';
     let isUploadAuthorized = false;
@@ -18365,8 +18365,8 @@ window.applySyncedAdminPassword = function(value) {
         if (activeTh) activeTh.classList.add(`sort-${currentSortDirection}`);
         
         document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
-        const btn1M = document.getElementById('btn-range-1m');
-        if (btn1M) btn1M.classList.add('active');
+        const defaultRangeButton = document.getElementById('btn-range-max');
+        if (defaultRangeButton) defaultRangeButton.classList.add('active');
 
         renderDashboard();
     });
@@ -19462,7 +19462,7 @@ window.applySyncedAdminPassword = function(value) {
 <script>
 (()=>{
  const layout=document.getElementById('recordDesignLayout'),body=document.getElementById('tableBody'),pane=document.getElementById('recordDesignDetails');
- const switches=[...document.querySelectorAll('[data-log-design]')];let design='1',recordCount=0,pageCount=1;
+ const switches=[...document.querySelectorAll('[data-log-design]')];let design='3',recordCount=0,pageCount=1;
  const tableViewport=document.getElementById('recordDesignTable');
  const columnStorageKey='najjar-record-visible-columns-v1';
  let hiddenColumns=new Set();try{const saved=JSON.parse(localStorage.getItem(columnStorageKey)||'[]');if(Array.isArray(saved))hiddenColumns=new Set(saved.filter(id=>typeof id==='string'));}catch(_){}
