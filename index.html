@@ -2235,22 +2235,6 @@ html,body,*{scrollbar-width:thin!important;scrollbar-color:#64748b #111827!impor
 #recordModal .record-section-nav svg,#recordModal .form-section-title svg{width:30px;height:30px;min-width:30px;flex-shrink:0;color:#68cfff}
 #recordModal .record-section-nav button,#recordModal .form-section-title{font-family:Arial,sans-serif;font-size:16px;font-weight:700;line-height:1.4}
 
-/* Fleet analysis option 2: bordered section cards and consistent line icons. */
-#fleetAnalysisPanel .fleet-ui-icon,#fleetAnalysisLauncher .fleet-ui-icon{width:30px;height:30px;min-width:30px;color:#62d4f4;vertical-align:middle;flex-shrink:0}
-#fleetAnalysisLauncher .fleet-launcher-title,#fleetAnalysisPanel .fleet-analysis-title h2{display:flex;align-items:center;gap:12px;font-family:Arial,sans-serif;font-size:18px;font-weight:700}
-#fleetAnalysisPanel .fleet-analysis-title h2>.fleet-ui-icon{width:42px;height:42px}
-#fleetAnalysisPanel .fleet-analysis-card{position:relative;padding-left:62px;background:linear-gradient(120deg,#10334b,#0a2033);border-color:#285875}
-#fleetAnalysisPanel .fleet-analysis-card>.fleet-ui-icon{position:absolute;left:16px;top:50%;transform:translateY(-50%)}
-#fleetAnalysisPanel .fleet-analysis-toolbar button{display:inline-flex;align-items:center;gap:9px;background:#10324b;border:1px solid #2a5c7c;color:#eef7ff}
-#fleetAnalysisPanel .fleet-analysis-toolbar button:hover{background:#194665}
-#fleetAnalysisPanel .fleet-section-card{margin-top:16px;padding:6px;border:1px solid #31678b;border-radius:9px;background:#0a2033;box-shadow:0 3px 10px #0003}
-#fleetAnalysisPanel .fleet-section-card>summary{display:flex;align-items:center;gap:12px;cursor:pointer;list-style:none;padding:11px 12px;border-radius:6px;background:linear-gradient(100deg,#164675,#0b2946);font:700 16px/1.4 Arial,sans-serif;color:#f0f7ff}
-#fleetAnalysisPanel .fleet-section-card>summary::-webkit-details-marker{display:none}
-#fleetAnalysisPanel .fleet-section-card>summary::after{content:'⌄';margin-left:auto;color:#9ad6f3;font-size:20px}
-#fleetAnalysisPanel .fleet-section-card[open]>summary::after{content:'⌃'}
-#fleetAnalysisPanel .fleet-section-card>div{margin-top:6px}
-#fleetAnalysisPanel .fleet-analysis-table th{font-size:12px;color:#c8e5f6!important}
-#fleetAnalysisPanel .fleet-analysis-table{font-family:Arial,sans-serif}
 </style>
 <style id="fleet-analysis-header-style">
 .btn-fleet-analysis{width:100%;min-width:0;box-sizing:border-box;border:0;border-radius:20px;padding:10px 14px;background:#334155;color:#fff;font-weight:600;cursor:pointer;transition:background .15s ease}
@@ -2303,6 +2287,47 @@ window.toggleFleetAnalysisPanel=function(){
 @media(max-width:650px){#fleetAnalysisPanel{padding:14px}.fleet-analysis-title h2{font-size:16px}}
 </style>
 
+<style id="fleet-approved-section-cards">
+/* Fleet analysis option 2: bordered section cards and consistent line icons. */
+#fleetAnalysisPanel .fleet-ui-icon,#fleetAnalysisLauncher .fleet-ui-icon{width:30px;height:30px;min-width:30px;color:#62d4f4;vertical-align:middle;flex-shrink:0}
+#fleetAnalysisLauncher .fleet-launcher-title,#fleetAnalysisPanel .fleet-analysis-title h2{display:flex;align-items:center;gap:12px;font-family:Arial,sans-serif;font-size:18px;font-weight:700}
+#fleetAnalysisPanel .fleet-analysis-title h2>.fleet-ui-icon{width:42px;height:42px}
+#fleetAnalysisPanel .fleet-analysis-card{position:relative;padding-left:62px;background:linear-gradient(120deg,#10334b,#0a2033);border-color:#285875}
+#fleetAnalysisPanel .fleet-analysis-card>.fleet-ui-icon{position:absolute;left:16px;top:50%;transform:translateY(-50%)}
+#fleetAnalysisPanel .fleet-analysis-toolbar button{display:inline-flex;align-items:center;gap:9px;background:#10324b;border:1px solid #2a5c7c;color:#eef7ff}
+#fleetAnalysisPanel .fleet-analysis-toolbar button:hover{background:#194665}
+#fleetAnalysisPanel .fleet-section-card{margin-top:16px;padding:6px;border:1px solid #31678b;border-radius:9px;background:#0a2033;box-shadow:0 3px 10px #0003}
+#fleetAnalysisPanel .fleet-section-card>summary{display:flex;align-items:center;gap:12px;cursor:pointer;list-style:none;padding:11px 12px;border-radius:6px;background:linear-gradient(100deg,#164675,#0b2946);font:700 16px/1.4 Arial,sans-serif;color:#f0f7ff}
+#fleetAnalysisPanel .fleet-section-card>summary::-webkit-details-marker{display:none}
+#fleetAnalysisPanel .fleet-section-card>summary::after{content:'⌄';margin-left:auto;color:#9ad6f3;font-size:20px}
+#fleetAnalysisPanel .fleet-section-card[open]>summary::after{content:'⌃'}
+#fleetAnalysisPanel .fleet-section-card>div{margin-top:6px}
+#fleetAnalysisPanel .fleet-analysis-table th{font-size:12px;color:#c8e5f6!important}
+#fleetAnalysisPanel .fleet-analysis-table{font-family:Arial,sans-serif}
+
+#fleetAnalysisPanel{background:#061b2c;border:1px solid #24516c;border-radius:10px;padding:16px;color:#edf6ff;font-family:Arial,sans-serif}
+#fleetAnalysisPanel .fleet-analysis-title{display:flex;flex-direction:column;align-items:flex-start;gap:2px;border-bottom:0;padding:0;margin:0 0 14px}
+#fleetAnalysisPanel .fleet-analysis-title h2{font-size:20px;line-height:1.4;margin:0;gap:14px}
+#fleetAnalysisPanel .fleet-analysis-title h2>.fleet-ui-icon{width:56px;height:46px}
+#fleetAnalysisPanel .fleet-analysis-title>span{margin-left:70px;margin-top:-8px;font-size:12px;color:#b3d5eb}
+#fleetAnalysisPanel .fleet-analysis-card{padding:13px 12px 13px 58px;min-height:76px;box-sizing:border-box;background:linear-gradient(110deg,#0d3048,#082135);border:1px solid #205673;border-radius:6px}
+#fleetAnalysisPanel .fleet-analysis-card b{font-size:22px;line-height:1.25;margin:5px 0 0;color:#f1f8ff}
+#fleetAnalysisPanel .fleet-analysis-card small{font-size:12px;color:#cee7f6}
+#fleetAnalysisPanel .fleet-analysis-toolbar{gap:8px;margin:12px 0 16px;align-items:stretch}
+#fleetAnalysisPanel .fleet-analysis-toolbar button{background:linear-gradient(#0d304a,#082137);padding:7px 11px;border:1px solid #245575;color:#edf7ff;border-radius:5px;font:500 12px/1.35 Arial,sans-serif}
+#fleetAnalysisPanel .fleet-analysis-toolbar button>.fleet-ui-icon{width:26px;height:26px;min-width:26px}
+#fleetAnalysisPanel .fleet-analysis-toolbar select{background:#0a2b43;border-color:#245575;border-radius:5px}
+#fleetAnalysisPanel .fleet-section-card{padding:5px;margin-top:12px;border-color:#2687ba;border-radius:8px;background:#061b2c}
+#fleetAnalysisPanel .fleet-section-card>summary{border-radius:5px 5px 0 0;background:linear-gradient(100deg,#0d497f,#073056);padding:9px 12px;font-size:16px}
+#fleetAnalysisPanel .fleet-analysis-table{min-width:760px;border-color:#1b4764;border-radius:0;font-size:13px}
+#fleetAnalysisPanel .fleet-analysis-table th,#fleetAnalysisPanel .fleet-analysis-table td{padding:10px 11px;border-right:1px solid #163d56}
+#fleetAnalysisPanel .fleet-analysis-table th{font-size:12px;line-height:1.4;background:#082c47!important;color:#deeffa!important;white-space:normal}
+#fleetAnalysisPanel .fleet-analysis-table td{background:#061d30!important}
+#fleetAnalysisPanel .fleet-analysis-table tr:nth-child(even) td{background:#082338!important}
+#fleetAnalysisPanel .fleet-analysis-table th:first-child,#fleetAnalysisPanel .fleet-analysis-table td:first-child{min-width:150px!important}
+#fleetAnalysisPanel .fleet-status.normal,#fleetAnalysisPanel .fleet-status.info{background:#06532c;color:#d9ffe9;border-radius:4px;padding:3px 8px}
+@media(max-width:650px){#fleetAnalysisPanel .fleet-analysis-title h2{font-size:18px}#fleetAnalysisPanel .fleet-analysis-title>span{margin:0 0 0 70px}}
+</style>
 <section class="fleet-analysis-panel" id="fleetAnalysisPanel">
   <div class="fleet-analysis-title"><h2><svg class="fleet-ui-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 5h12v12H2zM14 10h4l4 4v3h-8"/><circle cx="6" cy="18" r="2"/><circle cx="18" cy="18" r="2"/></svg> Fleet Analysis &amp; Vehicle Settings</h2><span>Vehicle standards are configurable and are not assumed by the system.</span></div>
   <div class="fleet-analysis-grid" id="fleetAnalysisKpis"></div>
