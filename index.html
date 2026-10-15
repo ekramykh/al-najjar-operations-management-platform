@@ -3310,6 +3310,10 @@ window.toggleFleetAnalysisPanel=function(){
                         <input type="text" id="inputDriverPhone" class="form-control" value="+96892286093" readonly="">
                     </div>
                 </div>
+                <div class="form-group" style="margin-top:14px">
+                    <label for="inputNotes">Notes</label>
+                    <textarea id="inputNotes" class="form-control" rows="3" placeholder="Optional notes for this record" style="resize:vertical;min-height:80px;white-space:pre-wrap"></textarea>
+                </div>
             </div>
             <div class="form-section" id="recordInvoices">
                 <div class="form-section-title">📄 2. Trip Invoices &amp; Deliveries</div>
@@ -18057,6 +18061,7 @@ window.applySyncedAdminPassword = function(value) {
             car: formatTitleCase(document.getElementById('inputCar').value),
             driver: driverNameVal,
             driverPhone: document.getElementById('inputDriverPhone').value || driverPhonesMap[driverNameVal] || '',
+            notes: document.getElementById('inputNotes').value,
             invoiceNumber: document.getElementById('inputInvoiceNumber').value.trim(),
             invoiceAmount: parseFloat(parseFloat(document.getElementById('inputInvoiceAmount').value || 0).toFixed(3)),
             branch: document.getElementById('inputBranch').value,
@@ -18118,6 +18123,7 @@ window.applySyncedAdminPassword = function(value) {
             car: formatTitleCase(document.getElementById('inputCar').value),
             driver: driverNameVal,
             driverPhone: document.getElementById('inputDriverPhone').value || driverPhonesMap[driverNameVal] || '',
+            notes: document.getElementById('inputNotes').value,
             invoiceNumber: document.getElementById('inputInvoiceNumber').value.trim(),
             invoiceAmount: parseFloat(parseFloat(document.getElementById('inputInvoiceAmount').value || 0).toFixed(3)),
             branch: formatTitleCase(document.getElementById('inputBranch').value),
@@ -18185,6 +18191,7 @@ window.applySyncedAdminPassword = function(value) {
         document.getElementById('inputTrip1Km').value = (item.trip1Km || 0).toFixed(2);
         document.getElementById('inputTrip2').value = formatTitleCase(item.trip2 || '');
         document.getElementById('inputTrip2Km').value = (item.trip2Km || 0).toFixed(2);
+        document.getElementById('inputNotes').value = item.notes ?? '';
         document.getElementById('inputTnxAuth').value = formatTitleCase(item.tnxAuth || '');
         
         const siteVal = formatTitleCase(item.site || '');

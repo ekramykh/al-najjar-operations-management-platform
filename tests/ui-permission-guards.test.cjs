@@ -123,3 +123,14 @@ test('accepted update saves once while new and copy actions do not ask update co
  c.editRecord(0);c.saveRecord('update');assert.equal(prompts,1);assert.equal(c.saves,1);
  c.saveRecord('new');c.saveRecordAsNew();assert.equal(prompts,1);assert.equal(c.saves,3);
 });
+
+test('record notes preserve multiline text through create, edit and Save as New',()=>{
+ const {context:c,element}=harness(admin);const notes='ملاحظات الرحلة\nMiXeD <text> & delivery';
+ element('inputNotes').value=notes;c.saveRecord('new');const record=c.fuelRecords[0];assert.equal(record.notes,notes);
+ c.editRecord(0);assert.equal(element('inputNotes').value,notes);
+ element('inputNotes').value=notes+'\nUpdated';c.saveRecord('update');assert.equal(c.fuelRecords[0].notes,notes+'\nUpdated');
+ c.editRecord(0);c.saveRecordAsNew();assert.equal(c.fuelRecords[0].notes,notes+'\nUpdated');assert.notEqual(c.fuelRecords[0]._syncId,c.fuelRecords[1]._syncId);
+});
+test('opening a legacy record clears notes left from another record',()=>{
+ const {context:c,element}=harness(admin);element('inputNotes').value='Previous notes';c.editRecord(0);assert.equal(element('inputNotes').value,'');
+});
