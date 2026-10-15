@@ -2088,6 +2088,35 @@ html,body,*{scrollbar-width:thin!important;scrollbar-color:#64748b #111827!impor
     <span style="font-size:12px;font-weight:500;color:var(--text-muted,#64748b);">Open Analysis</span>
   </button>
 </div>
+<style id="record-sidebar-cards-refinement">
+/* Only the five detail card sections in the sidebar. */
+#recordDesignDetails .record-detail-section,#recordDesignDetails .record-detail-doc{background:#0d2032;border:1px solid #304b65;border-radius:10px;padding:16px;margin-top:14px;margin-bottom:14px;box-shadow:0 3px 10px #0002}
+#recordDesignDetails .record-detail-section h4{font-family:inherit;font-size:14px;font-weight:700;line-height:1.5;color:#e9f4ff;margin:0 0 14px;padding:0 0 11px;border-bottom:1px solid #2b455e;letter-spacing:0}
+#recordDesignDetails .record-detail-section dl{gap:10px;grid-template-columns:repeat(2,minmax(0,1fr))}
+#recordDesignDetails .record-detail-section dl>div{background:#091a2a;border:1px solid #20394e;border-radius:6px;padding:10px 12px;min-width:0}
+#recordDesignDetails .record-detail-section dt{color:#a7bed3;font-size:12px;line-height:1.4;margin:0 0 5px}
+#recordDesignDetails .record-detail-section dd{color:#f1f6fc;font-size:14px;font-weight:500;line-height:1.6;white-space:pre-wrap;overflow-wrap:anywhere}
+#recordDesignDetails .record-detail-section:last-child dl{grid-template-columns:minmax(0,1fr)}
+#recordDesignDetails .record-invoices-title{font-family:inherit;font-size:14px;color:#e9f4ff;margin:18px 0 10px;padding-bottom:9px;border-bottom:1px solid #2b455e}
+#recordDesignDetails .record-invoice-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;align-items:stretch}
+#recordDesignDetails .record-invoice-grid>strong{grid-column:1/-1;color:#8ecbff;font-size:13px;padding-bottom:9px;border-bottom:1px solid #2b455e}
+#recordDesignDetails .record-invoice-grid>div{background:#091a2a;border:1px solid #20394e;border-radius:6px;padding:10px 12px;font-size:14px;line-height:1.6;text-align:left;overflow-wrap:anywhere;min-width:0}
+#recordDesignDetails .record-invoice-grid small{display:block;color:#a7bed3;font-size:12px;margin-bottom:5px}
+#recordDesignDetails .record-invoice-grid>.record-invoice-low{color:#fbbf24;border-color:#71521c;background:#2a2418}
+
+#recordDesignDetails .record-details-title{background:#0d2032;border:1px solid #304b65;border-bottom:0;border-radius:10px 10px 0 0;padding:14px 16px;margin:0;color:#e9f4ff;font-size:15px;gap:12px}
+#recordDesignDetails .record-details-title button{display:flex;align-items:center;justify-content:center;flex-shrink:0;width:28px;height:28px;border:1px solid #304b65;border-radius:6px;background:#091a2a;color:#a7bed3}
+#recordDesignDetails .record-details-title button:hover{background:#19364e;color:white}
+#recordDesignDetails .record-detail-summary{background:#0d2032;border:1px solid #304b65;border-top:0;border-radius:0 0 10px 10px;padding:0 16px 16px;margin-top:0;margin-bottom:16px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+#recordDesignDetails .record-detail-summary>div{background:#091a2a;border:1px solid #20394e;border-radius:6px;padding:10px 12px;font-size:14px;font-weight:500;line-height:1.6}
+#recordDesignDetails .record-detail-summary>div:last-child{grid-column:1/-1}
+#recordDesignDetails .record-detail-summary small{font-size:12px;font-weight:400;color:#a7bed3;margin-bottom:5px}
+#recordDesignDetails .record-detail-summary .record-vehicle{max-width:100%;white-space:normal;overflow-wrap:anywhere}
+#recordDesignDetails .record-detail-section:last-child dd{min-height:48px;font-weight:400}
+#recordDesignDetails .record-detail-section:nth-of-type(2) h4::before{content:'↗';mask:none;background:none;color:#85bce9;font-size:19px;line-height:17px}
+#recordDesignDetails .record-detail-section:nth-of-type(3) h4::before{content:'⛽';mask:none;background:none;font-size:16px;line-height:17px}
+#recordDesignDetails .record-detail-section:last-child h4::before{content:'✎';mask:none;background:none;color:#85bce9;font-size:19px;line-height:17px}
+</style>
 <style id="fleet-analysis-header-style">
 .btn-fleet-analysis{width:100%;min-width:0;box-sizing:border-box;border:0;border-radius:20px;padding:10px 14px;background:#334155;color:#fff;font-weight:600;cursor:pointer;transition:background .15s ease}
 .btn-fleet-analysis:hover{background:#475569}
