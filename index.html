@@ -2230,6 +2230,10 @@ html,body,*{scrollbar-width:thin!important;scrollbar-color:#64748b #111827!impor
 
 #recordDesignTable .record-serial-aligned{display:inline-flex;align-items:center;vertical-align:middle;min-height:24px;line-height:1.4}
 #recordDesignTable .record-serial-aligned .record-row-chevron{flex-shrink:0;line-height:1;margin-top:0;margin-bottom:0;vertical-align:middle}
+
+/* Record editor: match approved detail heading and icon sizes only. */
+#recordModal .record-section-nav svg,#recordModal .form-section-title svg{width:30px;height:30px;min-width:30px;flex-shrink:0;color:#68cfff}
+#recordModal .record-section-nav button,#recordModal .form-section-title{font-family:Arial,sans-serif;font-size:16px;font-weight:700;line-height:1.4}
 </style>
 <style id="fleet-analysis-header-style">
 .btn-fleet-analysis{width:100%;min-width:0;box-sizing:border-box;border:0;border-radius:20px;padding:10px 14px;background:#334155;color:#fff;font-weight:600;cursor:pointer;transition:background .15s ease}
@@ -3396,7 +3400,7 @@ window.toggleFleetAnalysisPanel=function(){
             <div class="record-form-scroll" tabindex="0" aria-label="Record fields">
 
             <div class="form-section" id="recordGeneral">
-                <div class="form-section-title">📋 1. General Information</div>
+                <div class="form-section-title"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V2h6v2M9 10h6M9 14h6"/></svg> 1. General Information</div>
                 <div class="form-grid-2">
                     <div class="form-group">
                         <label>Date</label>
@@ -3430,7 +3434,7 @@ window.toggleFleetAnalysisPanel=function(){
                 </div>
             </div>
             <div class="form-section" id="recordInvoices">
-                <div class="form-section-title">📄 2. Trip Invoices &amp; Deliveries</div>
+                <div class="form-section-title"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h9l4 4v14H6zM14 3v5h5M9 12h7M9 16h7"/></svg> 2. Trip Invoices &amp; Deliveries</div>
                 <div id="tripDocumentsEditor">
                   <div class="trip-document-row">
                     <div class="trip-document-heading"><strong>Invoice / Delivery 1</strong><button type="button" class="trip-document-remove" onclick="removeTripDocument(this)">Clear</button></div>
@@ -3465,7 +3469,7 @@ window.toggleFleetAnalysisPanel=function(){
             </div>
 
             <div class="form-section" id="recordTrip">
-                <div class="form-section-title">🛣️ 3. Trips &amp; Odometer Details</div>
+                <div class="form-section-title"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="6" r="2"/><circle cx="19" cy="18" r="2"/><path d="M5 8v6a4 4 0 0 0 4 4h8M7 6h8a4 4 0 0 1 0 8h-4"/></svg> 3. Trips &amp; Odometer Details</div>
                 <div class="form-grid-2">
                     <div class="form-group">
                         <label>Starting KM</label>
@@ -3495,7 +3499,7 @@ window.toggleFleetAnalysisPanel=function(){
             </div>
 
             <div class="form-section" id="recordFuel">
-                <div class="form-section-title">⛽ 4. Fuel &amp; Refueling Meters</div>
+                <div class="form-section-title"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 21V4h9v17M4 10h9M2 21h13M13 12h2a2 2 0 0 1 2 2v3a2 2 0 0 0 4 0V8l-4-4M18 5v4h3"/></svg> 4. Fuel &amp; Refueling Meters</div>
                 <div class="form-grid-2">
                     <div class="form-group">
                         <label>TNX Auth / Reference</label>
