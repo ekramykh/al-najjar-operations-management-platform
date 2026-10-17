@@ -19956,9 +19956,9 @@ window.applySyncedAdminPassword = function(value) {
 <script id="brand-glow-script">
 (function(){
  const logo=document.querySelector('.header-icon-box');if(!logo)return;
- const key='najjar-brand-glow';let saved='blue',menu=null;
- try{saved=localStorage.getItem(key)||'blue';}catch{}
- logo.dataset.glow=saved==='gold'?'gold':'blue';logo.title='Right-click to choose logo lighting';logo.tabIndex=0;
+ const key='najjar-brand-glow-gold-default';let saved='gold',menu=null;
+ try{saved=localStorage.getItem(key)||'gold';}catch{}
+ logo.dataset.glow=saved==='blue'?'blue':'gold';logo.title='Right-click to choose logo lighting';logo.tabIndex=0;
  function close(restore=false){if(menu){menu.remove();menu=null;if(restore)logo.focus({preventScroll:true});}}
  function open(event){
   event.preventDefault();close();menu=document.createElement('div');menu.id='brand-glow-menu';menu.setAttribute('role','menu');menu.setAttribute('aria-label','Logo lighting');
