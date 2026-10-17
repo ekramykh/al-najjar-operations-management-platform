@@ -2016,6 +2016,18 @@ html,body,*{scrollbar-width:thin!important;scrollbar-color:#64748b #111827!impor
 #invoiceWarningDashboard .warning-title.dashboard-section-heading{font:700 16px/1.4 Arial,sans-serif}
 .dashboard-section-heading>.dashboard-heading-icon{width:30px;height:30px;min-width:30px;flex-shrink:0}
 </style>
+<style id="invoice-warning-bar-pulse">
+@media screen {
+#invoiceWarningDashboard{border-width:1px;border-radius:10px}
+#invoiceWarningDashboard .warning-dropdown-toggle{height:42px;min-height:42px;padding:0 16px}
+#invoiceWarningDashboard .warning-title.dashboard-section-heading{font:700 18px/1.4 Arial,sans-serif}
+#invoiceWarningDashboard.active{animation:invoice-warning-pulse 2s ease-in-out infinite}
+@keyframes invoice-warning-pulse{
+0%,100%{box-shadow:0 0 0 0 rgba(251,191,36,0);border-color:#6c4d22}
+50%{box-shadow:0 0 12px 2px rgba(251,191,36,.38);border-color:#fbbf24}
+}
+}
+</style>
 </head>
 <body class="">
 
@@ -2093,6 +2105,19 @@ html,body,*{scrollbar-width:thin!important;scrollbar-color:#64748b #111827!impor
     <span style="font-size:12px;font-weight:500;color:var(--text-muted,#64748b);">Open Analysis</span>
   </button>
 </div>
+    <div id="invoiceWarningDashboard" class="invoice-warning-dashboard" role="alert" aria-live="polite">
+        <button type="button" class="warning-dropdown-toggle" onclick="toggleInvoiceWarningDropdown()" aria-expanded="false">
+            <span class="warning-title dashboard-section-heading"><svg class="dashboard-heading-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 2 21h20L12 3Z"/><path d="M12 9v5M12 18h.01"/></svg>Invoice Amount Warning</span>
+            <span id="invoiceWarningCount" class="warning-count-badge">0</span>
+            <span class="warning-chevron">▾</span>
+        </button>
+        <div id="invoiceWarningDropdownContent" class="warning-dropdown-content">
+            <div id="invoiceWarningSummary" class="warning-summary"></div>
+            <div id="invoiceWarningList" class="warning-list"></div>
+            <div id="invoiceWarningMore" class="warning-more"></div>
+        </div>
+    </div>
+
 <style id="record-sidebar-cards-refinement">
 /* Shared record cards across all three display designs. */
 :is(#recordDesignDetails,#recordDesignTable .record-expanded-content) .record-detail-section,:is(#recordDesignDetails,#recordDesignTable .record-expanded-content) .record-detail-doc{background:#0d2032;border:1px solid #304b65;border-radius:10px;padding:16px;margin-top:14px;margin-bottom:14px;box-shadow:0 3px 10px #0002}
@@ -2581,19 +2606,6 @@ const r=new FileReader();r.onload=()=>{if(!requireFuelPermission('import'))retur
             <div class="kpi-icon-box">
                 <svg viewBox="0 0 24 24"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
             </div>
-        </div>
-    </div>
-
-    <div id="invoiceWarningDashboard" class="invoice-warning-dashboard" role="alert" aria-live="polite">
-        <button type="button" class="warning-dropdown-toggle" onclick="toggleInvoiceWarningDropdown()" aria-expanded="false">
-            <span class="warning-title dashboard-section-heading"><svg class="dashboard-heading-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 2 21h20L12 3Z"/><path d="M12 9v5M12 18h.01"/></svg>Invoice Amount Warning</span>
-            <span id="invoiceWarningCount" class="warning-count-badge">0</span>
-            <span class="warning-chevron">▾</span>
-        </button>
-        <div id="invoiceWarningDropdownContent" class="warning-dropdown-content">
-            <div id="invoiceWarningSummary" class="warning-summary"></div>
-            <div id="invoiceWarningList" class="warning-list"></div>
-            <div id="invoiceWarningMore" class="warning-more"></div>
         </div>
     </div>
 
