@@ -2252,6 +2252,7 @@ html,body,*{scrollbar-width:thin!important;scrollbar-color:#64748b #111827!impor
 </style>
 <script>
 let fleetEscapeReturnedToTitle=false;
+let invoiceEscapeReturnedToTitle=false;
 window.toggleFleetAnalysisPanel=function(){
  const p=document.getElementById('fleetAnalysisPanel');
  if(!p)return;
@@ -2261,8 +2262,18 @@ window.toggleFleetAnalysisPanel=function(){
 };
 document.addEventListener('keydown',event=>{
  if(event.key!=='Escape'||event.repeat||event.defaultPrevented)return;
+ if(document.body.classList.contains('modal-open')||document.querySelector('.app-select-menu'))return;
  const panel=document.getElementById('fleetAnalysisPanel');
- if(!panel?.classList.contains('fleet-analysis-open')||document.body.classList.contains('modal-open')||document.querySelector('.app-select-menu'))return;
+ const warning=document.getElementById('invoiceWarningDashboard');
+ const warningRect=warning?.getBoundingClientRect();
+ const fleetRect=panel?.getBoundingClientRect();
+ if(warning?.classList.contains('expanded')&&((warningRect.bottom>0&&warningRect.top<innerHeight)||!panel?.classList.contains('fleet-analysis-open')||fleetRect.bottom<=0)){
+  event.preventDefault();
+  if(!invoiceEscapeReturnedToTitle){warning.scrollIntoView({behavior:'instant',block:'start'});invoiceEscapeReturnedToTitle=true;}
+  else{warning.classList.remove('expanded');warning.querySelector('.warning-dropdown-toggle').setAttribute('aria-expanded','false');invoiceEscapeReturnedToTitle=false;}
+  return;
+ }
+ if(!panel?.classList.contains('fleet-analysis-open'))return;
  event.preventDefault();
  if(!fleetEscapeReturnedToTitle){panel.scrollIntoView({behavior:'instant',block:'start'});fleetEscapeReturnedToTitle=true;}
  else{panel.classList.remove('fleet-analysis-open');fleetEscapeReturnedToTitle=false;document.getElementById('fleetAnalysisLauncher').scrollIntoView({behavior:'instant',block:'start'});}
@@ -2451,7 +2462,7 @@ const r=new FileReader();r.onload=()=>{if(!requireFuelPermission('import'))retur
     const row=event.target.closest('tr[data-fleet-alert-index]');if(!row)return;
     const record=fleetAlertRecords[Number(row.dataset.fleetAlertIndex)];if(!record)return;
     const index=fuelRecords.findIndex(item=>record._syncId?item._syncId===record._syncId:item===record);
-    if(index>=0)editRecord(index);
+    if(index>=0)goToInvoiceWarningRecord(index);
   });
   document.addEventListener('DOMContentLoaded',()=>{refreshSelectors();renderFleetProfilesTable();renderFleetAnalysis();});
   const oldRender=window.renderDashboard; if(typeof oldRender==='function')window.renderDashboard=function(){const x=oldRender.apply(this,arguments);setTimeout(()=>{refreshSelectors();renderFleetAnalysis();renderFleetProfilesTable()},0);return x};
@@ -17583,6 +17594,7 @@ window.applySyncedAdminPassword = function(value) {
         const toggle = box ? box.querySelector('.warning-dropdown-toggle') : null;
         if (!box || !toggle) return;
         const expanded = box.classList.toggle('expanded');
+        invoiceEscapeReturnedToTitle = false;
         toggle.setAttribute('aria-expanded', expanded ? 'true' : 'false');
     }
 
