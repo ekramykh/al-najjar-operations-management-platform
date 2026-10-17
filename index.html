@@ -2283,8 +2283,6 @@ function returnToSectionTitle(section){
   section.scrollIntoView({behavior:'instant',block:'start'});
   const title=section.id==='fleetAnalysisPanel'?section.querySelector('.fleet-analysis-title'):section.querySelector('.warning-dropdown-toggle');
   title.setAttribute('tabindex','-1');title.focus({preventScroll:true});
-  title.classList.add('section-title-returned');
-  setTimeout(()=>title.classList.remove('section-title-returned'),1500);
  });
 }
 window.toggleFleetAnalysisPanel=function(){
@@ -2405,7 +2403,8 @@ body{overflow-x:clip}
 #invoiceWarningDashboard{overflow:clip}
 #invoiceWarningDashboard.expanded>.warning-dropdown-toggle{position:sticky;top:0;z-index:70;background:#171b25}
 #fleetAnalysisPanel>.fleet-analysis-title{position:sticky;top:0;z-index:70;background:#061b2c}
-.section-title-returned{outline:2px solid #fbbf24;outline-offset:-2px}
+#fleetAnalysisPanel.fleet-analysis-open>.fleet-analysis-title h2>.fleet-ui-icon{filter:drop-shadow(0 0 5px #22d3ee) drop-shadow(0 0 10px #22d3ee88)}
+#invoiceWarningDashboard.expanded>.warning-dropdown-toggle .dashboard-heading-icon{filter:drop-shadow(0 0 5px #fbbf24) drop-shadow(0 0 10px #fbbf2488)}
 }
 </style>
 <section class="fleet-analysis-panel" id="fleetAnalysisPanel">
