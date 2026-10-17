@@ -19942,4 +19942,43 @@ window.applySyncedAdminPassword = function(value) {
  }
 })();
 </script>
+<style id="brand-glow-style">
+.header-icon-box{position:relative;isolation:isolate;--brand-glow:59,130,246}
+.header-icon-box[data-glow="gold"]{--brand-glow:245,174,36}
+.header-icon-box::before{content:"";position:absolute;inset:-16px;border-radius:24px;background:radial-gradient(ellipse,rgba(var(--brand-glow),.65),rgba(var(--brand-glow),.25) 40%,transparent 72%);z-index:-1;pointer-events:none;animation:brand-halo-pulse 3s ease-in-out infinite}
+@keyframes brand-halo-pulse{0%,100%{opacity:.28}50%{opacity:.95}}
+#brand-glow-menu{position:fixed;z-index:10000;min-width:190px;padding:6px;background:#111c2d;border:1px solid #34465e;border-radius:10px;box-shadow:0 8px 24px #0006;font:13px Arial,sans-serif;color:#edf4ff}
+#brand-glow-menu button{display:block;width:100%;padding:10px;border:0;border-radius:6px;background:transparent;color:inherit;font:inherit;text-align:left;cursor:pointer}
+#brand-glow-menu button:hover,#brand-glow-menu button:focus-visible{background:#25344b;outline:1px solid #6287b5}
+#brand-glow-menu button[aria-checked="true"]{background:#20344e}
+@media print{.header-icon-box::before,#brand-glow-menu{display:none}}
+</style>
+<script id="brand-glow-script">
+(function(){
+ const logo=document.querySelector('.header-icon-box');if(!logo)return;
+ const key='najjar-brand-glow';let saved='blue',menu=null;
+ try{saved=localStorage.getItem(key)||'blue';}catch{}
+ logo.dataset.glow=saved==='gold'?'gold':'blue';logo.title='Right-click to choose logo lighting';logo.tabIndex=0;
+ function close(restore=false){if(menu){menu.remove();menu=null;if(restore)logo.focus({preventScroll:true});}}
+ function open(event){
+  event.preventDefault();close();menu=document.createElement('div');menu.id='brand-glow-menu';menu.setAttribute('role','menu');menu.setAttribute('aria-label','Logo lighting');
+  [['blue','🔵 Blue lighting'],['gold','🟡 Gold lighting']].forEach(([value,label])=>{
+   const button=document.createElement('button');button.type='button';button.textContent=label;button.setAttribute('role','menuitemradio');button.setAttribute('aria-checked',String(logo.dataset.glow===value));
+   button.addEventListener('click',()=>{logo.dataset.glow=value;try{localStorage.setItem(key,value);}catch{}close(true);});menu.appendChild(button);
+  });
+  document.body.appendChild(menu);const box=menu.getBoundingClientRect();
+  menu.style.left=Math.max(8,Math.min(event.clientX,innerWidth-box.width-8))+'px';menu.style.top=Math.max(8,Math.min(event.clientY,innerHeight-box.height-8))+'px';menu.querySelector('[aria-checked="true"]').focus({preventScroll:true});
+ }
+ logo.addEventListener('contextmenu',open);
+ logo.addEventListener('keydown',event=>{if(event.key==='ContextMenu'||(event.shiftKey&&event.key==='F10')){const box=logo.getBoundingClientRect();open({preventDefault:()=>event.preventDefault(),clientX:box.left,clientY:box.bottom});}});
+ document.addEventListener('pointerdown',event=>{if(menu&&!menu.contains(event.target))close();},true);
+ document.addEventListener('keydown',event=>{
+  if(!menu)return;
+  if(event.key==='Escape'){event.preventDefault();event.stopImmediatePropagation();close(true);}
+  else if(event.key==='Tab')close();
+  else if(['ArrowDown','ArrowUp','Home','End'].includes(event.key)){event.preventDefault();event.stopImmediatePropagation();const buttons=[...menu.querySelectorAll('button')],i=buttons.indexOf(document.activeElement);buttons[event.key==='Home'?0:event.key==='End'?buttons.length-1:(i+(event.key==='ArrowDown'?1:-1)+buttons.length)%buttons.length].focus();}
+ },true);
+ window.addEventListener('resize',()=>close());window.addEventListener('scroll',()=>close(),true);
+})();
+</script>
 </body></html>
