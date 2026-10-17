@@ -2280,8 +2280,8 @@ let sectionEscapeTarget=null;
 function returnToSectionTitle(section){
  sectionEscapeTarget=section;
  requestAnimationFrame(()=>{
-  section.scrollIntoView({behavior:'instant',block:'start'});
-  const title=section.id==='fleetAnalysisPanel'?section.querySelector('.fleet-analysis-title'):section.querySelector('.warning-dropdown-toggle');
+  const title=section.id==='fleetAnalysisPanel'?document.querySelector('#fleetAnalysisLauncher button'):section.querySelector('.warning-dropdown-toggle');
+  (section.id==='fleetAnalysisPanel'?document.getElementById('fleetAnalysisLauncher'):section).scrollIntoView({behavior:'instant',block:'start'});
   title.setAttribute('tabindex','-1');title.focus({preventScroll:true});
  });
 }
@@ -2401,10 +2401,12 @@ document.addEventListener('keydown',event=>{
 @media screen {
 body{overflow-x:clip}
 #invoiceWarningDashboard{overflow:clip}
+.container:has(>#fleetAnalysisPanel.fleet-analysis-open)>#fleetAnalysisLauncher{position:sticky;top:0;z-index:75}
 #invoiceWarningDashboard.expanded>.warning-dropdown-toggle{position:sticky;top:0;z-index:70;background:#171b25}
-#fleetAnalysisPanel>.fleet-analysis-title{position:sticky;top:0;z-index:70;background:#061b2c}
-#fleetAnalysisPanel.fleet-analysis-open>.fleet-analysis-title h2>.fleet-ui-icon{filter:drop-shadow(0 0 5px #22d3ee) drop-shadow(0 0 10px #22d3ee88)}
-#invoiceWarningDashboard.expanded>.warning-dropdown-toggle .dashboard-heading-icon{filter:drop-shadow(0 0 5px #fbbf24) drop-shadow(0 0 10px #fbbf2488)}
+.container:has(>#fleetAnalysisPanel.fleet-analysis-open)>#invoiceWarningDashboard.expanded>.warning-dropdown-toggle{top:44px}
+.container:has(>#fleetAnalysisPanel.fleet-analysis-open)>#fleetAnalysisLauncher .fleet-ui-icon{--section-glow:#22d3ee;animation:section-icon-pulse 2s ease-in-out infinite}
+#invoiceWarningDashboard.expanded>.warning-dropdown-toggle .dashboard-heading-icon{--section-glow:#fbbf24;animation:section-icon-pulse 2s ease-in-out infinite}
+@keyframes section-icon-pulse{0%,100%{filter:drop-shadow(0 0 2px var(--section-glow))}50%{filter:drop-shadow(0 0 6px var(--section-glow)) drop-shadow(0 0 10px var(--section-glow))}}
 }
 </style>
 <section class="fleet-analysis-panel" id="fleetAnalysisPanel">
