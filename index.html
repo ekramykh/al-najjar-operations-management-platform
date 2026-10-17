@@ -19945,8 +19945,8 @@ window.applySyncedAdminPassword = function(value) {
 <style id="brand-glow-style">
 .header-icon-box{position:relative;isolation:isolate;--brand-glow:59,130,246}
 .header-icon-box[data-glow="gold"]{--brand-glow:245,174,36}
-.header-icon-box::before{content:"";position:absolute;inset:-16px;border-radius:24px;background:radial-gradient(ellipse,rgba(var(--brand-glow),.65),rgba(var(--brand-glow),.25) 40%,transparent 72%);z-index:-1;pointer-events:none;animation:brand-halo-pulse 3s ease-in-out infinite}
-@keyframes brand-halo-pulse{0%,100%{opacity:.28}50%{opacity:.95}}
+.header-icon-box::before{content:"";position:absolute;inset:0;border-radius:inherit;box-shadow:0 0 8px 2px rgba(var(--brand-glow),.85),0 0 18px 6px rgba(var(--brand-glow),.55);z-index:-1;pointer-events:none;animation:brand-halo-pulse 3s ease-in-out infinite}
+@keyframes brand-halo-pulse{0%,100%{opacity:.5}50%{opacity:1}}
 #brand-glow-menu{position:fixed;z-index:10000;min-width:190px;padding:6px;background:#111c2d;border:1px solid #34465e;border-radius:10px;box-shadow:0 8px 24px #0006;font:13px Arial,sans-serif;color:#edf4ff}
 #brand-glow-menu button{display:block;width:100%;padding:10px;border:0;border-radius:6px;background:transparent;color:inherit;font:inherit;text-align:left;cursor:pointer}
 #brand-glow-menu button:hover,#brand-glow-menu button:focus-visible{background:#25344b;outline:1px solid #6287b5}
