@@ -2251,12 +2251,22 @@ html,body,*{scrollbar-width:thin!important;scrollbar-color:#64748b #111827!impor
 #fleetAnalysisPanel.fleet-analysis-open{display:block}
 </style>
 <script>
+let fleetEscapeReturnedToTitle=false;
 window.toggleFleetAnalysisPanel=function(){
  const p=document.getElementById('fleetAnalysisPanel');
  if(!p)return;
  const open=p.classList.toggle('fleet-analysis-open');
+ fleetEscapeReturnedToTitle=false;
  if(open){p.scrollIntoView({behavior:'instant',block:'start'}); if(typeof window.renderFleetAnalysis==='function')window.renderFleetAnalysis();}
 };
+document.addEventListener('keydown',event=>{
+ if(event.key!=='Escape'||event.repeat||event.defaultPrevented)return;
+ const panel=document.getElementById('fleetAnalysisPanel');
+ if(!panel?.classList.contains('fleet-analysis-open')||document.body.classList.contains('modal-open')||document.querySelector('.app-select-menu'))return;
+ event.preventDefault();
+ if(!fleetEscapeReturnedToTitle){panel.scrollIntoView({behavior:'instant',block:'start'});fleetEscapeReturnedToTitle=true;}
+ else{panel.classList.remove('fleet-analysis-open');fleetEscapeReturnedToTitle=false;document.getElementById('fleetAnalysisLauncher').scrollIntoView({behavior:'instant',block:'start'});}
+});
 </script>
 
 <style id="fleet-analysis-styles">
@@ -2426,6 +2436,7 @@ window.toggleFleetAnalysisPanel=function(){
     if(!authorized||!requireFuelPermission('import')){e.target.value='';return;}
 const r=new FileReader();r.onload=()=>{if(!requireFuelPermission('import'))return;try{const x=JSON.parse(r.result);if(!x||typeof x!=='object'||Array.isArray(x))throw new Error();saveProfiles(x);refreshSelectors();renderFleetAnalysis();renderFleetProfilesTable();alert('Vehicle settings imported.')}catch(err){alert('Invalid vehicle settings file.')}};r.readAsText(f);e.target.value=''};
   function renderFleetProfilesTable(){const tb=document.getElementById('fleetProfilesTable');if(!tb)return;const p=getProfiles();tb.innerHTML=Object.entries(p).map(([car,x])=>`<tr><td>${fleetBrand(car)}</td><td>${esc(x.type)}</td><td>${esc(x.model)}</td><td>${esc(x.fuelType)}</td><td>${fmt(x.tankCapacity)}</td><td>${fmt(x.expectedKmL)}</td><td>${fmt(x.targetKmL)}</td><td>${fmt(x.allowedVariance)}%</td><td>${x.lastServiceKm?fmt(x.lastServiceKm)+' / '+fmt(x.serviceIntervalKm):'Not set'}</td><td><button onclick="document.getElementById('fpCar').value=${esc(JSON.stringify(car))};document.getElementById('fpCar').dispatchEvent(new Event('change'))" style="padding:4px 7px">Edit</button> <button onclick="deleteVehicleProfile(${esc(JSON.stringify(car))})" style="padding:4px 7px">Delete</button></td></tr>`).join('')||'<tr><td colspan="10" class="fleet-empty">No vehicle settings entered yet.</td></tr>'}
+  let fleetAlertRecords=[];
   window.renderFleetAnalysis=()=>{
     refreshSelectors();const rec=currentRecords().slice();const cf=document.getElementById('fleetAnalysisCarFilter')?.value||'',df=document.getElementById('fleetAnalysisDriverFilter')?.value||'';const rows=rec.filter(r=>(!cf||r.car===cf)&&(!df||r.driver===df));const profiles=getProfiles();
     const totalKm=rows.reduce((a,r)=>a+kmOf(r),0), totalFuel=rows.reduce((a,r)=>a+n(r.fuel),0), fuelRows=rows.filter(r=>n(r.fuel)>0&&kmOf(r)>0), actual=totalFuel>0?totalKm/totalFuel:0;
@@ -2433,8 +2444,15 @@ const r=new FileReader();r.onload=()=>{if(!requireFuelPermission('import'))retur
     const byCar={};rows.forEach(r=>{const c=r.car||'Unknown';byCar[c]??={trips:0,km:0,fuel:0};byCar[c].trips++;byCar[c].km+=kmOf(r);byCar[c].fuel+=n(r.fuel)});
     const vt=document.getElementById('fleetVehicleAnalysis');vt.innerHTML=Object.entries(byCar).map(([car,x])=>{const p=profiles[car]||{}, al=p.allowedVariance||10, act=x.fuel>0?x.km/x.fuel:0, exp=n(p.expectedKmL), variance=exp>0?((act-exp)/exp*100):null, excess=exp>0?Math.max(0,x.km/exp-x.fuel):0;let st=exp? (act<exp*(1-al/100)?'high':act<exp?'review':'normal'):'info';const serviceDue=p.lastServiceKm&&p.serviceIntervalKm? (x.km+Math.max(...rows.filter(r=>r.car===car).map(r=>n(r.endKm)),0)-p.lastServiceKm>=p.serviceIntervalKm):false;return `<tr><td>${fleetBrand(car)}</td><td>${x.trips}</td><td>${fmt(x.km)}</td><td>${fmt(x.fuel)}</td><td>${fmt(act)}</td><td>${exp?fmt(exp):'Not set'}</td><td>${variance===null?'—':fmt(variance)+'%'}</td><td>${exp?fmt(excess):'—'}</td><td><span class="fleet-status ${serviceDue?'review':st}">${serviceDue?'SERVICE DUE':st==='high'?'HIGH CONSUMPTION':st==='review'?'REVIEW':'OK'}</span></td></tr>`}).join('')||'<tr><td colspan="9" class="fleet-empty">No records found.</td></tr>';
     const byDriver={};rows.forEach(r=>{const d=r.driver||'Unknown';byDriver[d]??={trips:0,km:0,fuel:0,cars:new Set()};byDriver[d].trips++;byDriver[d].km+=kmOf(r);byDriver[d].fuel+=n(r.fuel);if(r.car)byDriver[d].cars.add(r.car)});const dt=document.getElementById('fleetDriverAnalysis');dt.innerHTML=Object.entries(byDriver).map(([d,x])=>`<tr><td>${esc(d)}</td><td>${x.trips}</td><td>${fmt(x.km)}</td><td>${fmt(x.fuel)}</td><td>${x.fuel?fmt(x.km/x.fuel):'—'}</td><td>${[...x.cars].map(esc).join(', ')||'—'}</td></tr>`).join('')||'<tr><td colspan="6" class="fleet-empty">No records found.</td></tr>';
-    const at=[];rows.forEach(r=>{const k=kmOf(r),f=n(r.fuel),p=profiles[r.car]||{},kl=f>0?k/f:0;if(k<=0&&f<=0)return;let reason='';if(k<0)reason='Negative KM';else if(f>0&&p.expectedKmL&&kl<p.expectedKmL*(1-(p.allowedVariance||10)/100))reason='Below expected efficiency';else if(f>0&&p.tankCapacity&&f>p.tankCapacity)reason='Fuel exceeds tank capacity';else if(n(r.currentKm)>0&&n(r.lastKm)>0&&n(r.currentKm)<n(r.lastKm))reason='Current KM below Last KM';else if(f<=0&&k>0)reason='KM without fuel entry';if(reason)at.push({r,k,f,kl,reason})});document.getElementById('fleetAlertsTable').innerHTML=at.slice(0,100).map(a=>`<tr><td>${esc(a.r.date)}</td><td>${esc(a.r.car)}</td><td>${esc(a.r.driver)}</td><td>${fmt(a.k)}</td><td>${fmt(a.f)}</td><td>${a.f?fmt(a.kl):'—'}</td><td><span class="fleet-status review">${esc(a.reason)}</span></td></tr>`).join('')||'<tr><td colspan="7" class="fleet-empty">No review items detected using the configured vehicle settings.</td></tr>';
+    const at=[];rows.forEach(r=>{const k=kmOf(r),f=n(r.fuel),p=profiles[r.car]||{},kl=f>0?k/f:0;if(k<=0&&f<=0)return;let reason='';if(k<0)reason='Negative KM';else if(f>0&&p.expectedKmL&&kl<p.expectedKmL*(1-(p.allowedVariance||10)/100))reason='Below expected efficiency';else if(f>0&&p.tankCapacity&&f>p.tankCapacity)reason='Fuel exceeds tank capacity';else if(n(r.currentKm)>0&&n(r.lastKm)>0&&n(r.currentKm)<n(r.lastKm))reason='Current KM below Last KM';else if(f<=0&&k>0)reason='KM without fuel entry';if(reason)at.push({r,k,f,kl,reason})});fleetAlertRecords=at.slice(0,100).map(a=>a.r);document.getElementById('fleetAlertsTable').innerHTML=at.slice(0,100).map((a,index)=>`<tr data-fleet-alert-index="${index}" title="Double-click to open record"><td>${esc(a.r.date)}</td><td>${esc(a.r.car)}</td><td>${esc(a.r.driver)}</td><td>${fmt(a.k)}</td><td>${fmt(a.f)}</td><td>${a.f?fmt(a.kl):'—'}</td><td><span class="fleet-status review">${esc(a.reason)}</span></td></tr>`).join('')||'<tr><td colspan="7" class="fleet-empty">No review items detected using the configured vehicle settings.</td></tr>';
   };
+  // Open the exact current record, even after filtering or synchronization changes its index.
+  document.getElementById('fleetAlertsTable').addEventListener('dblclick',event=>{
+    const row=event.target.closest('tr[data-fleet-alert-index]');if(!row)return;
+    const record=fleetAlertRecords[Number(row.dataset.fleetAlertIndex)];if(!record)return;
+    const index=fuelRecords.findIndex(item=>record._syncId?item._syncId===record._syncId:item===record);
+    if(index>=0)editRecord(index);
+  });
   document.addEventListener('DOMContentLoaded',()=>{refreshSelectors();renderFleetProfilesTable();renderFleetAnalysis();});
   const oldRender=window.renderDashboard; if(typeof oldRender==='function')window.renderDashboard=function(){const x=oldRender.apply(this,arguments);setTimeout(()=>{refreshSelectors();renderFleetAnalysis();renderFleetProfilesTable()},0);return x};
 })();
