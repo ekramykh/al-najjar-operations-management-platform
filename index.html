@@ -2276,32 +2276,34 @@ html,body,*{scrollbar-width:thin!important;scrollbar-color:#64748b #111827!impor
 #fleetAnalysisPanel.fleet-analysis-open{display:block}
 </style>
 <script>
-let fleetEscapeReturnedToTitle=false;
-let invoiceEscapeReturnedToTitle=false;
+let sectionEscapeTarget=null;
+function returnToSectionTitle(section){
+ sectionEscapeTarget=section;
+ requestAnimationFrame(()=>{
+  section.scrollIntoView({behavior:'instant',block:'start'});
+  const title=section.id==='fleetAnalysisPanel'?section.querySelector('.fleet-analysis-title'):section.querySelector('.warning-dropdown-toggle');
+  title.setAttribute('tabindex','-1');title.focus({preventScroll:true});
+  title.classList.add('section-title-returned');
+  setTimeout(()=>title.classList.remove('section-title-returned'),1500);
+ });
+}
 window.toggleFleetAnalysisPanel=function(){
- const p=document.getElementById('fleetAnalysisPanel');
- if(!p)return;
- const open=p.classList.toggle('fleet-analysis-open');
- fleetEscapeReturnedToTitle=false;
- if(open){p.scrollIntoView({behavior:'instant',block:'start'}); if(typeof window.renderFleetAnalysis==='function')window.renderFleetAnalysis();}
+ const panel=document.getElementById('fleetAnalysisPanel');if(!panel)return;
+ const open=panel.classList.toggle('fleet-analysis-open');sectionEscapeTarget=null;
+ if(open){if(typeof window.renderFleetAnalysis==='function')window.renderFleetAnalysis();returnToSectionTitle(panel);sectionEscapeTarget=null;}
 };
 document.addEventListener('keydown',event=>{
  if(event.key!=='Escape'||event.repeat||event.defaultPrevented)return;
  if(document.body.classList.contains('modal-open')||document.querySelector('.app-select-menu'))return;
- const panel=document.getElementById('fleetAnalysisPanel');
- const warning=document.getElementById('invoiceWarningDashboard');
- const warningRect=warning?.getBoundingClientRect();
- const fleetRect=panel?.getBoundingClientRect();
- if(warning?.classList.contains('expanded')&&((warningRect.bottom>0&&warningRect.top<innerHeight)||!panel?.classList.contains('fleet-analysis-open')||fleetRect.bottom<=0)){
-  event.preventDefault();
-  if(!invoiceEscapeReturnedToTitle){warning.scrollIntoView({behavior:'instant',block:'start'});invoiceEscapeReturnedToTitle=true;}
-  else{warning.classList.remove('expanded');warning.querySelector('.warning-dropdown-toggle').setAttribute('aria-expanded','false');invoiceEscapeReturnedToTitle=false;}
-  return;
- }
- if(!panel?.classList.contains('fleet-analysis-open'))return;
+ const sections=[document.getElementById('invoiceWarningDashboard'),document.getElementById('fleetAnalysisPanel')].filter(section=>section&&(section.id==='fleetAnalysisPanel'?section.classList.contains('fleet-analysis-open'):section.classList.contains('expanded')));
+ const visible=sections.filter(section=>{const rect=section.getBoundingClientRect();return rect.bottom>0&&rect.top<innerHeight;});
+ const section=visible.sort((a,b)=>Math.abs(a.getBoundingClientRect().top)-Math.abs(b.getBoundingClientRect().top))[0];
+ if(!section)return;
  event.preventDefault();
- if(!fleetEscapeReturnedToTitle){panel.scrollIntoView({behavior:'instant',block:'start'});fleetEscapeReturnedToTitle=true;}
- else{panel.classList.remove('fleet-analysis-open');fleetEscapeReturnedToTitle=false;document.getElementById('fleetAnalysisLauncher').scrollIntoView({behavior:'instant',block:'start'});}
+ if(sectionEscapeTarget!==section){returnToSectionTitle(section);return;}
+ sectionEscapeTarget=null;
+ if(section.id==='fleetAnalysisPanel'){section.classList.remove('fleet-analysis-open');document.getElementById('fleetAnalysisLauncher').scrollIntoView({behavior:'instant',block:'start'});}
+ else{section.classList.remove('expanded');section.querySelector('.warning-dropdown-toggle').setAttribute('aria-expanded','false');section.scrollIntoView({behavior:'instant',block:'start'});}
 });
 </script>
 
@@ -2395,6 +2397,15 @@ document.addEventListener('keydown',event=>{
 .container>.main-grid>.panel{padding:20px}
 .container>#recordLogsPanel{margin-left:0;margin-right:0;width:100%}
 #fleetAnalysisPanel .fleet-section-card{margin-top:20px}
+}
+</style>
+<style id="section-sticky-titles">
+@media screen {
+body{overflow-x:clip}
+#invoiceWarningDashboard{overflow:clip}
+#invoiceWarningDashboard.expanded>.warning-dropdown-toggle{position:sticky;top:0;z-index:70;background:#171b25}
+#fleetAnalysisPanel>.fleet-analysis-title{position:sticky;top:0;z-index:70;background:#061b2c}
+.section-title-returned{outline:2px solid #fbbf24;outline-offset:-2px}
 }
 </style>
 <section class="fleet-analysis-panel" id="fleetAnalysisPanel">
@@ -17606,7 +17617,8 @@ window.applySyncedAdminPassword = function(value) {
         const toggle = box ? box.querySelector('.warning-dropdown-toggle') : null;
         if (!box || !toggle) return;
         const expanded = box.classList.toggle('expanded');
-        invoiceEscapeReturnedToTitle = false;
+        sectionEscapeTarget = null;
+        if(expanded){returnToSectionTitle(box);sectionEscapeTarget=null;}
         toggle.setAttribute('aria-expanded', expanded ? 'true' : 'false');
     }
 
