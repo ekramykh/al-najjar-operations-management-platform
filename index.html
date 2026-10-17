@@ -17645,11 +17645,11 @@ window.applySyncedAdminPassword = function(value) {
 
         box.classList.add('active');
         if (count) count.textContent = String(lowInvoices.length);
-        summary.textContent = `${lowInvoices.length} invoice${lowInvoices.length === 1 ? '' : 's'} have an amount below OMR 500. Click any warning to go directly to that record in the Dashboard.`;
+        summary.textContent = `${lowInvoices.length} invoice${lowInvoices.length === 1 ? '' : 's'} have an amount below OMR 500. Double-click any warning to go directly to that record in the Dashboard.`;
         list.innerHTML = lowInvoices.map(x => {
             const r = x.record;
             const amount = Number(r.invoiceAmount) || 0;
-            return `<div class="warning-item" role="button" tabindex="0" onclick="goToInvoiceWarningRecord(${x.index})" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();goToInvoiceWarningRecord(${x.index})}">
+            return `<div class="warning-item" role="button" tabindex="0" ondblclick="goToInvoiceWarningRecord(${x.index})" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();goToInvoiceWarningRecord(${x.index})}">
                 <span><strong>⚠️ Date:</strong> ${escapeHtml(r.date || '-')}</span>
                 <span><strong>Invoice:</strong> ${escapeHtml(r.invoiceNumber || '-')}</span>
                 <span class="warning-amount"><strong>Amount:</strong> OMR ${amount.toFixed(3)}</span>
