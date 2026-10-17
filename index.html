@@ -2021,13 +2021,10 @@ html,body,*{scrollbar-width:thin!important;scrollbar-color:#64748b #111827!impor
 #invoiceWarningDashboard{border-width:1px;border-radius:10px}
 #invoiceWarningDashboard .warning-dropdown-toggle{height:42px;min-height:42px;padding:0 16px}
 #invoiceWarningDashboard .warning-title.dashboard-section-heading{font:700 18px/1.4 Arial,sans-serif}
-#invoiceWarningDashboard.active{animation:invoice-warning-pulse 2s ease-in-out infinite}
-@keyframes invoice-warning-pulse{
-0%,100%{box-shadow:0 0 0 0 rgba(251,191,36,0);border-color:#6c4d22}
-50%{box-shadow:0 0 12px 2px rgba(251,191,36,.38);border-color:#fbbf24}
-}
+
 }
 </style>
+
 </head>
 <body class="">
 
@@ -2391,9 +2388,7 @@ body{overflow-x:clip}
 .container:has(>#fleetAnalysisPanel.fleet-analysis-open)>#fleetAnalysisLauncher{position:sticky;top:0;z-index:75}
 #invoiceWarningDashboard.expanded>.warning-dropdown-toggle{position:sticky;top:0;z-index:70;background:#171b25}
 .container:has(>#fleetAnalysisPanel.fleet-analysis-open)>#invoiceWarningDashboard.expanded>.warning-dropdown-toggle{top:44px}
-.container:has(>#fleetAnalysisPanel.fleet-analysis-open)>#fleetAnalysisLauncher .fleet-ui-icon{--section-glow:#22d3ee;animation:section-icon-pulse 2s ease-in-out infinite}
-#invoiceWarningDashboard.expanded>.warning-dropdown-toggle .dashboard-heading-icon{--section-glow:#fbbf24;animation:section-icon-pulse 2s ease-in-out infinite}
-@keyframes section-icon-pulse{0%,100%{filter:drop-shadow(0 0 2px var(--section-glow))}50%{filter:drop-shadow(0 0 6px var(--section-glow)) drop-shadow(0 0 10px var(--section-glow))}}
+
 }
 </style>
 <section class="fleet-analysis-panel" id="fleetAnalysisPanel">
@@ -19895,6 +19890,44 @@ window.applySyncedAdminPassword = function(value) {
   const favicon = document.querySelector('link[rel="icon"]');
   const brand = document.querySelector('.header-brand-icon');
   if (favicon && brand) brand.src = favicon.href;
+})();
+</script>
+<style id="section-effect-options">
+.section-effect-switch{display:inline-flex;gap:0;border-radius:4px;overflow:hidden;background:#363a48;z-index:80}
+.section-effect-switch button{display:flex;align-items:center;justify-content:center;width:32px;height:28px;padding:5px;border:1px solid transparent;background:transparent;color:#cbd5e1;cursor:pointer}
+.section-effect-switch button[aria-pressed="true"]{background:#103649;border-color:#22d3ee;color:#7de9ff}
+.section-effect-switch svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.6}
+#fleetAnalysisPanel{position:relative}
+#fleetAnalysisPanel>.section-effect-switch{position:absolute;right:20px;top:16px}
+#fleetAnalysisPanel .fleet-analysis-title{padding-right:140px}
+#invoiceWarningDashboard{position:relative}
+#invoiceWarningDashboard>.section-effect-switch{position:absolute;right:80px;top:7px}
+#invoiceWarningDashboard>.warning-dropdown-toggle{padding-right:220px}
+@media screen{
+#fleetAnalysisLauncher{--effect-color:#22d3ee;--effect-light:rgba(34,211,238,.32)}
+#invoiceWarningDashboard{--effect-color:#fbbf24;--effect-light:rgba(251,191,36,.30)}
+#fleetAnalysisLauncher>button,#invoiceWarningDashboard>.warning-dropdown-toggle{position:relative;isolation:isolate}
+.container:has(>#fleetAnalysisPanel.fleet-analysis-open)>#fleetAnalysisLauncher[data-effect="1"]>button,
+#invoiceWarningDashboard.expanded[data-effect="1"]>.warning-dropdown-toggle{box-shadow:0 0 12px 2px var(--effect-light)}
+.container:has(>#fleetAnalysisPanel.fleet-analysis-open)>#fleetAnalysisLauncher[data-effect="2"] .fleet-launcher-title,
+#invoiceWarningDashboard.expanded[data-effect="2"] .warning-title{text-decoration:underline;text-decoration-color:var(--effect-color);text-underline-offset:7px;text-decoration-thickness:2px}
+.container:has(>#fleetAnalysisPanel.fleet-analysis-open)>#fleetAnalysisLauncher[data-effect="3"]>button::before,
+#invoiceWarningDashboard.expanded[data-effect="3"]>.warning-dropdown-toggle::before{content:'';position:absolute;inset:0;z-index:-1;pointer-events:none;border-radius:10px;background-image:radial-gradient(ellipse at center,var(--effect-light),transparent 70%);background-size:35% 160%;background-repeat:no-repeat;animation:section-background-sweep 3s linear infinite}
+.container:has(>#fleetAnalysisPanel.fleet-analysis-open)>#fleetAnalysisLauncher[data-effect="4"] .fleet-ui-icon,
+#invoiceWarningDashboard.expanded[data-effect="4"] .dashboard-heading-icon{animation:section-icon-pulse 2s ease-in-out infinite}
+@keyframes section-background-sweep{0%{background-position:-55% 50%;opacity:0}15%,85%{opacity:1}100%{background-position:155% 50%;opacity:0}}
+@keyframes section-icon-pulse{0%,100%{filter:drop-shadow(0 0 2px var(--effect-color))}50%{filter:drop-shadow(0 0 6px var(--effect-color)) drop-shadow(0 0 10px var(--effect-color))}}
+}
+</style>
+<script>
+(()=>{
+ const effects=[['Soft glow','<rect x="3" y="5" width="18" height="14" rx="4"/><path d="M1 3h3M20 3h3M1 21h3M20 21h3"/>'],['Underline','<path d="M4 7h16M4 12h16M4 18h16"/>'],['Background light','<circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2"/>'],['Icon pulse','<path d="m12 2 2.5 7.5L22 12l-7.5 2.5L12 22l-2.5-7.5L2 12l7.5-2.5Z"/>']];
+ for(const [targetId,hostId] of [['fleetAnalysisLauncher','fleetAnalysisPanel'],['invoiceWarningDashboard','invoiceWarningDashboard']]){
+  const target=document.getElementById(targetId),host=document.getElementById(hostId);if(!target||!host)continue;
+  const key='najjar-section-effect-'+targetId;let selected='3';try{const saved=localStorage.getItem(key);if(['1','2','3','4'].includes(saved))selected=saved;}catch{}
+  target.dataset.effect=selected;const group=document.createElement('div');group.className='section-effect-switch';group.setAttribute('role','group');group.setAttribute('aria-label','Section highlight design');
+  effects.forEach(([label,paths],index)=>{const value=String(index+1),button=document.createElement('button');button.type='button';button.title=value+' — '+label;button.setAttribute('aria-label',label);button.setAttribute('aria-pressed',String(value===selected));button.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true">'+paths+'</svg>';button.addEventListener('click',event=>{event.stopPropagation();target.dataset.effect=value;for(const item of group.children)item.setAttribute('aria-pressed',String(item===button));try{localStorage.setItem(key,value);}catch{}});group.appendChild(button);});host.appendChild(group);
+ }
 })();
 </script>
 </body></html>
