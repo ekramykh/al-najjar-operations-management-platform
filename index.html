@@ -19895,11 +19895,12 @@ window.applySyncedAdminPassword = function(value) {
  for(const option of select.options){if(option.hidden)continue;const row=document.createElement('button');row.type='button';row.setAttribute('role','option');row.setAttribute('aria-selected',String(option.selected));row.textContent=option.label;if(vehicleSelectIds.has(select.id)){const artwork=vehicleBrandArtwork(option.value);if(artwork){const icon=document.createElement('span');icon.innerHTML=artwork;icon.style.cssText='display:inline-flex;vertical-align:middle;margin-right:8px';row.prepend(icon);}}row.disabled=option.disabled||option.parentElement.disabled===true;row.addEventListener('click',()=>{if(select.disabled)return;const changed=select.selectedIndex!==option.index;select.selectedIndex=option.index;if(changed)select.dispatchEvent(new Event('change',{bubbles:true}));closeMenu(true);});menu.appendChild(row);}
  let search=null;
  if(select.id==='filterSite'){
-  search=document.createElement('input');search.type='search';search.placeholder='Search locations...';search.setAttribute('aria-label','Search locations');
-  search.style.cssText='position:sticky;top:0;z-index:1;width:100%;box-sizing:border-box;padding:8px 10px;margin-bottom:4px;border:1px solid #506b8d;border-radius:4px;background:#111827;color:#f9fafb;font-size:13px';
+  const searchBox=document.createElement('div');searchBox.className='searchable-dropdown-search-box';
+  search=document.createElement('input');search.type='text';search.className='searchable-dropdown-search-input';search.placeholder='🔍 Search locations...';search.setAttribute('aria-label','Search locations');
+  searchBox.appendChild(search);
   const empty=document.createElement('div');empty.textContent='No locations found';empty.style.cssText='display:none;padding:10px;color:#a7c2df;font-size:13px';
   search.addEventListener('input',()=>{const query=search.value.trim().toLocaleLowerCase();let count=0;for(const row of menu.querySelectorAll('button')){const matches=row.textContent.toLocaleLowerCase().includes(query);row.hidden=!matches;row.style.display=matches?'':'none';if(matches)count++;}empty.style.display=count?'none':'block';positionMenu();});
-  menu.prepend(search);menu.appendChild(empty);
+  menu.prepend(searchBox);menu.appendChild(empty);
  }
  document.body.appendChild(menu);positionMenu();const selected=menu.querySelector('[aria-selected="true"]')||menu.querySelector('button:not(:disabled)');if(search)search.focus({preventScroll:true});else{selected?.focus({preventScroll:true});selected?.scrollIntoView({block:'nearest'});}
 
