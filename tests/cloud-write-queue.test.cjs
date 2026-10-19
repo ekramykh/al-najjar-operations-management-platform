@@ -72,3 +72,32 @@ test('a successful retry clears the old network failure without losing pending r
  networkDown=false;await c.queueCloudWrite('unused');
  assert.equal(c.cloudDirty,false);assert.equal(c.rows[0].value,'initial');assert.equal(states.at(-1),'Connected & Synced');assert.equal(messages.at(-1),'');
 });
+
+test('two device queues recover simultaneous number conflict and preserve both additions',async()=>{
+ let remote=[{_syncId:'existing',sn:535}],readers=0,release,conflicts=0;
+ const bothRead=new Promise(resolve=>release=resolve);
+ const invoke=async(ctx,action,rows)=>{
+  if(action==='read'){
+   const snapshot=structuredClone(remote);
+   if(++readers<=2){if(readers===2)release();await bothRead;}
+   return {data:{records:snapshot}};
+  }
+  if(rows.some(r=>remote.some(old=>old._syncId!==r._syncId&&old.sn===r.sn))){
+   conflicts++;const e=Error('Record number conflict');e.status=409;throw e;
+  }
+  const merged=new Map(remote.map(r=>[r._syncId,r]));rows.forEach(r=>merged.set(r._syncId,r));remote=[...merged.values()];
+  return {data:{records:structuredClone(remote),updated_at:'revision'}};
+ };
+ const a=harness(invoke),b=harness(invoke);
+ const mergeSource=html.slice(html.indexOf('  const nextAvailableSn = used => {'),html.indexOf('  const persistMergedRecords = records => {'));
+ for(const [ctx,id] of [[a,'device-A'],[b,'device-B']]){
+  Object.assign(ctx,{deletedSyncIds:new Map(),recordTime:()=>0,saveConflictBackup(){}});
+  vm.runInNewContext(mergeSource+'\nthis.mergeRecordSets=mergeRecordSets;',ctx);
+  ctx.rows=[{_syncId:id,sn:536}];
+ }
+ await Promise.all([a.queueCloudWrite(''),b.queueCloudWrite('')]);
+ assert.equal(conflicts,1);assert.equal(remote.length,3);
+ assert.deepEqual(remote.map(r=>r.sn).sort((x,y)=>x-y),[535,536,537]);
+ assert.equal(a.cloudDirty,false);assert.equal(b.cloudDirty,false);
+ for(const id of ['existing','device-A','device-B'])assert.ok(remote.some(r=>r._syncId===id));
+});

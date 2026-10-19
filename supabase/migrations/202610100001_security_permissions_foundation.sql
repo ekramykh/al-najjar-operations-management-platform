@@ -45,24 +45,19 @@ create policy "Users can read their own permissions"
 -- No INSERT/UPDATE/DELETE policies are intentionally created for browser roles.
 -- The table owner / trusted migration role can provision the initial administrators.
 
--- Provision the three agreed accounts if they already exist in Supabase Auth.
--- Missing accounts are deliberately skipped and reported by the verification query
--- in SECURITY_IMPLEMENTATION_PLAN.md; no Auth users are created by this migration.
+-- Optional initial roles are supplied privately by the operator in session
+-- settings app.release_admin_email, app.release_add_email, app.release_reader_email.
+-- With no settings this seeds nobody. Existing production assignments remain
+-- untouched; do not rerun this migration just to release the frontend.
 insert into public.app_user_permissions
   (user_id, can_read, can_add, can_edit, can_delete, can_manage_users)
-select
-  u.id,
-  true,
-  (lower(u.email) in ('ekramykh@gmail.com', 'khaloudalmamri96@gmail.com')),
-  (lower(u.email) = 'ekramykh@gmail.com'),
-  (lower(u.email) = 'ekramykh@gmail.com'),
-  (lower(u.email) = 'ekramykh@gmail.com')
+select u.id, true, roles.can_add, roles.is_admin, roles.is_admin, roles.is_admin
 from auth.users u
-where lower(u.email) in (
-  'ekramykh@gmail.com',
-  'khaloudalmamri96@gmail.com',
-  'jaall77@yahoo.com'
-)
+join (values
+  (nullif(lower(current_setting('app.release_admin_email', true)), ''), true, true),
+  (nullif(lower(current_setting('app.release_add_email', true)), ''), true, false),
+  (nullif(lower(current_setting('app.release_reader_email', true)), ''), false, false)
+) as roles(email, can_add, is_admin) on lower(u.email) = roles.email
 on conflict (user_id) do update set
   can_read = excluded.can_read,
   can_add = excluded.can_add,

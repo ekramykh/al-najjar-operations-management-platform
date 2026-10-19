@@ -13,12 +13,12 @@ function makeMerge() {
     deletedSyncIds: new Map(),
     normalizeRecordsForSync: rows => structuredClone(rows),
     stableRecordKey: row => row._syncId,
-    nextAvailableSn: used => { let n = 1; while (used.has(n)) n++; return n; },
+
     recordChanged: (a,b) => JSON.stringify(a) !== JSON.stringify(b),
     recordTime: row => Date.parse(row._syncUpdatedAt || '') || 0,
     saveConflictBackup: () => {},
   };
-  vm.runInNewContext('const knownCloudSyncIds = new Set();\n' + implementation + '\nthis.merge = mergeRecordSets;', context);
+  vm.runInNewContext(html.slice(html.indexOf('  const nextAvailableSn = used => {'), html.indexOf('  // Remember cloud-confirmed identities')) + '\nconst knownCloudSyncIds = new Set();\n' + implementation + '\nthis.merge = mergeRecordSets;', context);
   return context;
 }
 const row = (id, sn, updated, extra={}) => ({_syncId:id,sn,_syncUpdatedAt:updated,...extra});
@@ -80,4 +80,36 @@ test('cloud tombstone retains every field so reconnect produces no stale delta',
   const result = merge([row('deleted',123,late)], [tombstone]);
   assert.equal(JSON.stringify(result[0]),JSON.stringify(tombstone));
   assert.equal(JSON.stringify(merge(result,[tombstone])[0]),JSON.stringify(tombstone));
+});
+
+
+test('concurrent additions with historical gaps allocate above the highest number', () => {
+  const {merge} = makeMerge();
+  const remote = [row('existing',535,early),row('device-B',536,late)];
+  const local = [row('device-A',536,late)];
+  const result = merge(local,remote);
+  assert.equal(result.find(r=>r._syncId==='device-A').sn,537);
+  assert.deepEqual(remote.map(r=>r.sn),[535,536]);
+  assert.equal(local[0].sn,536);
+  const repeated = merge(result,result);
+  assert.equal(repeated.find(r=>r._syncId==='device-A').sn,537);
+});
+
+test('multiple pending additions get distinct numbers after remote maximum', () => {
+  const {merge} = makeMerge();
+  const result=merge([row('a',536,late),row('b',537,late)],[row('remote',536,early)]);
+  assert.equal(result.find(r=>r._syncId==='a').sn,537);
+  assert.equal(result.find(r=>r._syncId==='b').sn,538);
+  assert.equal(new Set(result.map(r=>r.sn)).size,3);
+});
+
+
+test('deleted test numbers do not inflate concurrent addition numbers or lose tombstones',()=>{
+ const {merge}=makeMerge();
+ const tombstone=row('deleted-test',900000101,early,{_deleted:true});
+ const remote=[row('device-B',538,late),tombstone];
+ const result=merge([row('device-A',538,late)],remote);
+ assert.equal(result.find(r=>r._syncId==='device-A').sn,539);
+ assert.equal(result.find(r=>r._syncId==='device-B').sn,538);
+ assert.equal(JSON.stringify(result.find(r=>r._syncId==='deleted-test')),JSON.stringify(tombstone));
 });
