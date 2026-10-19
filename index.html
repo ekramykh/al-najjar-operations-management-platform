@@ -6331,6 +6331,7 @@ window.applySyncedAdminPassword = function(value) {
             // device clean or silently discard those newer local edits.
             setCloudDirty(newerLocalSave || currentSnapshot() !== savedSnapshot);
             status(cloudDirty ? "Pending local changes" : "Connected & Synced", "#34d399");
+            message(cloudDirty ? "Pending local changes will be synchronized automatically." : "");
             return;
           } catch (err) {
             lastError = err;
@@ -6429,12 +6430,16 @@ window.applySyncedAdminPassword = function(value) {
     }
     if (pollTimer) clearInterval(pollTimer);
     pollTimer = setInterval(() => {
-      if (!client || !permissionsReady || cloudDirty || busy || document.hidden) return;
+      if (!client || !permissionsReady || busy || document.hidden) return;
+      if (typeof navigator !== 'undefined' && navigator.onLine === false) return;
+      if (cloudDirty && !(currentPermissions?.can_add || currentPermissions?.can_edit || currentPermissions?.can_delete)) return;
       const pollGeneration = connectionGeneration;
       const pollClient = client;
-      pullCloud().then(() => {
+      const operation = cloudDirty ? queueCloudWrite(currentSnapshot()) : pullCloud();
+      operation.then(() => {
         if (pollGeneration === connectionGeneration && pollClient === client && permissionsReady && !cloudDirty) {
           status("Connected & Synced", "#34d399");
+          message("");
         }
       }).catch(err => {
         // A read from the previous connection must not overwrite the new status.

@@ -62,3 +62,13 @@ test('real HTTP 409 retries after another read and keeps local change',async()=>
   assert.deepEqual(Array.from(c.fuelRecords,r=>r.sn),[2,1]);
   assert.equal(c.lastSaved,c.currentSnapshot());
  });
+
+test('a successful retry clears the old network failure without losing pending rows',async()=>{
+ let networkDown=true;const messages=[],states=[];
+ const c=harness(async(ctx,action,rows)=>{if(networkDown)throw Error('Failed to send a request to the Edge Function');return {data:{records:action==='read'?[]:rows,updated_at:'recovered'}}});
+ c.message=m=>messages.push(m);c.status=s=>states.push(s);
+ await assert.rejects(c.queueCloudWrite('unused'),/Failed to send/);
+ assert.equal(c.cloudDirty,true);assert.equal(c.rows[0].value,'initial');assert.match(messages.at(-1),/Sync failed/);
+ networkDown=false;await c.queueCloudWrite('unused');
+ assert.equal(c.cloudDirty,false);assert.equal(c.rows[0].value,'initial');assert.equal(states.at(-1),'Connected & Synced');assert.equal(messages.at(-1),'');
+});

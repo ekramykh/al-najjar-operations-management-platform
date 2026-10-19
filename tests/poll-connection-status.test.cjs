@@ -8,3 +8,11 @@ test('old polling rejection cannot mark a new connection as lost',async()=>{cons
 test('old polling success cannot replace current account status',async()=>{const h=harness();await h.c.startRealtime();h.tick();h.c.connectionGeneration++;h.pending.resolve();await settle();assert.equal(h.c.states.length,0);});
 test('current connection errors stay visible and a successful poll restores status',async()=>{const h=harness();await h.c.startRealtime();h.tick();h.pending.reject(Error('Network unavailable'));await settle();assert.equal(h.c.states.at(-1)[0],'Connection lost');assert.equal(h.c.messages.at(-1),'Network unavailable');h.c.pullCloud=async()=>{};h.tick();await settle();assert.equal(h.c.states.at(-1)[0],'Connected & Synced');});
 test('connect cancels polling before awaiting sign in',()=>{const source=html.slice(html.indexOf('  async function connect()'),html.indexOf('  async function pullCloud'));assert.ok(source.indexOf('clearInterval(pollTimer)')<source.indexOf('signInWithPassword'));});
+test('dirty offline save retries on a later poll after first reconnect request fails',async()=>{
+ const h=harness();let attempts=0;h.c.cloudDirty=true;h.c.currentPermissions={can_add:true};h.c.currentSnapshot=()=>'{pending}';h.c.queueCloudWrite=async()=>{attempts++;if(attempts===1)throw Error('Failed to send a request to the Edge Function');h.c.cloudDirty=false;};
+ await h.c.startRealtime();h.tick();await settle();assert.equal(attempts,1);assert.equal(h.c.cloudDirty,true);
+ h.tick();await settle();assert.equal(attempts,2);assert.equal(h.c.cloudDirty,false);assert.equal(h.c.states.at(-1)[0],'Connected & Synced');assert.equal(h.c.messages.at(-1),'');
+});
+test('offline, busy, and unprivileged sessions do not start automatic writes',async()=>{
+ for(const mode of ['offline','busy','reader']){const h=harness();h.c.cloudDirty=true;h.c.currentPermissions={can_add:mode!=='reader'};h.c.currentSnapshot=()=>'';let writes=0;h.c.queueCloudWrite=async()=>{writes++};if(mode==='offline')h.c.navigator={onLine:false};if(mode==='busy')h.c.busy=true;await h.c.startRealtime();h.tick();await settle();assert.equal(writes,0,mode);}
+});
