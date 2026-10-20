@@ -2065,7 +2065,14 @@ html,body,*{scrollbar-width:thin!important;scrollbar-color:#64748b #111827!impor
 .fuel-theme-control button{font:600 10px/1.3 Arial,sans-serif;letter-spacing:.04em;cursor:pointer;min-height:28px;padding:5px 9px;border:1px solid transparent;border-radius:5px;color:var(--text-muted,#9ca3af);background:transparent}
 .fuel-theme-control button[aria-pressed="true"]{color:#fff;background:#2563eb;border-color:#2563eb}
 .fuel-theme-control button:focus-visible{outline:2px solid #60a5fa;outline-offset:2px}
-#requiredCloudLoginGate .fuel-theme-control{display:flex;width:max-content;margin:0 0 16px auto}
+#requiredCloudLoginGate .gate-brand{flex-wrap:wrap}
+#requiredCloudLoginGate .gate-brand>div:has(.gate-brand-name){flex:1;min-width:125px}
+#requiredCloudLoginGate .gate-logo{flex-shrink:0}
+#requiredCloudLoginGate .fuel-theme-control{display:inline-flex;width:auto;margin:0 0 0 auto;align-self:center;padding:3px;gap:2px}
+#requiredCloudLoginGate .fuel-theme-control button{width:auto;height:28px;min-height:28px;margin:0;padding:4px 8px;border:1px solid transparent;border-radius:5px;background:transparent;color:var(--text-muted,#9ca3af);box-shadow:none;font:600 10px/1.3 Arial,sans-serif;letter-spacing:.03em;transform:none;filter:none}
+#requiredCloudLoginGate .fuel-theme-control button[aria-pressed="true"]{background:#2563eb;color:#fff;border-color:#2563eb}
+#requiredCloudLoginGate .fuel-theme-control button:hover:not(:disabled){transform:none;filter:none;background:var(--bg-card-hover,#374151)}
+#requiredCloudLoginGate .fuel-theme-control button[aria-pressed="true"]:hover{background:#1d4ed8;color:#fff}
 @media(max-width:600px){.sync-row{flex-wrap:wrap}.fuel-theme-control button{min-height:32px}}
 @media print{.fuel-theme-control{display:none!important}}
 @media screen{
@@ -2424,6 +2431,17 @@ html[data-fuel-theme="light"] .app-select-menu button{color:#17283e!important}
 html[data-fuel-theme="light"] .app-select-menu input{background:#fff!important}
 html[data-fuel-theme="light"] .fuel-theme-control{background:#f1f5f9;border-color:#cbd5e1}
 html[data-fuel-theme="light"] .fuel-theme-control button{color:#52657a}
+}
+
+@media screen{
+html[data-fuel-theme="light"] #requiredCloudLoginGate .gate-security{color:#166534;background:#ecfdf5;border-color:#a7f3d0}
+html[data-fuel-theme="light"] #requiredCloudLoginGate .gate-security-dot{background:#059669;box-shadow:none}
+html[data-fuel-theme="light"] #requiredCloudLoginGate :is(.gate-subtitle,.gate-status,.gate-footer,.gate-brand-sub,.gate-migration-note,.gate-advanced-note){color:#475569}
+html[data-fuel-theme="light"] #requiredCloudLoginGate .gate-brand-name{color:#1d4ed8}
+html[data-fuel-theme="light"] #requiredCloudLoginGate .fuel-theme-control button{background:transparent;color:#475569;box-shadow:none}
+html[data-fuel-theme="light"] #requiredCloudLoginGate .fuel-theme-control button[aria-pressed="true"]{background:#2563eb;color:#fff}
+html[data-fuel-theme="light"] #requiredCloudLoginGate .fuel-theme-control button:hover:not([aria-pressed="true"]){background:#e2e8f0}
+html[data-fuel-theme="light"] #requiredCloudLoginGate .gate-status[style*="rgb(248, 113, 113)"]{color:#b91c1c}
 }
 </style>
 </head>
@@ -6404,8 +6422,8 @@ window.applySyncedAdminPassword = function(value) {
     <div class="gate-brand">
       <div class="gate-logo" aria-hidden="true">☁</div>
       <div><div class="gate-brand-name">ALNAJJAR</div><div class="gate-brand-sub">Operations Management Platform</div></div>
+      <div class="fuel-theme-control" role="group" aria-label="Color theme"><button type="button" data-fuel-theme-choice="dark" aria-pressed="true">DARK</button><button type="button" data-fuel-theme-choice="light" aria-pressed="false">LIGHT</button></div>
     </div>
-    <div class="fuel-theme-control" role="group" aria-label="Color theme"><button type="button" data-fuel-theme-choice="dark" aria-pressed="true">DARK</button><button type="button" data-fuel-theme-choice="light" aria-pressed="false">LIGHT</button></div>
     <h2 id="requiredCloudLoginTitle">Welcome back</h2>
     <p class="gate-subtitle">Sign in to your shared workspace to access the system and keep your records synchronized across devices.</p>
     <div class="gate-security"><span class="gate-security-dot"></span><span>Secure cloud connection required before continuing</span></div>
