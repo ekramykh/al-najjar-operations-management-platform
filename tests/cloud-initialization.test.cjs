@@ -18,6 +18,7 @@ function harness({rows=[],stored=null,dirty=false,legacy=false,project='',backup
   markLegacyMigrationComplete:()=>c.legacyMigrationPending=false,
   queueCloudWrite:async()=>c.writes++,loadCloudReadOnly:async()=>c.reads++,
  };
+ c.window={fuelStorageGuard:{critical:(key,value)=>c.localStorage.setItem(key,value)}};
  vm.runInNewContext(implementation,c);return c;
 }
 const remote={data:{records:[{_syncId:'cloud-new',sn:999}],updated_at:'cloud-revision'}};

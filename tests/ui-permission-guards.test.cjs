@@ -7,19 +7,20 @@ const html = fs.readFileSync('index.html', 'utf8');
 function harness(flags = {}, ready = true) {
   const elements = new Map();
   const element = id => {
-    if (!elements.has(id)) elements.set(id, {value: id === 'editIndex' ? '-1' : '', style:{},classList:{add(){},remove(){}},checkValidity:()=>true,reportValidity(){}});
+    if (!elements.has(id)) elements.set(id, {value: id === 'editIndex' ? '-1' : id==='auditEditReason'?'Test correction':'', style:{},classList:{add(){},remove(){}},checkValidity:()=>true,reportValidity(){},focus(){}});
     return elements.get(id);
   };
   let id = 0;
   const context = {
     client: {}, permissionsReady: ready, currentPermissions: flags,
-    $:element, window:{}, document:{getElementById:element,body:{classList:{add(){},remove(){}}}},
+    $:element, window:{}, document:{getElementById:element,querySelector:()=>({click(){}}),body:{classList:{add(){},remove(){}}}},
+    prepareAuditForm(){},stageRecordAudit(){},showAuditEditConfirmation(before,after,callback){if(context.window.confirm('هل تريد حفظ التعديلات؟'))callback();},
     alerts:[], alert(message){context.alerts.push(message)},
     fuelRecords:[{sn:1,_syncId:'existing',_syncUpdatedAt:'2026-10-11T00:00:00Z',date:'11/10/2026',fuel:1}],
     isDataDirty:false, driverPhonesMap:{}, currentSortColumn:'sn',currentSortDirection:'asc',
     formatDateDisplay:x=>x, formatTitleCase:x=>x,parseFlexibleDate:()=>null,
     checkInvoiceAmountWarning(){},confirmInvoiceAmountMinimum:()=>true,
-    readTripDocuments:()=>[],loadTripDocuments(){},
+    tripDocuments:r=>r.tripDocuments||[{...r}],readTripDocuments:()=>[],loadTripDocuments(){},
     sortRecordsArray(){},filterAndRender(){},closeRecordModal(){},
     updateFormAndFilterDatalists(){},onDriverSelectionChange(){},
     promptPassword(_message,callback){context.passwordCallback=callback},
@@ -29,6 +30,7 @@ function harness(flags = {}, ready = true) {
   context.window.generateSyncId=()=>`new-${++id}`;
   context.window.saveToLocalStorage=()=>context.saves=(context.saves||0)+1;
   context.window.markFuelRecordDeleted=()=>context.deletions=(context.deletions||0)+1;
+  vm.runInNewContext(html.slice(html.indexOf('    function escapeHtml(value)'),html.indexOf('    function renderDashboard(')),context);
   vm.runInNewContext(html.slice(html.indexOf('    function tripDocumentSummary'),html.indexOf('    function readTripDocuments')),context);
   const bridge = html.slice(html.indexOf('  window.hasFuelPermission ='), html.indexOf('  // All protected reads'));
   vm.runInNewContext(bridge,context);
@@ -66,7 +68,7 @@ test('add-only Save Record and Save as New create distinct identities and preser
 test('modal controls reflect edit versus copy permissions',()=>{
   const {context:c,element}=harness(adder);
   c.editRecord(0);
-  assert.equal(element('btnModalSubmit').disabled,true);
+  assert.equal(element('btnModalSubmit').disabled,false);
   assert.equal(element('btnModalSaveAsNew').disabled,false);
   c.permissionsReady=false;c.window.refreshFuelPermissionControls();
   assert.equal(element('btnModalSaveAsNew').disabled,true);
@@ -133,4 +135,16 @@ test('record notes preserve multiline text through create, edit and Save as New'
 });
 test('opening a legacy record clears notes left from another record',()=>{
  const {context:c,element}=harness(admin);element('inputNotes').value='Previous notes';c.editRecord(0);assert.equal(element('inputNotes').value,'');
+});
+
+test('edit confirmation defers writes and rechecks stale records and permissions',()=>{for(const failure of ['stale','permission']){const {context:c}=harness(admin);let confirm;c.showAuditEditConfirmation=(_before,_after,callback)=>confirm=callback;c.editRecord(0);c.saveRecord('update');assert.equal(c.saves,undefined);assert.equal(typeof confirm,'function');if(failure==='stale')c.fuelRecords[0].fuel=999;else c.currentPermissions=reader;confirm();assert.equal(c.saves,undefined);}});
+
+test('missing required hidden site blocks both new save and Save as New without writes',()=>{
+ const {context:c,element}=harness(admin);element('inputSite').required=true;c.saveRecord('new');c.saveRecordAsNew();
+ assert.equal(c.saves,undefined);assert.equal(c.fuelRecords.length,1);assert.equal(c.alerts.length,2);assert(c.alerts.every(s=>s.includes('Site / Location')));
+ element('inputSite').value='QA SITE';c.saveRecord('new');assert.equal(c.saves,1);assert.equal(c.fuelRecords[0].site,'QA SITE');
+});
+test('native invalid fields stop both save paths before any data write',()=>{
+ const {context:c,element}=harness(admin);let reports=0;element('fuelForm').checkValidity=()=>false;element('fuelForm').reportValidity=()=>reports++;
+ c.saveRecord('new');c.saveRecordAsNew();assert.equal(c.saves,undefined);assert.equal(c.fuelRecords.length,1);assert.equal(reports,2);
 });

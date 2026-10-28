@@ -7,15 +7,16 @@ const { stripTypeScriptTypes } = require('node:module');
 
 const source = fs.readFileSync('supabase/functions/fuel-sync/index.ts', 'utf8');
 function harness(role, initial=[], options={}) {
-  const resetRequests=[];
+  const resetRequests=[],audit=[];
   let records = structuredClone(initial), revision = 'rev0', saves = 0;
   const user = { id: 'test-user', email: 'test@example.invalid' };
   const permissions = role;
   const query = (table) => {
     const q = {
-      select() { return q; }, eq() { return q; },
+      select() { return q; }, eq() { return q; }, order(){return q;},limit(){return q;},async range(){return {data:audit,error:null}},async in(_key,ids){return {data:audit.filter(e=>ids.includes(e.event_id)),error:null}},
       async maybeSingle() {
         if (table === 'app_user_permissions') return { data: permissions, error: null };
+        if(table === 'fuel_record_audit') return {data:audit.find(e=>e.operation==='create') || null,error:null};
         return { data: records.length || saves ? {records: structuredClone(records),updated_at:revision} : null, error:null };
       },
       insert(data) { records=structuredClone(data.records);revision=data.updated_at;saves++;return Promise.resolve({error:null}); },
@@ -35,20 +36,24 @@ function harness(role, initial=[], options={}) {
   };
   const createClient = (_url,key) => key==='anon'
     ? {auth:{getUser:async token => token==='valid' ? {data:{user},error:null}:{data:{user:null},error:{message:'invalid'}}}}
-    : {from:query,auth:{admin:{listUsers:async()=>({data:{users:options.users || []},error:null})},resetPasswordForEmail:async(email,settings)=>{resetRequests.push({email,settings});return {error:options.resetError || null}}}};
+    : {from:query,rpc:async(_name,p)=>{if(options.commitError)return {data:null,error:{message:'atomic failure'}};if(p.p_expected!== (records.length||saves?revision:null))return {data:null,error:null};records=structuredClone(p.p_records);revision=new Date().toISOString();audit.push(...p.p_events);saves++;return {data:{updated_at:revision},error:null}},auth:{admin:{listUsers:async()=>({data:{users:options.users || []},error:null})},resetPasswordForEmail:async(email,settings)=>{resetRequests.push({email,settings});return {error:options.resetError || null}}}};
   let handler;
   const stripped=stripTypeScriptTypes(source.replace(/^import \{ createClient \} from .*;\s*/m,''));
   vm.runInNewContext(stripped.replace('Deno.serve(async (req: Request) => {','Deno.serve(async (req: Request) => {'),{
     createClient,
     Deno:{env:{get:key=>({SUPABASE_URL:'https://staging.invalid',SUPABASE_ANON_KEY:'anon',SUPABASE_SERVICE_ROLE_KEY:'service',FUEL_PASSWORD_RESET_REDIRECT_URL:options.resetRedirect}[key])},serve:fn=>{handler=fn;}},
-    Response,Date,Map,Set,JSON,Number,String,Array,RegExp,URL,
+    Response,Date,Map,Set,JSON,Number,String,Array,RegExp,URL,crypto:require('node:crypto').webcrypto,
   });
   return {
     request:async (action,token='valid')=>{
+      if(action.action==='sync' && !Object.hasOwn(action,'audit_events')) {
+        const business=r=>r?Object.fromEntries(Object.entries(r).filter(([k])=>!k.startsWith('_')&&!['sn','dayVal','kmDay','difference'].includes(k))):null;
+        action={...action,audit_events:(action.records||[]).filter(r=>!r._deleted).filter(r=>{const old=records.find(o=>o._syncId===r._syncId);return !old || JSON.stringify(old)!==JSON.stringify(r)}).map(r=>({event_id:require('node:crypto').randomUUID(),record_id:r._syncId,actor_id:user.id,reason:'Test correction',before:business(records.find(o=>o._syncId===r._syncId)),after:business(r)}))};
+      }
       const res=await handler(new Request('https://staging.invalid/functions/v1/fuel-sync',{method:'POST',headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},body:JSON.stringify(action)}));
       return {status:res.status,body:await res.json()};
     },
-    state:()=>({records,saves,resetRequests})
+    state:()=>({records,saves,resetRequests,audit})
   };
 }
 const admin={can_read:true,can_add:true,can_edit:true,can_delete:true,can_manage_users:true};
@@ -154,3 +159,12 @@ test('nonexistent account and provider failure report errors instead of false re
  const opts={resetRedirect:'https://staging.example.com/password-reset.html'};const h=harness(admin,[],opts);assert.equal((await h.request({action:'manage_users',operation:'reset_password',email:'missing@example.com'})).status,404);assert.equal(h.state().resetRequests.length,0);
  const failed=harness(admin,[],{...opts,users:[{id:'u',email:'user@example.com'}],resetError:{status:429}});assert.equal((await failed.request({action:'manage_users',operation:'reset_password',email:'user@example.com'})).status,429);
 });
+
+test('missing edit reason cannot bypass the server',async()=>{const h=harness(admin,[row('a',1,time1,{fuel:10})]);const r=await h.request({action:'sync',records:[row('a',1,time2,{fuel:20})],audit_events:[]});assert.equal(r.status,409);assert.equal(h.state().saves,0);});
+test('every offline edit is logged; verified actor replaces client name',async()=>{const a=row('a',1,time1,{fuel:10}),b=row('a',1,time2,{fuel:30}),h=harness(admin,[a]);const r=await h.request({action:'sync',records:[b],audit_events:[{event_id:'edit-1',record_id:'a',actor_id:'test-user',actor_label:'FAKE',reason:'First correction',before:{fuel:10},after:{fuel:20}},{event_id:'edit-2',record_id:'a',actor_id:'test-user',reason:'Second correction',before:{fuel:20},after:{fuel:30}}]});assert.equal(r.status,200);assert.equal(h.state().audit.length,2);assert.equal(h.state().audit[0].actor_email,'test@example.invalid');assert.equal(h.state().audit[0].before_data.fuel,10);assert.equal(h.state().audit[1].after_data.fuel,30);});
+test('audit failure prevents saving business data',async()=>{const h=harness(admin,[row('a',1,time1,{fuel:10})],{commitError:true});const r=await h.request({action:'sync',records:[row('a',1,time2,{fuel:20})]});assert.equal(r.status,500);assert.equal(h.state().records[0].fuel,10);assert.equal(h.state().audit.length,0);});
+test('reader can access history but cannot create an edit',async()=>{const h=harness(reader,[row('a',1,time1)]);assert.equal((await h.request({action:'audit',record_id:'a'})).status,200);assert.equal((await h.request({action:'sync',records:[row('a',1,time2)]})).status,403);});
+test('mismatched before/after chain and another account are rejected',async()=>{for(const [before,actor] of [[{fuel:99},'test-user'],[{fuel:10},'someone-else']]){const h=harness(admin,[row('a',1,time1,{fuel:10})]);const r=await h.request({action:'sync',records:[row('a',1,time2,{fuel:20})],audit_events:[{event_id:'bad',record_id:'a',actor_id:actor,reason:'Correction',before,after:{fuel:20}}]});assert.equal(r.status,409);assert.equal(h.state().saves,0)}});
+test('offline creation followed by deletion preserves both events without creating a live record',async()=>{const h=harness(admin);const r=await h.request({action:'sync',records:[{_syncId:'offline-only',_deleted:true,_syncUpdatedAt:time2}],audit_events:[{event_id:'offline-create',record_id:'offline-only',record_sn:1,actor_id:'test-user',reason:'Initial record creation',before:null,after:{fuel:10}},{event_id:'offline-delete',record_id:'offline-only',record_sn:1,actor_id:'test-user',reason:'Authorized deletion',before:{fuel:10},after:null}]});assert.equal(r.status,200);assert.equal(h.state().audit.length,2);assert.equal(h.state().audit[1].operation,'delete');assert.equal(h.state().records[0]._deleted,true)});
+
+test('audit keeps per-operation profile name but derives account identity from authentication',async()=>{const h=harness(admin);const record={_syncId:'name-test',sn:123,fuel:10};const r=await h.request({action:'sync',records:[record],audit_events:[{event_id:'name-event',record_id:'name-test',actor_id:'test-user',actor_email:'forged@example.invalid',actor_name:'Saved Name',reason:'Initial record creation',before:null,after:{fuel:10}}]});assert.equal(r.status,200);const event=h.state().audit[0];assert.equal(event.actor_name,'Saved Name');assert.equal(event.actor_email,'test@example.invalid');assert.equal(event.actor_id,'test-user');});

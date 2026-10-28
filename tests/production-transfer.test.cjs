@@ -16,6 +16,7 @@ test('production target overrides stale staging connection preferences without m
 test('first production rollout loads cloud without uploading dirty cache even when cached project matches production',async()=>{
  const cache=new Map([['fuel_cloud_legacy_migration_v1','old'],['fuel_system_records','test-cache']]);
  const c={localStorage:{getItem:k=>cache.get(k)??null,setItem:(k,v)=>cache.set(k,v)},cloudDirty:true,storedRecords:'test-cache',dataProject:'https://mykwxfifrjohhjhomegf.supabase.co',CLOUD_DATA_PROJECT_KEY:'project',deletedSyncIds:new Map(),currentPermissions:{can_add:true},rows:[{_syncId:'TEST-DO-NOT-UPLOAD'}],writes:0,backups:[],currentSnapshotRecords:()=>c.rows,currentSnapshot:()=>JSON.stringify(c.rows),saveConflictBackup:s=>{c.backups.push(s);return true},normalizeRecordsForSync:r=>r,persistMergedRecords:r=>{c.rows=r;return JSON.stringify(r)},setRemoteBaseline(){},setCloudDirty:v=>c.cloudDirty=v,queueCloudWrite:async()=>c.writes++,loadCloudReadOnly:async()=>{throw Error('unexpected')}};
+ c.window={fuelStorageGuard:{critical:(key,value)=>c.localStorage.setItem(key,value)}};
  vm.runInNewContext(migration+'\n'+init,c);const live=[{_syncId:'PRODUCTION',sn:539}];await c.initializeCloudData({data:{records:live,updated_at:'revision'}},c.dataProject);assert.equal(c.writes,0);assert.equal(c.rows,live);assert.equal(c.cloudDirty,false);assert(c.backups[0].includes('TEST-DO-NOT-UPLOAD'));assert.equal(cache.get('fuel_production_rollout_20261018'),'cloud-loaded');
 });
 test('production roles seed only existing production accounts and never updates auth credentials or shared records',()=>{
@@ -24,6 +25,23 @@ test('production roles seed only existing production accounts and never updates 
  assert(!/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i.test(sql));
  assert(!/\b(?:update|insert\s+into|delete\s+from)\s+(?:auth\.users|public\.fuel_shared_state)/i.test(sql));
  assert(sql.includes('current_setting'));
+});
+
+test('dirty staging cache cannot upload even when the previous production rollout marker exists',async()=>{
+ const cache=new Map([['fuel_production_rollout_20261018','cloud-loaded'],['fuel_cloud_legacy_migration_v1','done'],['fuel_system_records','staging-cache']]);
+ const c={localStorage:{getItem:k=>cache.get(k)??null,setItem:(k,v)=>cache.set(k,v)},cloudDirty:true,storedRecords:'staging-cache',dataProject:'https://lfmuxtnurxaanixxflwc.supabase.co',CLOUD_DATA_PROJECT_KEY:'project',deletedSyncIds:new Map(),currentPermissions:{can_add:true},rows:[{_syncId:'STAGING-NEVER-UPLOAD'}],writes:0,backups:[],currentSnapshotRecords:()=>c.rows,currentSnapshot:()=>JSON.stringify(c.rows),saveConflictBackup:s=>{c.backups.push(s);return true},normalizeRecordsForSync:r=>r,persistMergedRecords:r=>{c.rows=r;return JSON.stringify(r)},setRemoteBaseline(){},setCloudDirty:v=>c.cloudDirty=v,queueCloudWrite:async()=>c.writes++,loadCloudReadOnly:async()=>{throw Error('unexpected')}};
+ c.window={fuelStorageGuard:{critical:(key,value)=>c.localStorage.setItem(key,value)}};
+ vm.runInNewContext(migration+'\n'+init,c);
+ const live=[{_syncId:'REAL-PRODUCTION',sn:547}];await c.initializeCloudData({data:{records:live,updated_at:'revision'}},'https://mykwxfifrjohhjhomegf.supabase.co');
+ assert.equal(c.writes,0);assert.equal(c.rows,live);assert.equal(c.cloudDirty,false);assert(c.backups[0].includes('STAGING-NEVER-UPLOAD'));assert.equal(cache.get('project'),'https://mykwxfifrjohhjhomegf.supabase.co');
+});
+
+test('failed backup during project switch stops before replacing local data or writing cloud',async()=>{
+ const original=[{_syncId:'PENDING-LOCAL'}];let writes=0,replacements=0;
+ const c={localStorage:{getItem:()=> 'done'},cloudDirty:true,storedRecords:'pending',dataProject:'staging',currentSnapshotRecords:()=>original,saveConflictBackup:()=>false,persistMergedRecords:()=>replacements++,queueCloudWrite:()=>writes++};
+ vm.runInNewContext(migration+'\n'+init,c);
+ await assert.rejects(c.initializeCloudData({data:{records:[]}},'production'),/No local or cloud data was replaced/);
+ assert.equal(writes,0);assert.equal(replacements,0);assert.equal(original[0]._syncId,'PENDING-LOCAL');
 });
 
 test('published markup contains no saved record rows, driver contacts or real driver defaults',()=>{
