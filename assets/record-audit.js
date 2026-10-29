@@ -205,6 +205,7 @@ async function showRecordAudit(id,sn,offset=0) {
 let pendingAuditEdit=null;
 function showAuditEditConfirmation(before,after,callback) {
     const changes=auditChangeRows(auditBusiness(before),auditBusiness(after));
+    if(!changes.length){pendingAuditEdit=null;alert('No changes to save.');return;}
     const modal=document.getElementById('fuelAuditConfirmModal');
     document.getElementById('auditConfirmTitle').textContent='Confirm changes — Record #'+after.sn;
     document.getElementById('auditConfirmChanges').innerHTML=changes.length?changes.map(row=>'<div class="audit-preview-row"><div class="audit-static-value audit-field-cell"><span class="audit-label">Field</span>'+escapeHtml(row.field)+'</div><div class="audit-static-value"><span class="audit-label">Current value</span>'+escapeHtml(row.before)+'</div><div class="audit-preview-arrow" aria-hidden="true">→</div><div class="audit-static-value"><span class="audit-label">New value</span>'+escapeHtml(row.after)+'</div></div>').join(''):'<p class="audit-help">No visible field changes. A reason is still required to confirm this update.</p>';
