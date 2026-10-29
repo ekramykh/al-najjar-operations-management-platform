@@ -67,6 +67,36 @@ function validateAddOnly(incoming: Record<string, unknown>[], remote: Record<str
   return null;
 }
 
+function auditBusiness(record: Record<string, unknown> | null) {
+  if (!record) return null;
+  return Object.fromEntries(Object.entries(record).filter(([key]) => !key.startsWith('_') && !['sn','dayVal','kmDay','difference'].includes(key)));
+}
+function makeAuditEvents(incoming: Record<string, unknown>[], remote: Record<string, unknown>[], pending: Record<string, unknown>[], actor: {id:string;email?:string}) {
+  const events: Record<string, unknown>[]=[];
+  const before=mapById(remote);
+  for(const row of incoming) {
+    const id=String(row._syncId),old=before.get(id);
+    const parts=pending.filter(e=>e.record_id===id);
+    if(parts.length) {
+      let cursor=auditBusiness(old || null);
+      for(const part of parts) {
+        if(part.actor_id!==actor.id) throw Error('Pending audit history belongs to another account. Sign in with the account that made these changes.');
+        if(stableJson(part.before)!==stableJson(cursor)) throw Error('Audit history conflicts with the current record. Preserve the local copy and reopen the record.');
+        const reason=typeof part.reason==='string'?part.reason.trim():'';
+        if(!reason || reason.length>500 || typeof part.event_id!=='string' || part.event_id.length>200 || (part.after!==null && (typeof part.after!=='object' || Array.isArray(part.after)))) throw Error('A valid edit reason and audit entry are required.');
+        events.push({event_id:part.event_id,record_id:id,record_sn:row.sn || old?.sn || part.record_sn,operation:part.after===null?'delete':cursor?'update':'create',actor_id:actor.id,actor_email:actor.email || actor.id,actor_name:typeof part.actor_name==='string'?part.actor_name.trim().slice(0,80):null,client_at:String(part.client_at||'').slice(0,60),device_id:String(part.device_id||'').slice(0,200),device_name:String(part.device_name||'').slice(0,80),reason,before_data:cursor,after_data:part.after});
+        cursor=part.after as Record<string, unknown>;
+      }
+      if(stableJson(cursor)!==stableJson(row._deleted===true?null:auditBusiness(row))) throw Error('Audit history does not match the submitted record. No changes were saved.');
+    } else if (!old || stableJson(auditBusiness(old))!==stableJson(auditBusiness(row)) || row._deleted===true && old._deleted!==true) {
+      if(old && row._deleted!==true) throw Error('An edit reason and audit history are required. Open the current application version before editing.');
+      events.push({event_id:crypto.randomUUID(),record_id:id,record_sn:row.sn || old?.sn,operation:row._deleted===true?'delete':'create',actor_id:actor.id,actor_email:actor.email || actor.id,actor_name:null,client_at:row._syncUpdatedAt,device_id:'not-supplied',device_name:'Not supplied by client',reason:row._deleted===true?'Authorized deletion':'Record creation / import',before_data:auditBusiness(old || null),after_data:row._deleted===true?null:auditBusiness(row)});
+    }
+  }
+  if(pending.some(e=>!incoming.some(row=>row._syncId===e.record_id))) throw Error('Audit entries must be synchronized with their matching records.');
+  return events;
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return reply(405, { error: "Method not allowed." });
@@ -234,19 +264,28 @@ Deno.serve(async (req: Request) => {
     });
   }
 
+  if(action === "audit") {
+    if(!permissions.can_read) return reply(403,{error:"Read permission is required."});
+    const id=typeof body.record_id==='string'?body.record_id:'';
+    if(!id || id.length>200) return reply(400,{error:"Invalid record identity."});
+    const offset=Number.isSafeInteger(body.offset) && Number(body.offset)>=0 ? Number(body.offset) : 0;
+    const {data,error}=await admin.from('fuel_record_audit').select('*').eq('record_id',id).order('confirmed_at',{ascending:false}).order('event_sequence',{ascending:false}).range(offset,offset+49);
+    if(error) return reply(500,{error:"Unable to load audit history."});
+    return reply(200,{events:data || []});
+  }
   if (action === "read") {
     if (!permissions.can_read) return reply(403, { error: "Read permission is required." });
     const { data, error } = await admin.from("fuel_shared_state")
       .select("records,updated_at").eq("id", "shared").maybeSingle();
     if (error) return reply(500, { error: "Unable to load shared records." });
-    if (!data) return reply(200, { data: null, permissions });
+    if (!data) return reply(200, { data: null, permissions, actor:{id:authData.user.id,email:authData.user.email} });
     // Legacy admin-password settings may still exist in the old shared row.
     // Never return those secrets to any browser session.
     const safeRecords = Array.isArray(data.records)
       ? data.records.filter((row: unknown) => !!row && typeof row === "object"
           && !(row as Record<string, unknown>)._appSetting)
       : [];
-    return reply(200, { data: { ...data, records: safeRecords }, permissions });
+    return reply(200, { data: { ...data, records: safeRecords }, permissions, actor:{id:authData.user.id,email:authData.user.email} });
   }
 
   if (action !== "sync") return reply(400, { error: "Unsupported action." });
@@ -257,6 +296,21 @@ Deno.serve(async (req: Request) => {
 
   const incoming = normalizeRecords(body.records);
   if (!incoming) return reply(400, { error: "Records payload is invalid or too large." });
+
+  const journal=Array.isArray(body.audit_events)?body.audit_events as Record<string,unknown>[]:[];
+  if(journal.length>50000 || journal.some(e=>!e || typeof e!=='object' || typeof e.event_id!=='string')) return reply(400,{error:"Invalid or oversized audit journal."});
+  const journalIds=journal.map(e=>String(e.event_id));
+  if(new Set(journalIds).size!==journalIds.length) return reply(400,{error:"Duplicate audit event identity."});
+  let acknowledged: string[]=[];
+  if(journalIds.length) {
+    for(let offset=0;offset<journalIds.length;offset+=100) {
+    const {data,error}=await admin.from('fuel_record_audit').select('event_id,actor_id,record_id').in('event_id',journalIds.slice(offset,offset+100));
+    if(error) return reply(500,{error:"Unable to verify pending audit history."});
+    if((data || []).some(e=>e.actor_id!==authData.user.id || !journal.some(j=>j.event_id===e.event_id && j.record_id===e.record_id))) return reply(403,{error:"Audit identity belongs to another account or record."});
+    acknowledged.push(...(data || []).map(e=>e.event_id));
+    }
+  }
+  const pendingJournal=journal.filter(e=>!acknowledged.includes(String(e.event_id)));
 
   // Optimistic concurrency protects concurrent clients from blindly overwriting
   // one another. Client must retry after a conflict by reading and merging again.
@@ -306,7 +360,10 @@ Deno.serve(async (req: Request) => {
       if (row._deleted === true) {
         // A deletion is only valid for a record that actually existed. An
         // unknown tombstone must not become a way to create arbitrary state.
-        if (!old) return reply(409, { error: "Cannot delete an unknown record ID." });
+        if (!old) {
+          const chain=pendingJournal.filter(e=>e.record_id===id);
+          if(!permissions.can_add || !chain.length || chain[0].before!==null || chain[chain.length-1].after!==null) return reply(409,{error:"Cannot delete an unknown record ID."});
+        }
         if (!permissions.can_delete) return reply(403, { error: "Delete permission is required." });
         merged.delete(id);
         // Keep a tombstone in the shared snapshot so stale devices cannot
@@ -344,6 +401,8 @@ Deno.serve(async (req: Request) => {
       }
     }
 
+    let auditEvents: Record<string,unknown>[];
+    try {auditEvents=makeAuditEvents(incoming,remoteRecords,pendingJournal,authData.user);} catch(error){return reply(409,{error:(error as Error).message});}
     const updated = Array.from(merged.values());
     // A no-op sync must not rewrite the shared row or advance its revision.
     // This also lets add-only users safely submit an unchanged snapshot.
@@ -353,8 +412,8 @@ Deno.serve(async (req: Request) => {
         const previous = previousBusinessRecords.find(old => old._syncId === row._syncId);
         return previous && stableJson(previous) === stableJson(row);
       });
-    if (sameSnapshot && remote) {
-      return reply(200, { data: { records: updated, updated_at: remote.updated_at } });
+    if (sameSnapshot && remote && !auditEvents.length) {
+      return reply(200, { data: { records: updated, updated_at: remote.updated_at }, audit_ack:acknowledged });
     }
     const numbers = new Set<number>();
     for (const row of updated) {
@@ -365,25 +424,10 @@ Deno.serve(async (req: Request) => {
       }
       numbers.add(sn);
     }
-    const timestamp = new Date().toISOString();
-    let writeQuery = admin.from("fuel_shared_state");
-    if (!remote) {
-      const { error: insertError } = await writeQuery.insert({
-        id: "shared", records: updated, updated_at: timestamp,
-      });
-      if (!insertError) return reply(200, { data: { records: updated, updated_at: timestamp } });
-      if (/duplicate|unique|already exists/i.test(insertError.message || "")) continue;
-      return reply(500, { error: "Unable to create the shared snapshot." });
-    }
+    const {data:saved,error:commitError}=await admin.rpc('fuel_commit_audited_snapshot',{p_expected:remote?.updated_at || null,p_records:updated,p_events:auditEvents});
+    if(commitError) return reply(500,{error:"Unable to commit records and their audit history. No changes were saved."});
+    if(saved) return reply(200,{data:{records:updated,updated_at:saved.updated_at},audit_ack:[...acknowledged,...auditEvents.map(e=>e.event_id)]});
 
-    const { data: saved, error: updateError } = await writeQuery
-      .update({ records: updated, updated_at: timestamp })
-      .eq("id", "shared")
-      .eq("updated_at", remote.updated_at)
-      .select("updated_at")
-      .maybeSingle();
-    if (updateError) return reply(500, { error: "Unable to save the shared snapshot." });
-    if (saved) return reply(200, { data: { records: updated, updated_at: saved.updated_at } });
   }
 
   return reply(409, { error: "Shared data changed repeatedly. Read the latest snapshot and retry." });

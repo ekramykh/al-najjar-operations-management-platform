@@ -6,7 +6,7 @@ const vm=require('node:vm');
 const html=fs.readFileSync('index.html','utf8');
 const source=html.slice(html.indexOf('  function queueCloudWrite(snapshot)'),html.indexOf('  async function connect()'));
 function harness(invoke){
-  const c={client:{},connectionGeneration:1,cloudWriteQueue:Promise.resolve(),busy:false,localWriteRevision:0,
+  const c={window:{},client:{},connectionGeneration:1,cloudWriteQueue:Promise.resolve(),busy:false,localWriteRevision:0,
     cloudDirty:false,lastSaved:'',rows:[{_syncId:'a',sn:1,value:'initial'}],
     setCloudDirty:v=>c.cloudDirty=v,status(){},message(){},
     normalizeRecordsForSync:rows=>structuredClone(rows),currentSnapshotRecords:()=>c.rows,
@@ -51,7 +51,7 @@ test('real HTTP 409 retries after another read and keeps local change',async()=>
   const c=harness(async(ctx)=>({data:{records:[{_syncId:'a',sn:1},{_syncId:'b',sn:2}],updated_at:'revision'}}));
   const persistSource=html.slice(html.indexOf('  const persistMergedRecords = records => {'),html.indexOf('  const recoveryBaselineRecords'));
   Object.assign(c,{deletedSyncIds:new Map(),fuelRecords:[],ADMIN_PASSWORD_SYNC_ID:'password',
-    localStorage:{setItem(){}},DELETED_SYNC_IDS_KEY:'deleted',window:{},
+    localStorage:{setItem(){}},DELETED_SYNC_IDS_KEY:'deleted',window:{fuelStorageGuard:{saveRecords(){},critical(){}}},
     currentSortColumn:'sn',currentSortDirection:'desc',
     sortRecordsArray:rows=>rows.sort((a,b)=>b.sn-a.sn),console});
   vm.runInNewContext(persistSource+'\nthis.persistMergedRecords=persistMergedRecords;',c);
