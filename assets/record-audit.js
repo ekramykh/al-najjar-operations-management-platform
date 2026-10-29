@@ -59,12 +59,12 @@ function prepareAuditForm(item) {
 }
 // Display only: stored before/after snapshots remain untouched.
 function auditFieldLabel(key) {
-    const labels={date:'Date',car:'Vehicle',driver:'Driver name',driverPhone:'Driver phone',notes:'Notes',branch:'Branch',salesOrderNumber:'Sales Order number',salesOrderDescription:'Sales Order description',salesOrderAmount:'Sales Order amount (OMR)',invoiceNumber:'Invoice number',invoiceDescription:'Invoice description',invoiceAmount:'Invoice amount (OMR)',deliveryNumber:'Delivery number',deliveryDescription:'Delivery description',deliveryAmount:'Delivery amount (OMR)',startingKm:'Starting KM',endKm:'End KM',trip1:'Trip 1 — From / To',trip1Km:'Trip 1 KM',trip2:'Trip 2 — From / To',trip2Km:'Trip 2 KM',tnxAuth:'Transaction reference',site:'Fuel station',fuel:'Fuel quantity (liters)',lastKm:'Last KM',currentKm:'Current KM'};
+    const labels={customerPaidDelivery:'Delivery paid by customer',deliveryFeePaid:'Delivery fee paid (OMR)',deliveryPaymentReference:'Delivery payment reference',date:'Date',car:'Vehicle',driver:'Driver name',driverPhone:'Driver phone',notes:'Notes',branch:'Branch',salesOrderNumber:'Sales Order number',salesOrderDescription:'Sales Order description',salesOrderAmount:'Sales Order amount (OMR)',invoiceNumber:'Invoice number',invoiceDescription:'Invoice description',invoiceAmount:'Invoice amount (OMR)',deliveryNumber:'Delivery number',deliveryDescription:'Delivery description',deliveryAmount:'Delivery amount (OMR)',startingKm:'Starting KM',endKm:'End KM',trip1:'Trip 1 — From / To',trip1Km:'Trip 1 KM',trip2:'Trip 2 — From / To',trip2Km:'Trip 2 KM',tnxAuth:'Transaction reference',site:'Fuel station',fuel:'Fuel quantity (liters)',lastKm:'Last KM',currentKm:'Current KM'};
     return labels[key] || String(key).replace(/([a-z])([A-Z])/g,'$1 $2').replace(/[_-]+/g,' ').replace(/^./,c=>c.toUpperCase());
 }
 function auditReadableValue(value,key) {
     if(value===undefined || value===null || value==='') return '—';
-    if(typeof value==='number' && /Amount$/.test(key)) return value.toFixed(3);
+    if(typeof value==='number' && /(Amount|FeePaid)$/.test(key)) return value.toFixed(3);
     if(typeof value==='boolean') return value?'Yes':'No';
     return String(value);
 }
