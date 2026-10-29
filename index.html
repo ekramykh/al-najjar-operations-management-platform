@@ -2082,6 +2082,34 @@ html,body,*{scrollbar-width:thin!important;scrollbar-color:#64748b #111827!impor
 #requiredCloudLoginGate .gate-card{margin-top:20px;max-height:calc(100dvh - 40px)}
 }
 </style>
+<style id="delivery-payment-style">
+#recordInvoices .delivery-payment-box{margin-top:12px;padding:12px;border:1px solid #355570;border-radius:6px;background:#10243a}
+#recordInvoices .delivery-payment-toggle{display:flex;align-items:center;gap:9px;font-weight:600;color:#d9eeff;cursor:pointer;margin:0}
+#recordInvoices .delivery-payment-toggle input{width:17px;height:17px;margin:0;accent-color:#3b82f6;flex-shrink:0}
+#recordInvoices .delivery-payment-toggle svg{width:24px;height:24px;color:#67c9ff;flex-shrink:0}
+#recordInvoices .delivery-payment-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px}
+#recordInvoices .delivery-payment-grid .form-group{margin:0;min-width:0}
+#recordInvoices .delivery-payment-help{font-size:11px;margin:8px 0 0;color:#adc3d8}
+#recordInvoices .delivery-payment-status,.delivery-paid-badge{color:#82efb6;background:#113c30;border:1px solid #318964;border-radius:5px;padding:6px 8px;font-size:11px}
+#recordInvoices .delivery-payment-status{margin-top:10px}
+.delivery-paid-badge{display:inline-block;white-space:normal}
+.record-invoice-total>.delivery-paid-badge{white-space:nowrap;padding:3px 5px}
+#recordInvoices [data-delivery-payment-fields][hidden],#recordInvoices [data-delivery-payment-status][hidden]{display:none!important}
+html[data-appearance="light"] #recordInvoices .delivery-payment-box{background:#edf6ff;border-color:#a9c8e4}
+html[data-appearance="light"] #recordInvoices .delivery-payment-toggle{color:#163853}
+html[data-appearance="light"] #recordInvoices .delivery-payment-help{color:#456279}
+html[data-appearance="light"] #recordInvoices .delivery-payment-status,html[data-appearance="light"] .delivery-paid-badge{background:#e6f6ee;color:#14633e;border-color:#7eb99a}
+@media(max-width:540px){#recordInvoices .delivery-payment-grid{grid-template-columns:1fr}}
+</style>
+<style id="record-history-actions-style">
+#recordLogsPanel .btn-icon-history{background:#15352f;color:#77e2bf;border:1px solid #38856f}
+#recordLogsPanel .btn-icon-history:hover{background:#205044}
+#recordLogsPanel .btn-icon-history .record-history-icon{width:18px;height:18px}
+#rowActionModal .record-history-action{width:100%;display:flex;align-items:center;justify-content:center;gap:8px;background:#15352f;color:#a1f0d5;border:1px solid #38856f}
+#rowActionModal .record-history-icon{width:18px;height:18px;flex-shrink:0}
+html[data-appearance="light"] #recordLogsPanel .btn-icon-history,html[data-appearance="light"] #rowActionModal .record-history-action{background:#e7f6ef;color:#17664e;border:1px solid #80bca6}
+html[data-appearance="light"] #recordLogsPanel .btn-icon-history:hover,html[data-appearance="light"] #rowActionModal .record-history-action:hover{background:#d2ecdf}
+</style>
 </head>
 <body class="">
 
@@ -2872,6 +2900,7 @@ const r=new FileReader();r.onload=()=>{if(!requireFuelPermission('import'))retur
         <div class="custom-modal-desc" style="margin-bottom: 18px;">Choose an action for the selected row:</div>
         <div style="display: flex; flex-direction: column; gap: 10px;">
             <button type="button" class="custom-modal-btn custom-modal-btn-confirm" style="background-color: var(--accent-primary); width: 100%;" onclick="executeRowAction('edit')">✏️ Edit Record</button>
+            <button type="button" class="custom-modal-btn record-history-action" onclick="executeRowAction('history')"><svg class="record-history-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11a9 9 0 1 1 2.6 7.4M3 4v7h7M12 7v5l3 2"/></svg><span>Audit History</span></button>
             <button type="button" class="custom-modal-btn custom-modal-btn-confirm" style="background-color: #10b981; width: 100%;" onclick="executeRowAction('whatsapp')">💬 WhatsApp Message</button>
             <button type="button" class="custom-modal-btn custom-modal-btn-confirm" style="background-color: #ef4444; width: 100%;" onclick="executeRowAction('delete')">🗑️ Delete Record</button>
             <button type="button" class="custom-modal-btn custom-modal-btn-cancel" style="width: 100%; margin-top: 5px;" onclick="closeRowActionModal()">Cancel</button>
@@ -2945,7 +2974,7 @@ const r=new FileReader();r.onload=()=>{if(!requireFuelPermission('import'))retur
                             <option value="BAYTAK/RUWI BRANCH">BAYTAK/RUWI BRANCH</option>
                             <option value="BARKAH BRANCH">BARKAH BRANCH</option>
                         </select>
-                    </div><section class="document-kind" data-kind="salesOrder"><h4 class="document-kind-title"><svg class="document-kind-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4h2l2 11h11l3-8H6M9 20h.01M18 20h.01"/></svg>Sales Order</h4><div class="form-grid-2 document-fields"><div class="form-group"><label for="inputSalesOrderNumber">Number</label><input type="text" id="inputSalesOrderNumber" data-document-field="salesOrderNumber" class="form-control" oninput="checkInvoiceAmountWarning()" placeholder="Sales Order No." required></div><div class="form-group"><label for="inputSalesOrderDescription">Description</label><input type="text" id="inputSalesOrderDescription" data-document-field="salesOrderDescription" class="form-control" oninput="checkInvoiceAmountWarning()" placeholder="Sales Order Description" required></div><div class="form-group"><label for="inputSalesOrderAmount">Amount (OMR)</label><input type="number" step="0.001" min="0" id="inputSalesOrderAmount" data-document-field="salesOrderAmount" class="form-control" oninput="checkInvoiceAmountWarning()" placeholder="0.000" required></div></div><div id="invoiceAmountWarning" data-document-warning style="display:none;margin:6px 0;padding:7px 10px;border-radius:6px;background:#fff7ed;color:#c2410c;border:1px solid #fdba74;font-size:12px">⚠ Sales Order amount is below OMR 500. Saving is allowed after confirmation.</div></section><section class="document-kind" data-kind="invoice"><h4 class="document-kind-title"><svg class="document-kind-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2V3zM9 7h6M9 11h6M9 15h4"/></svg>Invoice</h4><div class="form-grid-2 document-fields"><div class="form-group"><label for="inputInvoiceNumber">Number</label><input type="text" id="inputInvoiceNumber" data-document-field="invoiceNumber" class="form-control" oninput="checkInvoiceAmountWarning()" placeholder="Invoice No." required></div><div class="form-group"><label for="inputInvoiceDescription">Description</label><input type="text" id="inputInvoiceDescription" data-document-field="invoiceDescription" class="form-control" oninput="checkInvoiceAmountWarning()" placeholder="Invoice Description" required></div><div class="form-group"><label for="inputInvoiceAmount">Amount (OMR)</label><input type="number" step="0.001" min="0" id="inputInvoiceAmount" data-document-field="invoiceAmount" class="form-control" oninput="checkInvoiceAmountWarning()" placeholder="0.000" required></div></div></section><section class="document-kind" data-kind="delivery"><h4 class="document-kind-title"><svg class="document-kind-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 5h11v12H3zM14 9h4l3 4v4h-7M6 20a2 2 0 1 0 0-4 2 2 0 0 0 0 4zM18 20a2 2 0 1 0 0-4 2 2 0 0 0 0 4z"/></svg>Delivery</h4><div class="form-grid-2 document-fields"><div class="form-group"><label for="inputDeliveryNumber">Number</label><input type="text" id="inputDeliveryNumber" data-document-field="deliveryNumber" class="form-control" oninput="checkInvoiceAmountWarning()" placeholder="Delivery No." required></div><div class="form-group"><label for="inputDeliveryDescription">Description</label><input type="text" id="inputDeliveryDescription" data-document-field="deliveryDescription" class="form-control" oninput="checkInvoiceAmountWarning()" placeholder="Delivery Description" required></div><div class="form-group"><label for="inputDeliveryAmount">Amount (OMR)</label><input type="number" step="0.001" min="0" id="inputDeliveryAmount" data-document-field="deliveryAmount" class="form-control" oninput="checkInvoiceAmountWarning()" placeholder="0.000" required></div></div></section>
+                    </div><section class="document-kind" data-kind="salesOrder"><h4 class="document-kind-title"><svg class="document-kind-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4h2l2 11h11l3-8H6M9 20h.01M18 20h.01"/></svg>Sales Order</h4><div class="form-grid-2 document-fields"><div class="form-group"><label for="inputSalesOrderNumber">Number</label><input type="text" id="inputSalesOrderNumber" data-document-field="salesOrderNumber" class="form-control" oninput="checkInvoiceAmountWarning()" placeholder="Sales Order No." required></div><div class="form-group"><label for="inputSalesOrderDescription">Description</label><input type="text" id="inputSalesOrderDescription" data-document-field="salesOrderDescription" class="form-control" oninput="checkInvoiceAmountWarning()" placeholder="Sales Order Description" required></div><div class="form-group"><label for="inputSalesOrderAmount">Amount (OMR)</label><input type="number" step="0.001" min="0" id="inputSalesOrderAmount" data-document-field="salesOrderAmount" class="form-control" oninput="checkInvoiceAmountWarning()" placeholder="0.000" required></div></div><div id="invoiceAmountWarning" data-document-warning style="display:none;margin:6px 0;padding:7px 10px;border-radius:6px;background:#fff7ed;color:#c2410c;border:1px solid #fdba74;font-size:12px">⚠ Sales Order amount is below OMR 500. Saving is allowed after confirmation.</div><div class="delivery-payment-box"><label class="delivery-payment-toggle"><input type="checkbox" data-document-field="customerPaidDelivery" onchange="checkInvoiceAmountWarning()"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 5h11v12H3zM14 9h4l3 4v4h-7M7 17a2 2 0 1 0 0 4 2 2 0 0 0 0-4M18 17a2 2 0 1 0 0 4 2 2 0 0 0 0-4"/></svg><span>Delivery paid by customer</span></label><div data-delivery-payment-fields hidden><div class="delivery-payment-grid"><div class="form-group"><label>Delivery fee paid (OMR)</label><input type="number" min="0.001" step="0.001" data-document-field="deliveryFeePaid" class="form-control" placeholder="0.000" oninput="checkInvoiceAmountWarning()" disabled></div><div class="form-group"><label>Payment reference</label><input type="text" maxlength="200" data-document-field="deliveryPaymentReference" class="form-control" placeholder="Receipt / payment reference" oninput="checkInvoiceAmountWarning()" disabled></div></div><p class="delivery-payment-help">Delivery fee is separate from the Delivery Note amount.</p></div><div class="delivery-payment-status" data-delivery-payment-status hidden>✓ Exempt from minimum-order warning · Delivery paid</div></div></section><section class="document-kind" data-kind="invoice"><h4 class="document-kind-title"><svg class="document-kind-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2V3zM9 7h6M9 11h6M9 15h4"/></svg>Invoice</h4><div class="form-grid-2 document-fields"><div class="form-group"><label for="inputInvoiceNumber">Number</label><input type="text" id="inputInvoiceNumber" data-document-field="invoiceNumber" class="form-control" oninput="checkInvoiceAmountWarning()" placeholder="Invoice No." required></div><div class="form-group"><label for="inputInvoiceDescription">Description</label><input type="text" id="inputInvoiceDescription" data-document-field="invoiceDescription" class="form-control" oninput="checkInvoiceAmountWarning()" placeholder="Invoice Description" required></div><div class="form-group"><label for="inputInvoiceAmount">Amount (OMR)</label><input type="number" step="0.001" min="0" id="inputInvoiceAmount" data-document-field="invoiceAmount" class="form-control" oninput="checkInvoiceAmountWarning()" placeholder="0.000" required></div></div></section><section class="document-kind" data-kind="delivery"><h4 class="document-kind-title"><svg class="document-kind-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 5h11v12H3zM14 9h4l3 4v4h-7M6 20a2 2 0 1 0 0-4 2 2 0 0 0 0 4zM18 20a2 2 0 1 0 0-4 2 2 0 0 0 0 4z"/></svg>Delivery</h4><div class="form-grid-2 document-fields"><div class="form-group"><label for="inputDeliveryNumber">Number</label><input type="text" id="inputDeliveryNumber" data-document-field="deliveryNumber" class="form-control" oninput="checkInvoiceAmountWarning()" placeholder="Delivery No." required></div><div class="form-group"><label for="inputDeliveryDescription">Description</label><input type="text" id="inputDeliveryDescription" data-document-field="deliveryDescription" class="form-control" oninput="checkInvoiceAmountWarning()" placeholder="Delivery Description" required></div><div class="form-group"><label for="inputDeliveryAmount">Amount (OMR)</label><input type="number" step="0.001" min="0" id="inputDeliveryAmount" data-document-field="deliveryAmount" class="form-control" oninput="checkInvoiceAmountWarning()" placeholder="0.000" required></div></div></section>
                   </div>
                 </div>
                 <button type="button" class="trip-document-add" onclick="addTripDocument()">+ Add Document Entry</button>
@@ -6087,6 +6116,7 @@ window.applySyncedAdminPassword = function(value) {
     function openRowActionModal(event, index) {
         if (event.target.closest('.action-btns')) return;
         activeRowIndex = index;
+        document.getElementById('rowActionModal').dataset.auditId = fuelRecords[index]._syncId || 'legacy-sn:' + fuelRecords[index].sn;
         document.getElementById('rowActionModal').classList.add('active');
         document.body.classList.add('modal-open');
     }
@@ -6100,6 +6130,14 @@ window.applySyncedAdminPassword = function(value) {
     function executeRowAction(actionType) {
         if (activeRowIndex === null) return;
         const idx = activeRowIndex;
+        if(actionType === 'history') {
+            const identity=document.getElementById('rowActionModal').dataset.auditId;
+            const item=fuelRecords.find(row=>(row._syncId || 'legacy-sn:'+row.sn)===identity);
+            closeRowActionModal();
+            if(item) showRecordAudit(identity,item.sn);
+            else alert('This record is no longer available.');
+            return;
+        }
         closeRowActionModal();
         if (actionType === 'edit') {
             editRecord(idx);
@@ -6804,7 +6842,7 @@ window.applySyncedAdminPassword = function(value) {
                 <td><span class="badge badge-efficiency">${avrgKm.toFixed(2)} KM/L</span></td>
                 <td>
                     <div class="action-btns">
-                        <button class="btn-icon" onclick="showRecordAudit(this.dataset.auditId,this.dataset.auditSn)" data-audit-id="${escapeHtml(item._syncId || 'legacy-sn:'+item.sn)}" data-audit-sn="${Number(item.sn)}" data-tooltip="Audit History">◷</button><button class="btn-icon btn-icon-edit" onclick="editRecord(${originalIndex})" data-tooltip="Edit Record">${iconPencil}</button>
+                        <button class="btn-icon btn-icon-history" onclick="showRecordAudit(this.dataset.auditId,this.dataset.auditSn)" data-audit-id="${escapeHtml(item._syncId || 'legacy-sn:'+item.sn)}" data-audit-sn="${Number(item.sn)}" data-tooltip="Audit History" aria-label="Audit History"><svg class="record-history-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11a9 9 0 1 1 2.6 7.4M3 4v7h7M12 7v5l3 2"/></svg></button><button class="btn-icon btn-icon-edit" onclick="editRecord(${originalIndex})" data-tooltip="Edit Record">${iconPencil}</button>
                         <button class="btn-icon btn-icon-delete" onclick="deleteRecord(${originalIndex})" data-tooltip="Delete Record">${iconTrash}</button>
                         ${isHigherThanAverage ? `<button type="button" class="btn-icon btn-icon-wa" data-fuel-alert data-tooltip="High Fuel Alert (WhatsApp)">${iconWhatsApp}</button>` : ''}
                     </div>
@@ -7259,12 +7297,12 @@ function prepareAuditForm(item) {
 }
 // Display only: stored before/after snapshots remain untouched.
 function auditFieldLabel(key) {
-    const labels={date:'Date',car:'Vehicle',driver:'Driver name',driverPhone:'Driver phone',notes:'Notes',branch:'Branch',salesOrderNumber:'Sales Order number',salesOrderDescription:'Sales Order description',salesOrderAmount:'Sales Order amount (OMR)',invoiceNumber:'Invoice number',invoiceDescription:'Invoice description',invoiceAmount:'Invoice amount (OMR)',deliveryNumber:'Delivery number',deliveryDescription:'Delivery description',deliveryAmount:'Delivery amount (OMR)',startingKm:'Starting KM',endKm:'End KM',trip1:'Trip 1 — From / To',trip1Km:'Trip 1 KM',trip2:'Trip 2 — From / To',trip2Km:'Trip 2 KM',tnxAuth:'Transaction reference',site:'Fuel station',fuel:'Fuel quantity (liters)',lastKm:'Last KM',currentKm:'Current KM'};
+    const labels={customerPaidDelivery:'Delivery paid by customer',deliveryFeePaid:'Delivery fee paid (OMR)',deliveryPaymentReference:'Delivery payment reference',date:'Date',car:'Vehicle',driver:'Driver name',driverPhone:'Driver phone',notes:'Notes',branch:'Branch',salesOrderNumber:'Sales Order number',salesOrderDescription:'Sales Order description',salesOrderAmount:'Sales Order amount (OMR)',invoiceNumber:'Invoice number',invoiceDescription:'Invoice description',invoiceAmount:'Invoice amount (OMR)',deliveryNumber:'Delivery number',deliveryDescription:'Delivery description',deliveryAmount:'Delivery amount (OMR)',startingKm:'Starting KM',endKm:'End KM',trip1:'Trip 1 — From / To',trip1Km:'Trip 1 KM',trip2:'Trip 2 — From / To',trip2Km:'Trip 2 KM',tnxAuth:'Transaction reference',site:'Fuel station',fuel:'Fuel quantity (liters)',lastKm:'Last KM',currentKm:'Current KM'};
     return labels[key] || String(key).replace(/([a-z])([A-Z])/g,'$1 $2').replace(/[_-]+/g,' ').replace(/^./,c=>c.toUpperCase());
 }
 function auditReadableValue(value,key) {
     if(value===undefined || value===null || value==='') return '—';
-    if(typeof value==='number' && /Amount$/.test(key)) return value.toFixed(3);
+    if(typeof value==='number' && /(Amount|FeePaid)$/.test(key)) return value.toFixed(3);
     if(typeof value==='boolean') return value?'Yes':'No';
     return String(value);
 }
@@ -7442,6 +7480,14 @@ function confirmAuditEdit() {
                 if(!Number.isFinite(amount) || amount<0) throw Error('Document amounts must be zero or greater.');
                 result[type+'Amount']=Number(amount.toFixed(3));
             }
+            if(row.customerPaidDelivery===true) {
+                const fee=Number(row.deliveryFeePaid);
+                const reference=String(row.deliveryPaymentReference || '').trim();
+                if(!Number.isFinite(fee) || fee<=0 || Number(fee.toFixed(3))<=0 || !reference) throw Error('Enter a positive delivery fee and payment reference for customer-paid delivery.');
+                result.customerPaidDelivery=true;
+                result.deliveryFeePaid=Number(fee.toFixed(3));
+                result.deliveryPaymentReference=reference;
+            }
             return result;
         });
     }
@@ -7456,7 +7502,7 @@ function confirmAuditEdit() {
     }
     function readTripDocuments() {
         return normalizeTripDocuments(Array.from(document.querySelectorAll('#tripDocumentsEditor .trip-document-row'), row => {
-            const result={};row.querySelectorAll('[data-document-field]').forEach(el=>result[el.dataset.documentField]=el.value);return result;
+            const result={};row.querySelectorAll('[data-document-field]').forEach(el=>result[el.dataset.documentField]=el.type==='checkbox'?el.checked:el.value);return result;
         })).filter(r=>Object.values(r).some(Boolean));
     }
 
@@ -7465,15 +7511,18 @@ function confirmAuditEdit() {
         const amount=Number(tripDocumentSummary(documents).invoiceAmount);
         const display=amount?amount.toFixed(3):'-';
         const low=documents.map((row,index)=>({row,index})).filter(({row})=>lowTripInvoice(row));
-        if(!low.length)return display;
+        const exceptions=documents.map((row,index)=>({row,index})).filter(({row})=>deliveryPaidException(row) && Number(row.salesOrderAmount)<500);
+        const exceptionDetails=exceptions.map(({row,index})=>'Order No.: '+(row.salesOrderNumber || 'Document entry '+(index+1))+' | Delivery fee paid: OMR '+Number(row.deliveryFeePaid).toFixed(3)+' | Payment reference: '+row.deliveryPaymentReference).join('\n');
+        const exempt=exceptions.length?'<span class="delivery-paid-badge" tabindex="0" title="'+escapeHtml(exceptionDetails)+'">✓ '+exceptions.length+' Delivery paid'+'</span>':'';
+        if(!low.length)return exempt?'<span class="record-invoice-total">'+exempt+'<span>'+display+'</span></span>':display;
         const label=low.length+' S/O < OMR 500';
         const details='Sales Orders below OMR 500: '+low.length+'\n'+low.map(({row,index})=>'Order No.: '+(row.salesOrderNumber || 'Not recorded — document entry '+(index+1))+' | Amount: OMR '+Number(row.salesOrderAmount||0).toFixed(3)).join('\n')+'\nDisplayed total is the invoice total; the warning concerns individual Sales Orders.';
         const icon='<svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 2 21h20L12 3zM12 9v5M12 17h.01"/></svg>';
-        return '<span class="record-invoice-total"><span class="sales-order-warning-badge" dir="ltr" role="img" tabindex="0" title="'+escapeHtml(details)+'" aria-label="'+escapeHtml(details)+'">'+icon+'<span>'+escapeHtml(label)+'</span></span><span>'+display+'</span></span>';
+        return '<span class="record-invoice-total">'+exempt+'<span class="sales-order-warning-badge" dir="ltr" role="img" tabindex="0" title="'+escapeHtml(details)+'" aria-label="'+escapeHtml(details)+'">'+icon+'<span>'+escapeHtml(label)+'</span></span><span>'+display+'</span></span>';
     }
 
     function renumberTripDocuments() {
-        const ids={branch:'inputBranch'};for(const type of ['salesOrder','invoice','delivery'])for(const suffix of ['Number','Description','Amount']){const key=type+suffix;ids[key]='input'+key[0].toUpperCase()+key.slice(1);}
+        const ids={branch:'inputBranch',customerPaidDelivery:'inputCustomerPaidDelivery',deliveryFeePaid:'inputDeliveryFeePaid',deliveryPaymentReference:'inputDeliveryPaymentReference'};for(const type of ['salesOrder','invoice','delivery'])for(const suffix of ['Number','Description','Amount']){const key=type+suffix;ids[key]='input'+key[0].toUpperCase()+key.slice(1);}
         const rows=document.querySelectorAll('#tripDocumentsEditor .trip-document-row');
         rows.forEach(row=>row.querySelectorAll('[id]').forEach(el=>el.removeAttribute('id')));
         rows.forEach((row,index)=>{
@@ -7492,7 +7541,8 @@ function confirmAuditEdit() {
         row.querySelectorAll('[id]').forEach(el=>el.removeAttribute('id'));
         row.querySelectorAll('[data-document-field]').forEach(el=>{
             const value=data[el.dataset.documentField] ?? '';
-            el.value=el.tagName==='SELECT' ? (Array.from(el.options).find(option=>option.value.toLowerCase()===String(value).toLowerCase())?.value || value) : value;
+            if(el.type==='checkbox') el.checked=value===true;
+            else el.value=el.tagName==='SELECT' ? (Array.from(el.options).find(option=>option.value.toLowerCase()===String(value).toLowerCase())?.value || value) : value;
             el.style.borderColor='';el.style.boxShadow='';
         });
         row.querySelector('[data-document-warning]').style.display='none';
@@ -7501,7 +7551,7 @@ function confirmAuditEdit() {
     function removeTripDocument(button) {
         const row=button.closest('.trip-document-row');
         const editor=document.getElementById('tripDocumentsEditor');
-        if(editor.children.length===1) row.querySelectorAll('[data-document-field]').forEach(el=>el.value='');
+        if(editor.children.length===1) row.querySelectorAll('[data-document-field]').forEach(el=>{if(el.type==='checkbox')el.checked=false;else el.value='';});
         else row.remove();
         renumberTripDocuments();checkInvoiceAmountWarning();
     }
@@ -7511,19 +7561,30 @@ function confirmAuditEdit() {
         const rows=normalizeTripDocuments(tripDocuments(record));
         editor.firstElementChild.querySelectorAll('[data-document-field]').forEach(el=>{
             const value=rows[0]?.[el.dataset.documentField] ?? '';
-            el.value=el.tagName==='SELECT' ? (Array.from(el.options).find(option=>option.value.toLowerCase()===String(value).toLowerCase())?.value || value) : value;
+            if(el.type==='checkbox') el.checked=value===true;
+            else el.value=el.tagName==='SELECT' ? (Array.from(el.options).find(option=>option.value.toLowerCase()===String(value).toLowerCase())?.value || value) : value;
         });
         rows.slice(1).forEach(addTripDocument);
         renumberTripDocuments();checkInvoiceAmountWarning();
     }
+    function deliveryPaidException(row) {
+        return row.customerPaidDelivery===true && Number.isFinite(Number(row.deliveryFeePaid)) && Number(row.deliveryFeePaid)>=0.001 && !!String(row.deliveryPaymentReference || '').trim();
+    }
+    function deliveryPaymentValues(row) {
+        return {customerPaidDelivery:row.querySelector('[data-document-field="customerPaidDelivery"]').checked,deliveryFeePaid:row.querySelector('[data-document-field="deliveryFeePaid"]').value,deliveryPaymentReference:row.querySelector('[data-document-field="deliveryPaymentReference"]').value};
+    }
     function lowTripInvoice(row) {
         const amount=Number(row.salesOrderAmount);
-        return Number.isFinite(amount) && amount<500 && (amount>0 || !!row.salesOrderNumber);
+        return Number.isFinite(amount) && amount<500 && (amount>0 || !!row.salesOrderNumber) && !deliveryPaidException(row);
     }
     function checkInvoiceAmountWarning() {
         document.querySelectorAll('#tripDocumentsEditor .trip-document-row').forEach(row=>{
             const el=row.querySelector('[data-document-field="salesOrderAmount"]');
-            const show=lowTripInvoice({salesOrderAmount:el.value,salesOrderNumber:row.querySelector('[data-document-field="salesOrderNumber"]').value});
+            const payment=deliveryPaymentValues(row);
+            const fields=row.querySelector('[data-delivery-payment-fields]');fields.hidden=!payment.customerPaidDelivery;
+            for(const key of ['deliveryFeePaid','deliveryPaymentReference']){const input=row.querySelector('[data-document-field="'+key+'"]');input.disabled=!payment.customerPaidDelivery;input.required=payment.customerPaidDelivery;if(key==='deliveryPaymentReference')input.setCustomValidity?.(payment.customerPaidDelivery && !input.value.trim()?'Enter a payment reference.':'');}
+            row.querySelector('[data-delivery-payment-status]').hidden=!deliveryPaidException(payment);
+            const show=lowTripInvoice({salesOrderAmount:el.value,salesOrderNumber:row.querySelector('[data-document-field="salesOrderNumber"]').value,...payment});
             row.querySelector('[data-document-warning]').style.display=show?'block':'none';
             el.style.borderColor=show?'#f97316':'';
             el.style.boxShadow=show?'0 0 0 2px rgba(249,115,22,.12)':'';
@@ -9527,7 +9588,7 @@ window.addEventListener('beforeunload',event=>{
   const km=calculateVariantKm(item.lastKm,item.currentKm),eff=calculateAverageKmPerLiter(km,item.fuel);
   return '<div class="record-details-title"><strong>'+recordCardIcon('record')+'Record '+escapeHtml(item.sn)+'</strong><button type="button" data-close-record-details aria-label="Close record details">×</button></div>'
    +'<div class="record-detail-summary"><div>'+recordCardIcon('date')+'<small>Date</small>'+escapeHtml(item.date||'-')+'</div><div><small>Vehicle</small>'+brand(item)+'</div><div>'+recordCardIcon('user')+'<small>Driver</small>'+escapeHtml(item.driver||'-')+'</div><div>'+recordCardIcon('record')+'<small>Total Invoices</small><span class="record-count">'+tripDocuments(item).filter(doc=>doc.invoiceNumber).length+'</span></div><div>'+recordCardIcon('amount')+'<small>Total Amount</small><span class="'+(tripDocuments(item).some(lowTripInvoice)?'record-detail-warning':'')+'">'+(tripDocuments(item).some(lowTripInvoice)?'⚠ ':'')+Number(tripDocumentSummary(tripDocuments(item)).invoiceAmount||0).toFixed(3)+'</span></div></div>'
-   +'<div class="record-invoices-card"><h4 class="record-invoices-title">'+recordCardIcon('record')+'Invoices</h4>'+tripDocuments(item).map((doc,i)=>'<article class="record-detail-doc"><div class="record-invoice-grid"><strong>Invoice '+(i+1)+'</strong><div><small>Invoice No.</small>'+escapeHtml(doc.invoiceNumber||'-')+'</div><div><small>Branch</small>'+escapeHtml(doc.branch||'-')+'</div><div><small>Delivery</small>'+escapeHtml(doc.deliveryNumber||'-')+'</div><div><small>Sales Order No.</small>'+escapeHtml(doc.salesOrderNumber||'-')+'</div><div><small>Sales Order Description</small>'+escapeHtml(doc.salesOrderDescription||'-')+'</div><div><small>Sales Order Amount (OMR)</small>'+Number(doc.salesOrderAmount||0).toFixed(3)+'</div><div><small>Invoice Description</small>'+escapeHtml(doc.invoiceDescription||'-')+'</div><div><small>Delivery Description</small>'+escapeHtml(doc.deliveryDescription||'-')+'</div><div><small>Delivery Amount (OMR)</small>'+Number(doc.deliveryAmount||0).toFixed(3)+'</div><div class="'+(lowTripInvoice(doc)?'record-invoice-low':'')+'"><small>Amount</small>'+Number(doc.invoiceAmount||0).toFixed(3)+'</div></div>'+(lowTripInvoice(doc)?'<p class="record-warning-banner">⚠ Sales Order amount below OMR 500</p>':'')+'</article>').join('')
+   +'<div class="record-invoices-card"><h4 class="record-invoices-title">'+recordCardIcon('record')+'Invoices</h4>'+tripDocuments(item).map((doc,i)=>'<article class="record-detail-doc"><div class="record-invoice-grid"><strong>Invoice '+(i+1)+'</strong><div><small>Invoice No.</small>'+escapeHtml(doc.invoiceNumber||'-')+'</div><div><small>Branch</small>'+escapeHtml(doc.branch||'-')+'</div><div><small>Delivery</small>'+escapeHtml(doc.deliveryNumber||'-')+'</div><div><small>Sales Order No.</small>'+escapeHtml(doc.salesOrderNumber||'-')+'</div><div><small>Sales Order Description</small>'+escapeHtml(doc.salesOrderDescription||'-')+'</div><div><small>Sales Order Amount (OMR)</small>'+Number(doc.salesOrderAmount||0).toFixed(3)+'</div><div><small>Invoice Description</small>'+escapeHtml(doc.invoiceDescription||'-')+'</div><div><small>Delivery Description</small>'+escapeHtml(doc.deliveryDescription||'-')+'</div><div><small>Delivery Amount (OMR)</small>'+Number(doc.deliveryAmount||0).toFixed(3)+'</div><div class="'+(lowTripInvoice(doc)?'record-invoice-low':'')+'"><small>Amount</small>'+Number(doc.invoiceAmount||0).toFixed(3)+'</div></div>'+(lowTripInvoice(doc)?'<p class="record-warning-banner">⚠ Sales Order amount below OMR 500</p>':'')+(deliveryPaidException(doc)?'<p class="delivery-paid-badge">✓ Delivery paid by customer · Fee: OMR '+Number(doc.deliveryFeePaid).toFixed(3)+' · Payment reference: '+escapeHtml(doc.deliveryPaymentReference)+'</p>':'')+'</article>').join('')
    +'</div><div class="record-detail-card-grid">'+group('Additional General Information',[['SN',item.sn],['Driver Phone',item.driverPhone]])
    +(Array.isArray(item.tripJourneys)&&item.tripJourneys.length?group('Trips &amp; Odometer',item.tripJourneys.flatMap((t,i)=>[['Trip '+(i+1)+' Route',t.route],['Trip '+(i+1)+' Starting KM',t.startingKm],['Trip '+(i+1)+' End KM',t.endKm],['Trip '+(i+1)+' KM',t.km]])):group('Trips &amp; Odometer',[['Starting KM',item.startingKm],['End KM',item.endKm],['/Day',item.dayVal],['Trip 1 (From–To)',item.trip1],['Trip 1 KM',item.trip1Km],['Trip 2 (From–To)',item.trip2],['Trip 2 KM',item.trip2Km],['KM/Day',item.kmDay],['Difference',item.difference]]))
    +group('Fuel &amp; Refueling',[['TNX Auth / Reference',item.tnxAuth],['Site / Location',item.site],['Fuel (Liters)',item.fuel],['Last KM',item.lastKm],['Current KM',item.currentKm],['Variant KM',km.toFixed(2)],['Average KM/L',eff.toFixed(2)]])
