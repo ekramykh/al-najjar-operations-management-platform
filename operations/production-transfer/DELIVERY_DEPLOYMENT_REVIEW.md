@@ -5,12 +5,12 @@ Baseline: preparation commit `c2cfd59`; production main remains `cb5afcff4c97a57
 ## Prepared changes
 
 - `delivery-schema.sql`: first-creation transaction for empty delivery tables, identity sequences, history index, invoker commit RPC, explicit service-only access and private 1 MiB proof bucket. Matches inspected staging structure and commit behavior; copies no records, accounts, permissions or attachments. Existing objects cause failure rather than replacement.
-- `delivery-manage/`: deployment candidate copied from the existing service. Only project guard changes, using an exact production URL. Validation and place data are unchanged. Deploy under the existing frontend name `delivery-manage` only after release approval; retain JWT verification. Do not replace the staging function with this candidate.
+- `delivery-manage/`: deployment candidate copied from the existing service. Uses an exact production URL and the approved fuel-style add/edit permission checks. Validation and place data are unchanged. Deploy under the existing frontend name `delivery-manage` only after release approval; retain JWT verification. Do not replace the staging function with this candidate.
 - Existing `layout-preferences.sql` remains a separate first-creation proposal.
 
-## Current permission behavior retained
+## Approved delivery permission correction
 
-Delivery list/history/proof reads require server `can_read`; saves and uploads require `can_manage_users`. This means the fuel add-only account cannot create delivery orders or trips. Do not silently broaden it using `can_add` or `can_edit`. Whether delivery should follow the fuel role model needs an explicit release decision and separate implementation/tests if requested.
+The user explicitly requested fuel-equivalent delivery roles on 17 November. List/history/proof reads still require server `can_read`. Creation requires `can_add`; updates require `can_edit`. Proof uploads resolve the entity on the server and require add permission for a new ID or edit permission for an existing ID. Flags returned by list are separate `canAdd` and `canEdit`; frontend creation, editing and saving use the corresponding flag. No role rows, schema, validation, design or passwords were changed. The existing revision-checked transaction prevents a forged revision-zero request from updating an existing row.
 
 ## Verification and limits
 
@@ -25,5 +25,11 @@ Delivery list/history/proof reads require server `can_read`; saves and uploads r
 
 1. Validate SQL transaction/RPC/sequence privileges and storage isolation in an isolated database; verify rollback and concurrent revision handling.
 2. Complete authenticated staging save/edit/conflict/role and two-client sync acceptance with disposable staging records, then clean up only those records.
-3. Resolve delivery permission policy before final approval.
+3. Verify the approved delivery permission correction against live staging roles before final approval.
 4. Prepare fresh production recovery snapshot and reviewed deployment request. Apply dependencies and deploy candidate only after explicit production approval. No test rows are to be transferred.
+
+## Permission correction verification
+
+Full Node suite: **244 passed / 0 failed**. Handler tests use simulated Supabase responses for reader, add-only, edit-only and administrator roles, including proof-upload denials on existing entries, lookup errors, actor attribution and revision-conflict propagation. UI tests execute the real create/edit/save entry guards and action-button rendering for all four permission combinations. All inline scripts parse, and `git diff --check` passes. Candidate and staging service remain equivalent except the project guard. The unchanged SQL revision check is inspected but no local Postgres runtime is available to execute it.
+
+This is preparatory source verification. The hosted staging function and Site were not deployed by this correction; production, main and live data remain unchanged. Live multi-account, two-device, storage, viewport and zoom acceptance remain unverified. The frontend requires the corresponding updated service response before deployment; deploy the service before the frontend.

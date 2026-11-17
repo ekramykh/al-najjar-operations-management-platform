@@ -88,3 +88,9 @@ Unverified: 80% zoom, mobile viewport, light theme, sign-out in the live browser
 User subsequently reported entry without another password prompt and successful inspection on mobile and desktop. This closes the reported device inspection issue; exact zoom/theme were not specified and are not inferred.
 
 Reproduced all 227 existing tests successfully. Prepared empty delivery schema/RPC/private-bucket SQL and a separate production-only service candidate under operations/production-transfer. Existing staging service, frontend and layout proposal are unchanged. Seven new handler/parity tests pass; full suite is now **234 passed / 0 failed**. These use simulated Supabase responses, not live role/concurrency tests. SQL has not been executed. See DELIVERY_DEPLOYMENT_REVIEW.md for exact scope and remaining gates, including the existing administrator-only delivery write policy. No hosted database changes, production merge or deployment occurred.
+
+## Approved delivery add/edit permission correction
+
+Root cause: delivery used `can_manage_users` for all writes and a single UI write flag, preventing the fuel add-only role from creating deliveries or trips. Updated both service sources and the preparatory frontend to separate server `can_add` / `can_edit`; proof uploads check server entity existence before allowing add or edit. Existing transactional revision checks, validation, actor attribution, shared fuel code and CSS remain unchanged. No account or permission rows were edited.
+
+Full suite: **244 passed / 0 failed**, including handler role/attachment guards, UI create/edit/save guards and inline script parsing. `git diff --check` passes. Recovery baseline: `3a4cd6de23ceeb6ebc8aa98304caf2537686c6e5`. Source-only correction: no hosted function/Site deployment or main merge, no live record writes, and no new browser/zoom/two-device or live role acceptance. See the deployment review for coordination and remaining gates.
