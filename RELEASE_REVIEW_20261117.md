@@ -82,3 +82,9 @@ TinyFish run e54740ec-6c1c-48ba-9b35-3f0fdd1b2ce4 completed: saved session resto
 Dashboard, Fuel Consumption and Delivery Management were accessible. New Record tabs (General / Invoices / Trip / Fuel), New Delivery tabs (General / Documents & Planning / Payments / Delivery Proof), and New Trip fields were inspected and cancelled without saving. No clipping was reported at the browser's default desktop zoom (reported approximately 100%; precise viewport dimensions were not supplied). The transient verifying-session text was not observed, so no timing/animation claim is made.
 
 Unverified: 80% zoom, mobile viewport, light theme, sign-out in the live browser, saves/edits/deletes, exports/imports, two-device sync and role acceptance. Automated tests cover sign-out during pending restore and denied/invalid sessions, but these are not live multi-account results. No claim that the production release gates are complete.
+
+## User acceptance and backend candidate preparation
+
+User subsequently reported entry without another password prompt and successful inspection on mobile and desktop. This closes the reported device inspection issue; exact zoom/theme were not specified and are not inferred.
+
+Reproduced all 227 existing tests successfully. Prepared empty delivery schema/RPC/private-bucket SQL and a separate production-only service candidate under operations/production-transfer. Existing staging service, frontend and layout proposal are unchanged. Seven new handler/parity tests pass; full suite is now **234 passed / 0 failed**. These use simulated Supabase responses, not live role/concurrency tests. SQL has not been executed. See DELIVERY_DEPLOYMENT_REVIEW.md for exact scope and remaining gates, including the existing administrator-only delivery write policy. No hosted database changes, production merge or deployment occurred.
