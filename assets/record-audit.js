@@ -59,7 +59,7 @@ function prepareAuditForm(item) {
 }
 // Display only: stored before/after snapshots remain untouched.
 function auditFieldLabel(key) {
-    const labels={customerPaidDelivery:'Delivery paid by customer',deliveryFeePaid:'Delivery fee paid (OMR)',deliveryPaymentReference:'Delivery payment reference',date:'Date',car:'Vehicle',driver:'Driver name',driverPhone:'Driver phone',notes:'Notes',branch:'Branch',salesOrderNumber:'Sales Order number',salesOrderDescription:'Sales Order description',salesOrderAmount:'Sales Order amount (OMR)',invoiceNumber:'Invoice number',invoiceDescription:'Invoice description',invoiceAmount:'Invoice amount (OMR)',deliveryNumber:'Delivery number',deliveryDescription:'Delivery description',deliveryAmount:'Delivery amount (OMR)',startingKm:'Starting KM',endKm:'End KM',trip1:'Trip 1 — From / To',trip1Km:'Trip 1 KM',trip2:'Trip 2 — From / To',trip2Km:'Trip 2 KM',tnxAuth:'Transaction reference',site:'Fuel station',fuel:'Fuel quantity (liters)',lastKm:'Last KM',currentKm:'Current KM'};
+    const labels={customerPaidDelivery:'Delivery paid by customer',deliveryFeePaid:'Delivery fee paid (OMR)',deliveryPaymentReference:'Delivery payment reference',date:'Date',car:'Vehicle',driver:'Driver name',driverPhone:'Driver phone',notes:'Notes',branch:'Branch',salesOrderNumber:'Sales Order number',salesOrderDescription:'Sales Order description',salesOrderAmount:'Sales Order amount (OMR)',invoiceNumber:'Invoice number',invoiceDescription:'Invoice description',invoiceAmount:'Invoice amount (OMR)',deliveryNumber:'Delivery number',deliveryDescription:'Delivery description',deliveryAmount:'Delivery amount (OMR)',startingKm:'Starting KM',endKm:'End KM',trip1:'Trip 1 — From / To',trip1Km:'Trip 1 KM',trip2:'Trip 2 — From / To',trip2Km:'Trip 2 KM',refuelingStatus:'Refueling status',fuelCost:'Fuel total paid (OMR)',tnxAuth:'Transaction reference',site:'Fuel station',fuel:'Fuel quantity (liters)',lastKm:'Last KM',currentKm:'Current KM'};
     return labels[key] || String(key).replace(/([a-z])([A-Z])/g,'$1 $2').replace(/[_-]+/g,' ').replace(/^./,c=>c.toUpperCase());
 }
 function auditReadableValue(value,key) {
@@ -148,7 +148,7 @@ function dismissAuditDialog(modal) {
 function closeAuditHistory(){auditHistoryRequest++;dismissAuditDialog(document.getElementById('fuelAuditModal'));}
 let auditHistoryRequest=0;
 function auditHistoryTable(changes) {
-    return '<div class="audit-table-wrap"><table class="audit-table"><thead><tr><th>Field</th><th>Before</th><th>After</th></tr></thead><tbody>'+changes.map(row=>'<tr><td>'+escapeHtml(row.field)+'</td><td>'+escapeHtml(row.before)+'</td><td>'+escapeHtml(row.after)+'</td></tr>').join('')+'</tbody></table></div>';
+    return '<div class="audit-table-wrap"><table class="audit-table"><thead><tr><th>Field</th><th>Before</th><th>After</th></tr></thead><tbody>'+changes.map(row=>'<tr><td>'+escapeHtml(row.field)+'</td><td>'+VehicleBrand.auditCell(row,'before')+'</td><td>'+VehicleBrand.auditCell(row,'after')+'</td></tr>').join('')+'</tbody></table></div>';
 }
 function auditHistoryMarkup(response,offset=0) {
     const events=Array.isArray(response.events)?response.events:[];
@@ -208,7 +208,7 @@ function showAuditEditConfirmation(before,after,callback) {
     if(!changes.length){pendingAuditEdit=null;alert('No changes to save.');return;}
     const modal=document.getElementById('fuelAuditConfirmModal');
     document.getElementById('auditConfirmTitle').textContent='Confirm changes — Record #'+after.sn;
-    document.getElementById('auditConfirmChanges').innerHTML=changes.length?changes.map(row=>'<div class="audit-preview-row"><div class="audit-static-value audit-field-cell"><span class="audit-label">Field</span>'+escapeHtml(row.field)+'</div><div class="audit-static-value"><span class="audit-label">Current value</span>'+escapeHtml(row.before)+'</div><div class="audit-preview-arrow" aria-hidden="true">→</div><div class="audit-static-value"><span class="audit-label">New value</span>'+escapeHtml(row.after)+'</div></div>').join(''):'<p class="audit-help">No visible field changes. A reason is still required to confirm this update.</p>';
+    document.getElementById('auditConfirmChanges').innerHTML=changes.length?changes.map(row=>'<div class="audit-preview-row"><div class="audit-static-value audit-field-cell"><span class="audit-label">Field</span>'+escapeHtml(row.field)+'</div><div class="audit-static-value"><span class="audit-label">Current value</span>'+VehicleBrand.auditCell(row,'before')+'</div><div class="audit-preview-arrow" aria-hidden="true">→</div><div class="audit-static-value"><span class="audit-label">New value</span>'+VehicleBrand.auditCell(row,'after')+'</div></div>').join(''):'<p class="audit-help">No visible field changes. A reason is still required to confirm this update.</p>';
     const reason=document.getElementById('auditEditReason');reason.value='';reason.required=true;
     document.getElementById('auditReasonGroup').hidden=false;document.getElementById('auditReasonError').hidden=true;updateAuditReasonCount();pendingAuditEdit=callback;openAuditDialog(modal);reason.focus();
 }

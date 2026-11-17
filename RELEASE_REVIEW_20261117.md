@@ -42,3 +42,9 @@ The historical PRODUCTION_TRANSFER.md describes the October release; its schema-
 ## Follow-up verification — 17 November 2026
 
 Reproduced the baseline: 215 tests, 196 passed, 19 failed. Updated only test harnesses and expectations for the existing mobile audio gesture capture / silent audio priming, exact-email sign-in, and approved Mitsubishi Fuso option. All 19 tests in the three affected files pass. Full suite: **215 tests, 200 passed, 15 failed**. No application code, production backend, credentials, user permissions or data were changed. Remaining failures and release gates above still apply; no browser or two-device acceptance was performed.
+
+## Automated verification completed — 17 November 2026
+
+Full suite: **218 tests, 218 passed, 0 failed**. The remaining 15 failures were resolved by loading the actual published VehicleBrand, FuelPurchases and FuelPurchaseForm modules into isolated test contexts, providing their DOM/event dependencies, updating the station assertion to the current shared purchase reader, and synchronizing assets/record-audit.js with the already published inline module. The audit differences were the new refueling labels and VehicleBrand rendering; index.html was not changed.
+
+Three additional tests exercise the actual purchase form: required choice / positive liters / positive total; duplicate receipt and copying a source purchase; pending cost and ascending optional odometer readings. Existing stale-record, permission, notes, multi-document and confirmation checks pass. npm test and git diff --check completed successfully. This completes automated verification only. No production backend deployment, browser viewport/zoom, authenticated staging, two-device sync or production acceptance is claimed. Backend and manual acceptance gates remain open.
