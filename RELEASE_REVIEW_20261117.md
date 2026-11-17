@@ -48,3 +48,19 @@ Reproduced the baseline: 215 tests, 196 passed, 19 failed. Updated only test har
 Full suite: **218 tests, 218 passed, 0 failed**. The remaining 15 failures were resolved by loading the actual published VehicleBrand, FuelPurchases and FuelPurchaseForm modules into isolated test contexts, providing their DOM/event dependencies, updating the station assertion to the current shared purchase reader, and synchronizing assets/record-audit.js with the already published inline module. The audit differences were the new refueling labels and VehicleBrand rendering; index.html was not changed.
 
 Three additional tests exercise the actual purchase form: required choice / positive liters / positive total; duplicate receipt and copying a source purchase; pending cost and ascending optional odometer readings. Existing stale-record, permission, notes, multi-document and confirmation checks pass. npm test and git diff --check completed successfully. This completes automated verification only. No production backend deployment, browser viewport/zoom, authenticated staging, two-device sync or production acceptance is claimed. Backend and manual acceptance gates remain open.
+
+## Live backend dependency inspection — 17 November 2026
+
+Read-only Supabase inspection reconfirmed production has only fuel_shared_state, fuel_record_audit and app_user_permissions in public, and fuel-sync v2. Staging has delivery_entities, delivery_audit, app_layout_preferences, delivery-manage v7 and fuel-sync v8. No live database, account, policy or function was modified.
+
+Reviewed delivery dependencies:
+- delivery_entities: UUID identity, order/trip kind check, generated ALWAYS bigint number (starts 1), revision default 1, JSON object data, updated_at timestamp, primary key and unique number.
+- delivery_audit: generated ALWAYS bigint sequence (starts 1), entity foreign key, actor UUID/email, reason, before/after JSON, confirmation timestamp, entity/sequence descending index. No non-internal triggers on these three tables.
+- Delivery tables have RLS enabled, no user-facing policies or anon/authenticated table grants. Access is through the service; delivery_commit is invoker and executable only by postgres/service_role. It locks an existing row, checks revision, and commits the entity and audit event in one transaction. Simultaneous new-ID inserts remain protected by the primary key.
+- app_layout_preferences exposes SELECT/INSERT/UPDATE to authenticated users, with own/global read policies and administrator checks for global writes. Existing proposal matches that access shape; no preference rows should be copied.
+- delivery-proof is private, maximum 1 MiB, restricted to JPEG/PNG/PDF, with no delivery bucket user policies; function handles uploads and 60-second signed reads.
+- The deployed delivery-manage v7 source remains explicitly staging-only. Current writes/uploads use can_manage_users (administrator), not fuel can_add/can_edit. This is a release decision to resolve before production rather than silently changing user capabilities.
+
+Missing production delivery tables/RPC/identity sequences/private bucket and production function adapter remain deployment blockers. This inspection is not a schema execution test or an authenticated role acceptance pass.
+
+Interface verification blocker: the connected local browser tool could not obtain the originating browser context. The cloud browser reached the trial URL but displayed the ChatGPT Sites access sign-in gate before the application. Therefore no application viewport, zoom, theme or authenticated workflow pass is claimed. Also, viewing the trial would not by itself verify the exact production-targeted preparatory artifact.
