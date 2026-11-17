@@ -18,16 +18,17 @@ function render(records,selected=''){
  assert.equal(JSON.stringify({records,defaults}),before,'lookup must not restore or change business records');
  return get;
 }
-test('empty cloud dataset still offers Mercedes and Volvo for the first record',()=>{
+test('empty cloud dataset still offers all approved vehicles for the first record',()=>{
  const get=render([]);const options=get('inputCar').innerHTML;
  assert.ok(options.includes('Mercedes - 8245 BA'));assert.ok(options.includes('Volvo - 8797 AK'));
- assert.equal((options.match(/<option/g)||[]).length,3);
- assert.equal(get('filterCar').innerHTML,'<option value="">All Vehicles</option>');
+ assert.ok(options.includes('Mitsubishi Fuso'));
+ assert.equal((options.match(/<option/g)||[]).length,4);
+ assert.equal(get('filterCar').innerHTML,'<option value="">All Vehicles</option><option value="Mitsubishi Fuso">Mitsubishi Fuso</option>');
 });
 test('new cloud vehicle is available and selected choice remains selected',()=>{
  const get=render([{car:'New vehicle',driver:'Driver',site:'Site'},{car:'Mercedes - 8245 BA'}],'New vehicle');
  assert.equal(get('inputCar').value,'New vehicle');assert.ok(get('inputCar').innerHTML.includes('New vehicle'));
- assert.equal((get('inputCar').innerHTML.match(/<option/g)||[]).length,4);
+ assert.equal((get('inputCar').innerHTML.match(/<option/g)||[]).length,5);
  assert.ok(get('filterCar').innerHTML.includes('New vehicle'));
 });
 test('deleting the final record does not remove known vehicle choices',()=>{

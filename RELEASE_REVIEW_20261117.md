@@ -38,3 +38,7 @@ The recovered delivery-manage source is retained under supabase/functions/delive
 4. Preserve a fresh private production snapshot and function baseline, coordinate zero pending device edits, deploy reviewed dependencies, then merge and verify publication and authenticated production behavior.
 
 The historical PRODUCTION_TRANSFER.md describes the October release; its schema-absence and test-count statements must not be used as current evidence for this November release.
+
+## Follow-up verification — 17 November 2026
+
+Reproduced the baseline: 215 tests, 196 passed, 19 failed. Updated only test harnesses and expectations for the existing mobile audio gesture capture / silent audio priming, exact-email sign-in, and approved Mitsubishi Fuso option. All 19 tests in the three affected files pass. Full suite: **215 tests, 200 passed, 15 failed**. No application code, production backend, credentials, user permissions or data were changed. Remaining failures and release gates above still apply; no browser or two-device acceptance was performed.
