@@ -9676,9 +9676,13 @@ window.addEventListener('beforeunload',event=>{
     return accepted;
   }
 
-  async function connect() {
+  async function connect({ restoreSession = false } = {}) {
     if (profileSaveBusy) throw new Error("Wait for your profile to finish saving before switching accounts.");
     connectionGeneration++;
+    const attemptGeneration = connectionGeneration;
+    const ensureCurrentAttempt = () => {
+      if (attemptGeneration !== connectionGeneration) throw new Error("Connection changed. Sign in again.");
+    };
     // Stop old polling before authentication; its pending response is obsolete.
     if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
     resetPermissionEditor();
@@ -9695,7 +9699,7 @@ window.addEventListener('beforeunload',event=>{
     const email = $("cloudEmail").value;
     const password = $("cloudPassword").value;
 
-    if (!url || !key || !email || !password) {
+    if (!url || !key || (!restoreSession && (!email || !password))) {
       throw new Error("Enter the project URL, public key, email, and password.");
     }
 
@@ -9708,7 +9712,25 @@ window.addEventListener('beforeunload',event=>{
       client = window.supabase.createClient(url, key, {auth:{storage:window.fuelStorageGuard.authStorage}});
       clientConnectionSignature = signature;
     }
-    const {data, error} = await signInWithExactEmail(url, key, email, password);
+    let authentication;
+    if (restoreSession) {
+      // A cached session alone never grants access. Validate its user online.
+      const saved = await client.auth.getSession();
+      ensureCurrentAttempt();
+      if (saved.error) throw saved.error;
+      if (!saved.data?.session) return false;
+      const verified = await client.auth.getUser();
+      ensureCurrentAttempt();
+      if (verified.error) throw verified.error;
+      if (!verified.data?.user?.id || verified.data.user.id !== saved.data.session.user?.id) {
+        throw new Error("Saved session could not be verified. Sign in again.");
+      }
+      authentication = {data:{session:saved.data.session,user:verified.data.user},error:null};
+    } else {
+      authentication = await signInWithExactEmail(url, key, email, password);
+      ensureCurrentAttempt();
+    }
+    const {data, error} = authentication;
     if (error) {
       if (/failed to fetch|networkerror|load failed|network request failed/i.test(error.message || '')) {
         throw new Error(navigator.onLine === false
@@ -9723,10 +9745,15 @@ window.addEventListener('beforeunload',event=>{
     if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
 
     const remoteCheck = await invokeFuelSync("read");
+    ensureCurrentAttempt();
+    if (restoreSession && (remoteCheck.permissions?.can_read !== true || remoteCheck.actor?.id !== headerSignedInUser.id)) {
+      throw new Error("Saved session has no verified access to this workspace. Sign in again.");
+    }
     currentPermissions = remoteCheck.permissions || null;
     const permissionPanel = $("permissionAdminPanel");
     if (permissionPanel) permissionPanel.hidden = currentPermissions?.can_manage_users !== true;
     await initializeCloudData(remoteCheck, url);
+    ensureCurrentAttempt();
 
     permissionsReady = true;
     window.refreshFuelPermissionControls();
@@ -9734,6 +9761,7 @@ window.addEventListener('beforeunload',event=>{
     status("Connected & Synced", "#34d399");
     $("cloudSettings").open = false;
     message("Connected. Changes are saved to the shared database and appear on connected devices.");
+    return true;
   }
 
   async function pullCloud(options = {}) {
@@ -9839,14 +9867,14 @@ window.addEventListener('beforeunload',event=>{
   });
 
   let connectionAttempt = null;
-  window.connectFuelCloud = function() {
+  window.connectFuelCloud = function(options) {
     if (connectionAttempt) return connectionAttempt;
     $("cloudConnect").disabled = true;
     status("Connecting...", "#93c5fd");
     message("");
     connectionAttempt = (async () => {
       try {
-        await connect();
+        return await connect(options);
       } catch(err) {
         permissionsReady = false;
         currentPermissions = null;
@@ -9862,6 +9890,7 @@ window.addEventListener('beforeunload',event=>{
     })();
     return connectionAttempt;
   };
+  window.restoreFuelCloudSession = () => window.connectFuelCloud({restoreSession:true});
   $("cloudConnect").addEventListener("click", () => {
     window.connectFuelCloud().catch(() => {});
   });
@@ -10247,7 +10276,21 @@ html.workspace-design[data-appearance] #requiredCloudLoginGate #axisPasswordVisi
       loading(false);
     }
   };
-  btn.addEventListener("click",login);[email,pass,url,key].forEach(el=>el?.addEventListener("keydown",e=>{if(e.key==="Enter")login()}));document.getElementById("cloudSignOut")?.addEventListener("click",()=>setTimeout(()=>{lock()},100));lock();
+  let gateGeneration = 0;
+  btn.addEventListener("click",login);[email,pass,url,key].forEach(el=>el?.addEventListener("keydown",e=>{if(e.key==="Enter")login()}));
+  document.getElementById("cloudSignOut")?.addEventListener("click",()=>{gateGeneration++;lock();});
+  lock();
+  if (typeof window.restoreFuelCloudSession === 'function') {
+    const generation = gateGeneration;
+    loginPending = true;loading(true);status("Verifying saved session...","#93c5fd");
+    window.restoreFuelCloudSession().then(restored=>{
+      if (generation !== gateGeneration) return;
+      if (restored) unlock();
+      else status("Enter your account details to continue.","#94a3b8");
+    }).catch(err=>{
+      if (generation === gateGeneration) status(err?.message||"Sign in again to continue.","#f87171");
+    }).finally(()=>{loginPending=false;loading(false);});
+  }
 })();
 </script>
 <script>

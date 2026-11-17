@@ -64,3 +64,21 @@ Reviewed delivery dependencies:
 Missing production delivery tables/RPC/identity sequences/private bucket and production function adapter remain deployment blockers. This inspection is not a schema execution test or an authenticated role acceptance pass.
 
 Interface verification blocker: the connected local browser tool could not obtain the originating browser context. The cloud browser reached the trial URL but displayed the ChatGPT Sites access sign-in gate before the application. Therefore no application viewport, zoom, theme or authenticated workflow pass is claimed. Also, viewing the trial would not by itself verify the exact production-targeted preparatory artifact.
+
+## Approved saved-session restoration — 17 November 2026
+
+Root cause: the startup login gate always locked the app and only the fresh email/password path could initialize the shared client. Persisted Supabase auth alone therefore could not unlock a new page.
+
+The narrowly scoped change adds a restore mode to the existing connection path: load/refresh the configured project's saved session, validate the user online with getUser, require matching user identity and the server fuel-sync read response's can_read permission and actor identity, then initialize data and polling before unlocking. Missing, expired, rejected or offline verification retains the gate and manual sign-in. Sign-out during pending restoration invalidates the attempt and cannot reopen the gate. Existing exact-email/password sign-in remains. No CSS/design, permissions, password or backend schema changes.
+
+Automated checks: full preparatory suite **227 passed / 0 failed** (218 existing plus 9 restore tests). The actual trial HTML passed **27 session/login/poll tests**, and all **68 inline script blocks** parsed. Existing queue source-boundary tests were updated for the new optional connect parameter; their behavior assertions remain.
+
+Applied the same patch to the original staging-targeted trial source (not the production-targeted index). Trial source baseline d3fdb72bc64fc3be9c9b373613c142bb78c1a8dd; patched source 380f15b9ae0c7536da4f8c0b5f2d8b8a0766ae31. Sites version 52 deployed successfully at the existing trial URL with access audience preserved. No main merge or production Supabase changes. Authenticated TinyFish browser verification is tracked at https://agent.tinyfish.ai/runs/e54740ec-6c1c-48ba-9b35-3f0fdd1b2ce4; final observations to be appended after completion.
+
+### Completed authenticated trial browser verification
+
+TinyFish run e54740ec-6c1c-48ba-9b35-3f0fdd1b2ce4 completed: saved session restored without credential entry; header showed Ekramy Kholosy / staging administrator and Connected & Synced, with zero pending changes. One reload restored access again and displayed the same dashboard values. Fuel Consumption displayed 551 entries; the dashboard's period metrics separately displayed 225 fuel records. These are UI observations, not a database integrity or metric-definition audit.
+
+Dashboard, Fuel Consumption and Delivery Management were accessible. New Record tabs (General / Invoices / Trip / Fuel), New Delivery tabs (General / Documents & Planning / Payments / Delivery Proof), and New Trip fields were inspected and cancelled without saving. No clipping was reported at the browser's default desktop zoom (reported approximately 100%; precise viewport dimensions were not supplied). The transient verifying-session text was not observed, so no timing/animation claim is made.
+
+Unverified: 80% zoom, mobile viewport, light theme, sign-out in the live browser, saves/edits/deletes, exports/imports, two-device sync and role acceptance. Automated tests cover sign-out during pending restore and denied/invalid sessions, but these are not live multi-account results. No claim that the production release gates are complete.
