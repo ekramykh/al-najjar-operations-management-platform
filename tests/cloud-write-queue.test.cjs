@@ -4,7 +4,7 @@ const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const vm=require('node:vm');
 const html=fs.readFileSync('index.html','utf8');
-const source=html.slice(html.indexOf('  function queueCloudWrite(snapshot)'),html.indexOf('  async function connect()'));
+const source=html.slice(html.indexOf('  function queueCloudWrite(snapshot)'),html.indexOf('  async function connect('));
 function harness(invoke){
   const c={window:{},client:{},connectionGeneration:1,cloudWriteQueue:Promise.resolve(),busy:false,localWriteRevision:0,
     cloudDirty:false,lastSaved:'',rows:[{_syncId:'a',sn:1,value:'initial'}],
