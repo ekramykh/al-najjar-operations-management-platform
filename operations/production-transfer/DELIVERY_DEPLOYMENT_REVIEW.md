@@ -33,3 +33,11 @@ The user explicitly requested fuel-equivalent delivery roles on 17 November. Lis
 Full Node suite: **244 passed / 0 failed**. Handler tests use simulated Supabase responses for reader, add-only, edit-only and administrator roles, including proof-upload denials on existing entries, lookup errors, actor attribution and revision-conflict propagation. UI tests execute the real create/edit/save entry guards and action-button rendering for all four permission combinations. All inline scripts parse, and `git diff --check` passes. Candidate and staging service remain equivalent except the project guard. The unchanged SQL revision check is inspected but no local Postgres runtime is available to execute it.
 
 This is preparatory source verification. The hosted staging function and Site were not deployed by this correction; production, main and live data remain unchanged. Live multi-account, two-device, storage, viewport and zoom acceptance remain unverified. The frontend requires the corresponding updated service response before deployment; deploy the service before the frontend.
+
+## Staging acceptance and production preflight (18 November 2026)
+
+The staging delivery-manage function is active at version 8 with JWT verification enabled. An add-only account created a test delivery. The staging audit log attributed creation to that account, and the same record appeared on a second computer after Refresh. The UI offered View and History for the saved record. A live direct edit or attachment request with that account remains unverified.
+
+The local working copy passed 245 automated tests, including simulated server-side authorization checks. That count includes separate local Fuel UI work. The staging save and second-device checks used the hosted trial.
+
+Read-only production inspection confirmed that the Delivery tables, commit function, private proof bucket and Delivery Edge Function are absent. The prepared schema and production function still require deployment verification. The release sequence is to validate the SQL in isolation, capture a fresh recovery baseline, apply the schema, deploy the production function, and publish and verify the frontend. Create empty production tables and keep staging records in staging.
