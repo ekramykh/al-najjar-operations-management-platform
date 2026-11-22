@@ -3448,12 +3448,12 @@ const r=new FileReader();r.onload=()=>{if(!requireFuelPermission('import'))retur
         <div class="pagination-footer">
             <div id="paginationInfo">Showing 0 of 0 records (Total System Records: 0)</div>
             <div class="pagination-controls">
-                <button type="button" class="pagination-btn" id="btnPrevPage" onclick="changePage(-1)" disabled="">◄ Prev</button>
+                <button type="button" class="pagination-btn" id="btnPrevPage" onclick="changePage(-1)" disabled="">‹ Previous</button>
                 <span id="recordPageButtons" aria-label="Record pages"></span><span id="pageNumberDisplay" style="font-weight: 600; color: var(--text-main);">Page 1/1</span>
-                <button type="button" class="pagination-btn" id="btnNextPage" onclick="changePage(1)">Next ►</button>
+                <button type="button" class="pagination-btn" id="btnNextPage" onclick="changePage(1)">Next ›</button>
             </div>
             <div class="page-size-selector">
-                <label for="pageSizeSelect">Page Size:</label>
+                <label for="pageSizeSelect">Per page</label>
                 <select id="pageSizeSelect" class="select-pagesize" onchange="changePageSize(this.value)">
                     <option value="5" selected="">5</option>
                     <option value="10">10</option>
@@ -7317,6 +7317,24 @@ window.applySyncedAdminPassword = function(value) {
         }, 80);
     }
 
+    const invoiceWarningPager = {page:1,size:'5'};
+    function listPage(state,count) {
+        const size = state.size === 'all' ? Math.max(1,count) : Number(state.size);
+        const pages = Math.max(1,Math.ceil(count/size));
+        state.page = Math.max(1,Math.min(state.page,pages));
+        const start = (state.page-1)*size;
+        return {pages,start,end:Math.min(start+size,count)};
+    }
+    function renderListPager(state,count,noun,label) {
+        if (!count) return '';
+        const {pages,start,end}=listPage(state,count);
+        const first=Math.max(1,Math.min(state.page-1,pages-2));
+        const button=(page,text,disabled=false)=>'<button type="button" class="pagination-btn" data-list-page="'+page+'"'+(disabled?' disabled':'')+(typeof text==='number'&&page===state.page?' aria-current="page"':'')+'>'+text+'</button>';
+        const numbers=Array.from({length:Math.min(3,pages)},(_,i)=>button(first+i,first+i)).join('');
+        const sizes=['5','10','25','50','100','all'].map(size=>'<option value="'+size+'"'+(state.size===size?' selected':'')+'>'+(size==='all'?'All':size)+'</option>').join('');
+        return '<nav class="pagination-footer delivery-pagination axis-list-pager" aria-label="'+label+'"><div class="axis-list-pager-summary"><span>Showing '+(start+1)+'–'+end+' of '+count+' '+noun+'</span><label>Per page <select data-list-size>'+sizes+'</select></label></div><div class="pagination-controls">'+button(state.page-1,'‹ Previous',state.page===1)+numbers+button(state.page+1,'Next ›',state.page===pages)+'</div></nav>';
+    }
+
     function updateInvoiceWarningDashboard() {
         const box = document.getElementById('invoiceWarningDashboard');
         const summary = document.getElementById('invoiceWarningSummary');
@@ -7340,18 +7358,34 @@ window.applySyncedAdminPassword = function(value) {
         box.classList.add('active');
         if (count) count.textContent = String(lowInvoices.length);
         summary.textContent = `${lowInvoices.length} Sales Order${lowInvoices.length === 1 ? '' : 's'} have an amount below OMR 500. Double-click any warning to go directly to that record in the Dashboard.`;
-        list.innerHTML = lowInvoices.map(x => {
+        summary.dataset.mobileSummary = `${lowInvoices.length} ${lowInvoices.length === 1 ? 'order' : 'orders'} below OMR 500. Tap a warning to open its record.`;
+        const page = listPage(invoiceWarningPager,lowInvoices.length);
+        list.innerHTML = lowInvoices.slice(page.start,page.end).map(x => {
             const r = x.record;
             const amount = Number(r.salesOrderAmount) || 0;
             return `<div class="warning-item" role="button" tabindex="0" ondblclick="goToInvoiceWarningRecord(${x.index})" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();goToInvoiceWarningRecord(${x.index})}">
-                <span><strong>⚠️ Date:</strong> ${escapeHtml(r.date || '-')}</span>
-                <span><strong>Sales Order:</strong> ${escapeHtml(r.salesOrderNumber || '-')}</span>
+                <span class="warning-field-date"><strong>Date:</strong> ${escapeHtml(r.date || '-')}</span>
+                <span class="warning-field-order"><strong>SO:</strong> ${escapeHtml(r.salesOrderNumber || '-')}</span>
                 <span class="warning-amount"><strong>Amount:</strong> OMR ${amount.toFixed(3)}</span>
-                <span><strong>Branch:</strong> ${escapeHtml(r.branch || '-')}</span>
-                <span><strong>Delivery:</strong> ${escapeHtml(r.deliveryNumber || '-')}</span>
+                <span class="warning-field-branch"><strong>Branch:</strong> ${escapeHtml(r.branch || '-')}</span>
+                <span class="warning-field-delivery"><strong>Delivery:</strong> ${escapeHtml(r.deliveryNumber || '-')}</span>
             </div>`;
         }).join('');
-        more.textContent = '';
+        more.innerHTML = renderListPager(invoiceWarningPager,lowInvoices.length,'warnings','Warning pages');
+        more.onclick = event => {
+            const button=event.target.closest('button[data-list-page]');
+            if(!button||button.disabled)return;
+            invoiceWarningPager.page=Number(button.dataset.listPage);
+            updateInvoiceWarningDashboard();
+            more.querySelector('[aria-current="page"]')?.focus({preventScroll:true});
+        };
+        more.onchange = event => {
+            if(!event.target.matches('[data-list-size]'))return;
+            invoiceWarningPager.size=event.target.value;
+            invoiceWarningPager.page=1;
+            updateInvoiceWarningDashboard();
+            more.querySelector('[data-list-size]')?.focus({preventScroll:true});
+        };
     }
 
     function escapeHtml(value) {
@@ -7457,9 +7491,10 @@ window.applySyncedAdminPassword = function(value) {
                 <td><span class="badge badge-efficiency">${avrgKm.toFixed(2)} KM/L</span></td>
                 <td>
                     <div class="action-btns">
-                        <button class="btn-icon btn-icon-history" onclick="showRecordAudit(this.dataset.auditId,this.dataset.auditSn)" data-audit-id="${escapeHtml(item._syncId || 'legacy-sn:'+item.sn)}" data-audit-sn="${Number(item.sn)}" data-tooltip="Audit History" aria-label="Audit History"><svg class="record-history-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11a9 9 0 1 1 2.6 7.4M3 4v7h7M12 7v5l3 2"/></svg></button><button class="btn-icon btn-icon-edit" onclick="editRecord(${originalIndex})" data-tooltip="Edit Record">${iconPencil}</button>
-                        <button class="btn-icon btn-icon-delete" onclick="deleteRecord(${originalIndex})" data-tooltip="Delete Record">${iconTrash}</button>
-                        ${isHigherThanAverage ? `<button type="button" class="btn-icon btn-icon-wa" data-fuel-alert data-tooltip="High Fuel Alert (WhatsApp)">${iconWhatsApp}</button>` : ''}
+                        <button type="button" class="btn-icon fuel-desktop-view" aria-label="View record details" title="View record details"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7-10-7-10-7"/><circle cx="12" cy="12" r="3"/></svg></button>
+                        <button class="btn-icon btn-icon-history" onclick="showRecordAudit(this.dataset.auditId,this.dataset.auditSn)" data-audit-id="${escapeHtml(item._syncId || 'legacy-sn:'+item.sn)}" data-audit-sn="${Number(item.sn)}" title="Audit History" data-tooltip="Audit History" aria-label="Audit History"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11a9 9 0 1 1 2.6 7.4M3 4v7h7M12 7v5l3 2"/></svg></button><button class="btn-icon btn-icon-edit" ${window.hasFuelPermission?.('edit') || window.hasFuelPermission?.('add') ? '' : 'disabled'} onclick="editRecord(${originalIndex})" title="Edit Record"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m16 3 5 5M3 21l5-1L21 7a2 2 0 0 0-5-5L3 15z"/></svg></button>
+                        <button class="btn-icon btn-icon-delete" ${window.hasFuelPermission?.('delete') ? '' : 'disabled'} onclick="deleteRecord(${originalIndex})" title="Delete Record"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7M14 10v7"/></svg></button>
+                        ${isHigherThanAverage ? `<button type="button" class="btn-icon btn-icon-wa" data-fuel-alert title="High Fuel Alert (WhatsApp)">${iconWhatsApp}</button>` : ''}
                     </div>
                 </td>
             `;
@@ -7472,6 +7507,9 @@ window.applySyncedAdminPassword = function(value) {
         });
 
         const displayedCount = paginatedRecords.length;
+        document.getElementById('paginationInfo').setAttribute?.('data-mobile-range', displayedCount
+            ? `Showing ${startIndex + 1}–${startIndex + displayedCount} of ${totalRecords} records`
+            : 'Showing 0 records');
         document.getElementById('paginationInfo').textContent = 
             `Showing ${displayedCount} of ${totalRecords} records (Total System Records: ${fuelRecords.length})`;
         
@@ -8210,6 +8248,50 @@ function confirmAuditEdit() {
         return window.confirm('WARNING: These individual Sales Orders are below OMR 500:\n\n'+low.map((r,i)=>(r.salesOrderNumber || 'Sales Order '+(i+1))+': OMR '+r.salesOrderAmount.toFixed(3)).join('\n')+'\n\nSave this record anyway?');
     }
 
+function confirmRecordDeletion({ title, reference, description, action, dialogId = 'deliveryConfirm' }){
+ if(document.querySelector('dialog.delivery-delete-confirm[open]'))return Promise.resolve(false);
+ const dialog=document.createElement('dialog');
+ dialog.id=dialogId;
+ dialog.className='delivery-dialog delivery-confirm delivery-delete-confirm';
+ dialog.setAttribute('aria-labelledby','deliveryDeleteTitle');
+ dialog.setAttribute('aria-describedby','deliveryDeleteDescription');
+ dialog.innerHTML='<form method="dialog"><header class="audit-dialog-header"><h2 id="deliveryDeleteTitle">'+escapeHtml(title)+'</h2><svg class="delivery-ui-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7M14 10v7"/></svg></header>'+
+  '<div class="audit-dialog-body"><p id="deliveryDeleteDescription"><strong>'+escapeHtml(reference)+'</strong><span>'+escapeHtml(description)+'</span></p>'+
+  '<label for="deliveryDeletePassword">Authorization password</label>'+
+  '<input id="deliveryDeletePassword" class="form-control" type="password" autocomplete="off" placeholder="Enter authorization password" required>'+
+  '<p class="delivery-delete-password-error" role="alert" hidden>Incorrect authorization password.</p></div>'+
+  '<footer class="audit-dialog-footer"><button class="audit-button" type="button" value="cancel" autofocus>Cancel</button>'+
+  '<button class="audit-button delivery-delete-confirm-action" value="delete">'+escapeHtml(action)+'</button></footer></form>';
+ const form=dialog.querySelector('form');
+ const password=dialog.querySelector('#deliveryDeletePassword');
+ const error=dialog.querySelector('.delivery-delete-password-error');
+ let authorized=false;
+ dialog.querySelector('[value="cancel"]').onclick=()=>dialog.close();
+ password.oninput=()=>{error.hidden=true;password.removeAttribute('aria-invalid');};
+ form.onsubmit=event=>{
+  event.preventDefault();
+  if(!password.value||password.value!==adminPassword){
+   error.hidden=false;
+   password.setAttribute('aria-invalid','true');
+   password.select();
+   return;
+  }
+  authorized=true;
+  dialog.close();
+ };
+ document.body.append(dialog);
+ return new Promise(resolve=>{
+  dialog.addEventListener('close',()=>{
+   const mobileNav=dialog.querySelector('#axisMobileNav');
+   if(mobileNav)document.body.append(mobileNav);
+   dialog.remove();
+   password.value='';
+   resolve(authorized);
+  },{once:true});
+  dialog.showModal();
+ });
+}
+
     function requireFuelPermission(action) {
         if (typeof window.requireFuelPermission !== 'function') {
             alert('Sign in and load your account permissions before changing records.');
@@ -8416,34 +8498,30 @@ function confirmAuditEdit() {
         document.body.classList.add('modal-open');
     }
 
-    function deleteRecord(index) {
+    async function deleteRecord(index) {
         if (!requireFuelPermission('delete')) return;
         const record = fuelRecords[index];
         if (!record) return;
-
-        // Require the current system password before any deletion confirmation or mutation.
-        // adminPassword is updated by the Change Password workflow at runtime.
-        promptPassword("Enter the current system password to delete this record:", function(password) {
-            if (password === null) return;
-            if (password !== adminPassword) {
-                alert("Incorrect password. The record was not deleted.");
-                return;
-            }
-            if (!requireFuelPermission('delete')) return;
-            if (!confirm('Are you sure you want to delete this record?')) return;
-            if (typeof window.markFuelRecordDeleted !== "function") {
-                alert("Cloud sync is not ready to record this deletion. Please reconnect and try again.");
-                return;
-            }
-
-            const currentIndex = fuelRecords.findIndex(item => item === record || (record._syncId && item._syncId === record._syncId));
-            if (currentIndex === -1) return;
-            if (!window.markFuelRecordDeleted(fuelRecords[currentIndex])) return;
-            fuelRecords.splice(currentIndex, 1);
-            isDataDirty = true;
-            window.saveToLocalStorage();
-            filterAndRender();
+        const confirmed = await confirmRecordDeletion({
+            title: 'Delete fuel record?',
+            reference: 'Fuel record #' + record.sn,
+            description: 'This record will be removed from the active list.',
+            action: 'Delete record',
+            dialogId: 'fuelDeleteConfirm'
         });
+        if (!confirmed || !requireFuelPermission('delete')) return;
+        if (typeof window.markFuelRecordDeleted !== "function") {
+            alert("Cloud sync is not ready to record this deletion. Please reconnect and try again.");
+            return;
+        }
+
+        const currentIndex = fuelRecords.findIndex(item => item === record || (record._syncId && item._syncId === record._syncId));
+        if (currentIndex === -1) return;
+        if (!window.markFuelRecordDeleted(fuelRecords[currentIndex])) return;
+        fuelRecords.splice(currentIndex, 1);
+        isDataDirty = true;
+        window.saveToLocalStorage();
+        filterAndRender();
     }
 
     function resetForm() {
@@ -10333,7 +10411,7 @@ html.workspace-design[data-appearance] #requiredCloudLoginGate #axisPasswordVisi
  }
  function saveColumnPreference(){try{localStorage.setItem(columnStorageKey,JSON.stringify([...hiddenColumns]));}catch(_){}document.dispatchEvent(new Event('axis-layout-edited')); }
  function closeColumnsMenu(){columnsMenu.hidden=true;columnsButton.setAttribute('aria-expanded','false');}
- function positionColumnsMenu(){if(columnsMenu.hidden)return;const r=columnsButton.getBoundingClientRect(),zoom=columnsMenu.currentCSSZoom||1,below=innerHeight-r.bottom-12,above=r.top-12,up=below<280&&above>below;columnsMenu.style.setProperty('--axis-columns-available',Math.max(80,(up?above:below)/zoom)+'px');columnsMenu.style.setProperty('top',up?'auto':'calc(100% + 7px)','important');columnsMenu.style.setProperty('bottom',up?'calc(100% + 7px)':'auto','important');}
+ function positionColumnsMenu(){if(columnsMenu.hidden)return;const r=columnsButton.getBoundingClientRect(),zoom=columnsMenu.currentCSSZoom||1,nav=document.getElementById('axisMobileNav'),mobile=columnsButton.closest('.axis-mobile-sort'),navTop=mobile&&nav?.getClientRects().length?nav.getBoundingClientRect().top:innerHeight,below=Math.min(innerHeight,navTop)-r.bottom-12,above=r.top-12,up=below<280&&above>below;columnsMenu.style.setProperty('--axis-columns-available',Math.max(0,(up?above:below)/zoom)+'px');columnsMenu.style.setProperty('top',up?'auto':'calc(100% + 7px)','important');columnsMenu.style.setProperty('bottom',up?'calc(100% + 7px)':'auto','important');}
  window.addEventListener('resize',positionColumnsMenu);
  function buildColumnsMenu(){
   columnsMenu.textContent='';const title=document.createElement('strong');title.className='record-columns-title';title.textContent='Visible columns';
@@ -10408,6 +10486,7 @@ html.workspace-design[data-appearance] #requiredCloudLoginGate #axisPasswordVisi
    const numberCell=row.children[0];numberCell.textContent=item.sn || '-';
    const cell=row.children[5];cell.textContent='';const button=document.createElement('button');button.type='button';button.className='record-invoice-toggle';button.textContent=tripDocuments(item).length;button.title='View invoices and deliveries';button.setAttribute('aria-label','View invoices for record '+item.sn);button.setAttribute('aria-expanded','false');
    button.addEventListener('dblclick',event=>event.stopPropagation());button.addEventListener('click',event=>{event.stopPropagation();const wasOpen=button.getAttribute('aria-expanded')==='true';clearDetails();if(wasOpen)return;button.setAttribute('aria-expanded','true');const chevron=row.querySelector('.record-row-chevron');if(chevron){chevron.textContent='⌄';chevron.setAttribute('aria-expanded','true');}row.classList.add('record-selected');if(design==='2'){pane.innerHTML=details(item);pane.querySelector('[data-close-record-details]').addEventListener('click',clearDetails);}else{const expanded=document.createElement('tr');expanded.className='record-expanded-detail';const td=document.createElement('td');td.colSpan=visibleColumnCount();td.innerHTML='<div class="record-expanded-content"><div class="record-centered-card">'+details(item)+'</div></div>';arrangeRecordCardColumns(td.querySelector('.record-centered-card'));expanded.appendChild(td);row.after(expanded);td.querySelector('[data-close-record-details]').addEventListener('click',clearDetails);}});cell.appendChild(button);
+   const view=row.querySelector('.fuel-desktop-view');if(view)view.onclick=event=>{event.stopPropagation();button.click();};
    if(design==='3'){const expand=document.createElement('button');expand.type='button';expand.className='record-row-chevron';expand.textContent='›';expand.setAttribute('aria-expanded','false');expand.setAttribute('aria-label','Expand invoices for record '+item.sn);expand.addEventListener('click',event=>{event.stopPropagation();button.click();});expand.addEventListener('dblclick',event=>event.stopPropagation());numberCell.prepend(expand);const serial=document.createElement('span');serial.className='record-serial-aligned';serial.append(...numberCell.childNodes);numberCell.append(serial);}
    const efficiencyCell=row.children[24];efficiencyCell.dataset.recordEfficiency='true';const distance=calculateVariantKm(item.lastKm,item.currentKm),fuel=Number(item.fuel),actual=calculateAverageKmPerLiter(distance,fuel);const total=vehicleTotals.get((item.car||'').trim().toUpperCase());const average=total&&total.fuel>0?total.km/total.fuel:0;const below=actual>0&&average>0&&actual<average;efficiencyCell.innerHTML='<span class="record-efficiency '+(below?'record-efficiency-low':actual>0?'record-efficiency-normal':'record-efficiency-missing')+'">'+(actual>0?actual.toFixed(2)+' KM/L':'—')+'</span>';efficiencyCell.title=average>0?'Vehicle average: '+average.toFixed(2)+' KM/L. '+(below?'Below vehicle average.':''):'Insufficient valid vehicle data';row.insertBefore(efficiencyCell,row.children[3]);
 
@@ -10441,7 +10520,7 @@ html.workspace-design[data-appearance] #requiredCloudLoginGate #axisPasswordVisi
   const height=menu.getBoundingClientRect().height;
   menu.style.top=(up?Math.max(edge,r.top-height-4):r.bottom+4)/scale+'px';
  }
- function positionMenu(){if(!menu||!activeSelect)return;if(activeSelect.hasAttribute('data-vehicle-select')){positionVehicleMenu();return;}const mobileSort=activeSelect.closest('.axis-mobile-sort')&&matchMedia('(max-width:767px), (max-width:1024px) and (pointer:coarse)').matches;const chartControl=activeSelect.closest('.axis-chart-actions91');const compactExport=activeSelect.id==='exportFormat';const anchor=compactExport?(activeSelect.closest('.export-container')||activeSelect):activeSelect;const r=anchor.getBoundingClientRect();if(r.bottom<0||r.top>innerHeight){closeMenu();return;}const width=Math.min((compactExport||chartControl)?r.width:Math.max(r.width,activeSelect.id==='pageSizeSelect'?64:mobileSort?180:200),innerWidth-16),below=innerHeight-r.bottom-12,above=r.top-12,up=below<160&&above>below,max=Math.max(80,Math.min(300,up?above:below));menu.style.width=width+'px';menu.style.maxHeight=max+'px';menu.style.left=Math.max(8,Math.min(r.left,innerWidth-width-8))+'px';menu.style.top=(up?Math.max(8,r.top-Math.min(menu.scrollHeight,max)-4):r.bottom+4)+'px';}
+ function positionMenu(){if(!menu||!activeSelect)return;if(activeSelect.hasAttribute('data-vehicle-select')){positionVehicleMenu();return;}const mobileSort=activeSelect.closest('.axis-mobile-sort')&&matchMedia('(max-width:767px), (max-width:1024px) and (pointer:coarse)').matches;const chartControl=activeSelect.closest('.axis-chart-actions91');const compactExport=activeSelect.id==='exportFormat';const pageSizeControl=activeSelect.hasAttribute('data-list-size')?activeSelect.closest('label'):activeSelect.id==='pageSizeSelect'&&matchMedia('(max-width:767px), (max-width:1024px) and (pointer:coarse)').matches?activeSelect.closest('.page-size-selector'):null;const anchor=pageSizeControl||(compactExport?(activeSelect.closest('.export-container')||activeSelect):activeSelect);const r=anchor.getBoundingClientRect();if(r.bottom<0||r.top>innerHeight){closeMenu();return;}const width=Math.min((pageSizeControl||compactExport||chartControl)?r.width:Math.max(r.width,activeSelect.id==='pageSizeSelect'?64:mobileSort?180:200),innerWidth-16),below=innerHeight-r.bottom-12,above=r.top-12,up=below<160&&above>below,max=Math.max(80,Math.min(300,up?above:below));if(mobileSort)menu.style.setProperty('--axis-sort-available',max+'px');menu.style.width=width+'px';menu.style.maxHeight=max+'px';menu.style.left=Math.max(8,Math.min(r.left,innerWidth-width-8))+'px';menu.style.top=(up?Math.max(8,r.top-(mobileSort?menu.getBoundingClientRect().height:Math.min(menu.scrollHeight,max))-4):r.bottom+4)+'px';}
  function openMenu(select){if(select.disabled)return;if(activeSelect===select){closeMenu();return;}closeMenu();activeSelect=select;menu=document.createElement('div');menu.className='app-select-menu'+(select.hasAttribute('data-vehicle-select')?' vehicle-brand-menu':'');if(select.id==='referenceDashboardVehicle')menu.classList.add('dashboard-vehicle-menu');if(select.closest('.axis-mobile-sort'))menu.classList.add('axis-sort-menu88');if(select.closest('.axis-chart-actions91'))menu.classList.add('axis-chart-menu92');menu.setAttribute('role','listbox');menu.setAttribute('aria-label',select.getAttribute('aria-label')||document.querySelector('label[for="'+select.id+'"]')?.textContent||'Select option');select.setAttribute('aria-expanded','true');
  for(const option of select.options){if(option.hidden)continue;const row=document.createElement('button');row.type='button';row.setAttribute('role','option');row.setAttribute('aria-selected',String(option.selected));row.textContent=option.label;if(select.hasAttribute('data-vehicle-select')||select.dataset.brandArtwork){const artwork=VehicleBrand.forOption(option,!!select.dataset.brandArtwork);if(artwork){row.classList.add('vehicle-brand-option');row.insertAdjacentHTML('afterbegin',artwork);}}row.disabled=option.disabled||option.parentElement.disabled===true;row.addEventListener('click',()=>{if(select.disabled)return;const changed=select.selectedIndex!==option.index;select.selectedIndex=option.index;if(changed)select.dispatchEvent(new Event('change',{bubbles:true}));closeMenu(true);});menu.appendChild(row);}
  let search=null;
@@ -10509,7 +10588,7 @@ html.workspace-design[data-appearance] #requiredCloudLoginGate #axisPasswordVisi
 #invoiceWarningDropdownContent .invoice-panel-icon{width:56px;height:46px;min-width:56px;color:#fbbf24}
 #invoiceWarningDropdownContent h2{margin:0;font:700 20px/1.4 Arial,sans-serif}
 #invoiceWarningDashboard #invoiceWarningSummary{margin:0 0 16px 70px}
-#invoiceWarningDashboard #invoiceWarningList{max-height:300px}
+#invoiceWarningDashboard #invoiceWarningList{max-height:none}
 @media screen{#invoiceWarningDashboard.expanded>.warning-dropdown-toggle{z-index:85}}
 </style>
 <script>
@@ -11554,36 +11633,17 @@ function deliveryConfirmChanges(){if(deliveryConfirmOpen)return Promise.resolve(
 async function save(){if(busy||deliveryConfirmOpen||viewMode||!(selected?.revision?canEdit:canAdd))return;if(editActor!==window.fuelHeaderAccount?.id){$('deliveryEditorError').textContent='Account changed. Close and reopen this form.';return;}collect();const form=$('deliveryForm');for(const s of form.querySelectorAll('[data-delivery-form-section]'))s.hidden=false;if(!form.reportValidity())return;const before=JSON.stringify(selected.data),after=JSON.stringify(draft);if(before===after||(selected.revision&&!deliveryChanges(selected.data,draft).length)){message('No changes to save.');return;}if(selected.revision){const reason=await deliveryConfirmChanges();if(reason===null)return;if(editActor!==window.fuelHeaderAccount?.id){$('deliveryEditorError').textContent='Account changed. Reopen this entry.';return;}$('deliveryEditReason').value=reason;}busy=true;$('deliverySave').disabled=true;try{const result=await api('save',{id:selected.id,kind:selected.kind,revision:selected.revision,data:draft,reason:$('deliveryEditReason').value.trim(),context:deliveryAuditContext()});$('deliveryEditor').close();busy=false;await refresh();message(number(result.entity)+' saved and server confirmed.');}catch(e){$('deliveryEditorError').textContent=e.message;}finally{busy=false;$('deliverySave').disabled=false;}}
 function filtered(){const destination=$('deliveryDestinationFilter')?.value||'',place=deliveryPlaces().find(p=>p.id===destination);const q=$('deliverySearch').value.toLowerCase(),status=$('deliveryStatusFilter').value,from=$('deliveryFromDate').value,to=$('deliveryToDate').value,driver=$('deliveryDriverFilter').value,vehicle=$('deliveryVehicleFilter').value;return orders().filter(e=>(!destination||e.data.destinationPlace?.id===destination||e.data.destination===destination||e.data.destination===place?.name||e.data.destination=== (place&&deliveryPlaceLabel(place)))&&(!status||e.data.status===status)&&(!from||e.data.date>=from)&&(!to||e.data.date<=to)&&(!driver||e.data.driver===driver)&&(!vehicle||e.data.vehicle===vehicle)&&[number(e),e.data.salesOrder,e.data.customer,e.data.destination,e.data.driver,e.data.driverPhone,e.data.vehicle,e.data.phone,e.data.invoice,e.data.deliveryNote,e.data.destinationAddress].join(' ').toLowerCase().includes(q));}
 function filteredDeliveryTrips(){const q=$('deliverySearch').value.toLowerCase(),driver=$('deliveryDriverFilter').value,vehicle=$('deliveryVehicleFilter').value,from=$('deliveryFromDate').value,to=$('deliveryToDate').value,status=$('deliveryStatusFilter').value,destination=$('deliveryDestinationFilter').value,place=deliveryPlaces().find(p=>p.id===destination);return trips().filter(t=>{const linked=orders().filter(o=>o.data.tripIds.includes(t.id));return (!driver||t.data.driver===driver)&&(!vehicle||t.data.vehicle===vehicle)&&(!from||t.data.date>=from)&&(!to||t.data.date<=to)&&(!status||linked.some(o=>o.data.status===status))&&(!destination||linked.some(o=>o.data.destinationPlace?.id===destination||o.data.destination===destination||o.data.destination===place?.name||o.data.destination===(place&&deliveryPlaceLabel(place))))&&[number(t),t.data.route,t.data.driver,t.data.driverPhone,t.data.vehicle,...linked.flatMap(o=>[o.data.salesOrder,o.data.invoice,o.data.deliveryNote,o.data.customer,o.data.destination])].join(' ').toLowerCase().includes(q);});}
-function confirmDeliveryDelete(order){
- if(deliveryConfirmOpen)return Promise.resolve(false);
- deliveryConfirmOpen=true;
- const dialog=document.createElement('dialog');
- dialog.id='deliveryConfirm';
- dialog.className='delivery-dialog delivery-confirm delivery-delete-confirm';
- dialog.setAttribute('aria-labelledby','deliveryDeleteTitle');
- dialog.setAttribute('aria-describedby','deliveryDeleteDescription');
- dialog.innerHTML='<form method="dialog"><header class="audit-dialog-header">'+icon('trash')+
-  '<h2 id="deliveryDeleteTitle">Delete delivery order?</h2></header>'+
-  '<div class="audit-dialog-body"><p id="deliveryDeleteDescription">Order <strong>'+esc(number(order))+
-  '</strong> will be removed from the active list. Its history will be kept.</p></div>'+
-  '<footer class="audit-dialog-footer"><button class="audit-button" value="cancel" autofocus>Cancel</button>'+
-  '<button class="audit-button delivery-delete-confirm-action" value="delete">Delete order</button></footer></form>';
- document.body.append(dialog);
- return new Promise(resolve=>{
-  dialog.addEventListener('close',()=>{
-   deliveryConfirmOpen=false;
-   dialog.remove();
-   resolve(dialog.returnValue==='delete');
-  },{once:true});
-  dialog.showModal();
- });
-}
-
 async function deleteDelivery(id){
  const order=entities.find(item=>item.id===id && item.kind==='order');
  const actor=window.fuelHeaderAccount?.id;
  if(busy||!canDelete||!actor||actor!==account||!order)return;
- if(!await confirmDeliveryDelete(order))return;
+ if(deliveryConfirmOpen)return;
+ deliveryConfirmOpen=true;
+ let confirmed;
+ try {
+  confirmed=await confirmRecordDeletion({title:'Delete delivery order?',reference:'Order '+number(order),description:'This order will be removed from the active list. Its history will be kept.',action:'Delete order'});
+ }finally{deliveryConfirmOpen=false;}
+ if(!confirmed)return;
  if(busy||!canDelete||actor!==account||actor!==window.fuelHeaderAccount?.id)return;
  busy=true;
  try{
@@ -11596,10 +11656,25 @@ async function deleteDelivery(id){
  }
  if(actor===window.fuelHeaderAccount?.id)await refresh();
 }
-function buttons(e){return '<button data-view="'+e.id+'">View</button><button data-history="'+e.id+'" title="Audit History">◷ History</button>'+(canEdit?'<button data-edit="'+e.id+'">Edit</button>':'')+(e.kind==='order'&&canDelete?'<button type="button" data-delete="'+e.id+'">Delete order</button>':'')+(e.data.proofPath?'<button data-proof="'+e.id+'">Proof</button>':'')+(e.kind==='order'&&e.data.fuelRecordId&&e.data.feeDue>0&&total(e.data,'Delivery fee')>=e.data.feeDue?'<button data-fuel-apply="'+e.id+'">Use fee in Fuel</button>':'');}
+const deliveryPager={page:1,size:'5'};
+function deliveryPagination(count){
+ return renderListPager(deliveryPager,count,'deliveries','Delivery pages');
+}
+function deliveryWhatsAppPhone(order){
+ const phone=String(order.data.driverPhone||deliveryDrivers().find(([name])=>name===order.data.driver)?.[1]||'').replace(/[^0-9]/g,'').replace(/^00/,'');
+ return /^[279][0-9]{7}$/.test(phone)?'968'+phone:/^[1-9][0-9]{8,14}$/.test(phone)?phone:'';
+}
+function openDeliveryWhatsApp(id){
+ const order=entities.find(item=>item.id===id&&item.kind==='order');
+ const phone=order&&deliveryWhatsAppPhone(order);
+ if(!phone)return;
+ const message='Delivery '+number(order)+' · '+order.data.status;
+ window.open('https://api.whatsapp.com/send?'+new URLSearchParams({phone,text:message}),'_blank','noopener');
+}
+function buttons(e){return '<button data-view="'+e.id+'">View</button><button data-history="'+e.id+'" title="Audit History">◷ History</button>'+(canEdit?'<button data-edit="'+e.id+'">Edit</button>':'')+(e.kind==='order'&&canDelete?'<button type="button" data-delete="'+e.id+'">Delete order</button>':'')+(e.kind==='order'&&deliveryWhatsAppPhone(e)?'<button type="button" class="btn-icon btn-icon-wa delivery-desktop-whatsapp" data-delivery-whatsapp="'+e.id+'" aria-label="WhatsApp driver" title="WhatsApp driver">'+iconWhatsApp+'</button>':'')+(e.data.proofPath?'<button data-proof="'+e.id+'">Proof</button>':'')+(e.kind==='order'&&e.data.fuelRecordId&&e.data.feeDue>0&&total(e.data,'Delivery fee')>=e.data.feeDue?'<button data-fuel-apply="'+e.id+'">Use fee in Fuel</button>':'');}
 function render(){if(!$('deliveryContent'))return;$('deliveryTabs').innerHTML=tabs.map(t=>'<button data-delivery-tab="'+t+'" aria-selected="'+(t===tab)+'" aria-pressed="'+(t===tab)+'">'+icon(tabIcons[t])+'<span>'+t+'</span></button>').join('');$('deliveryNewOrder').disabled=!canAdd;$('deliveryNewTrip').disabled=!canAdd;for(const [id,key] of [['deliveryDriverFilter','driver'],['deliveryVehicleFilter','vehicle'],['deliveryDestinationFilter','destination']]){const el=$(id),value=el.value;el.innerHTML=deliveryOptions(key,value,true);el.value=value;el.dispatchEvent(new Event('delivery-options'));}const list=filtered();let html='';
-if(tab==='Overview'){const all=orders(),due=all.reduce((s,e)=>s+e.data.feeDue-total(e.data,'Delivery fee'),0);html='<div class="delivery-kpis">'+[['Pending',all.filter(e=>['Pending','Scheduled'].includes(e.data.status)).length],['In Transit',all.filter(e=>e.data.status==='In Transit').length],['Delivered',all.filter(e=>e.data.status==='Delivered').length],['Delivery fees outstanding',fmt(due)+' OMR']].map(([label,v])=>'<div><span>'+label+'</span><strong>'+v+'</strong></div>').join('')+'</div><p>Plan deliveries, link orders to trips, record payments separately and track proof of delivery. No records are imported automatically.</p>';}
-if(tab==='Overview'||tab==='Delivery Orders')html+='<div class="delivery-table-scroll"><table><thead><tr><th>Delivery</th><th>Sales Order</th><th>Customer / Area</th><th>Driver Name</th><th>Driver Phone</th><th>Vehicle</th><th>Status</th><th>Delivery fee</th><th>Paid</th><th>Actions</th></tr></thead><tbody>'+list.map(e=>'<tr><td>'+number(e)+'</td><td>'+esc(e.data.salesOrder)+'</td><td>'+esc(e.data.customer)+'<small>'+esc(e.data.destination)+'</small></td><td>'+esc(e.data.driver)+'</td><td class="delivery-driver-phone">'+esc(e.data.driverPhone||deliveryDrivers().find(([n])=>n===e.data.driver)?.[1]||'')+'</td><td>'+VehicleBrand.label(e.data.vehicle,{brand:e.data.vehicleBrand,chosenIcon:e.data.vehicleIcon,delivery:true})+'</td><td>'+esc(e.data.status)+'</td><td>'+fmt(e.data.feeDue)+'</td><td>'+fmt(total(e.data,'Delivery fee'))+'</td><td>'+buttons(e)+'</td></tr>').join('')+'</tbody></table></div>';
+if(tab==='Overview'){const all=orders(),due=all.reduce((s,e)=>s+e.data.feeDue-total(e.data,'Delivery fee'),0);html='<div class="delivery-kpis">'+[['Pending',all.filter(e=>['Pending','Scheduled'].includes(e.data.status)).length],['In Transit',all.filter(e=>e.data.status==='In Transit').length],['Delivered',all.filter(e=>e.data.status==='Delivered').length],['Delivery fees outstanding',fmt(due)+' OMR']].map(([label,v])=>'<div><span>'+label+'</span><strong>'+v+'</strong></div>').join('')+'</div><p class="axis-delivery-overview-note">Plan deliveries, link orders to trips, record payments separately and track proof of delivery. No records are imported automatically.</p>';}
+if(tab==='Overview'||tab==='Delivery Orders'){const pager=deliveryPagination(list.length);const {start,end}=listPage(deliveryPager,list.length);html+='<div class="delivery-orders-frame"><div class="delivery-table-scroll"><table><thead><tr><th>Delivery</th><th>Sales Order</th><th>Customer / Area</th><th>Driver Name</th><th>Driver Phone</th><th>Vehicle</th><th>Status</th><th>Delivery fee</th><th>Paid</th><th>Actions</th></tr></thead><tbody>'+list.slice(start,end).map(e=>'<tr><td>'+number(e)+'</td><td>'+esc(e.data.salesOrder)+'</td><td>'+esc(e.data.customer)+'<small>'+esc(e.data.destination)+'</small></td><td>'+esc(e.data.driver)+'</td><td class="delivery-driver-phone">'+esc(e.data.driverPhone||deliveryDrivers().find(([n])=>n===e.data.driver)?.[1]||'')+'</td><td>'+VehicleBrand.label(e.data.vehicle,{brand:e.data.vehicleBrand,chosenIcon:e.data.vehicleIcon,delivery:true})+'</td><td><span class="axis-record-status" data-status="'+esc(String(e.data.status||'').toLowerCase().replace(/\s+/g,'-'))+'">'+esc(e.data.status)+'</span></td><td>'+fmt(e.data.feeDue)+'</td><td>'+fmt(total(e.data,'Delivery fee'))+'</td><td>'+buttons(e)+'</td></tr>').join('')+'</tbody></table></div>'+pager+'</div>';}
 if(tab==='Trip Planning')html='<div class="delivery-table-scroll"><table><thead><tr><th>Trip</th><th>Date</th><th>Driver Name</th><th>Driver Phone</th><th>Vehicle</th><th>Route</th><th>Deliveries</th><th>Actions</th></tr></thead><tbody>'+filteredDeliveryTrips().map(e=>'<tr><td>'+number(e)+'</td><td>'+esc(deliveryDate(e.data.date))+'</td><td>'+esc(e.data.driver)+'</td><td class="delivery-driver-phone">'+esc(e.data.driverPhone||deliveryDrivers().find(([n])=>n===e.data.driver)?.[1]||'')+'</td><td>'+VehicleBrand.label(e.data.vehicle,{brand:e.data.vehicleBrand,chosenIcon:e.data.vehicleIcon,delivery:true})+'</td><td>'+esc(e.data.route)+'</td><td>'+orders().filter(o=>o.data.tripIds.includes(e.id)).map(number).join(', ')+'</td><td>'+buttons(e)+'</td></tr>').join('')+'</tbody></table></div>';
 if(tab==='Collections & Settlements')html='<div class="delivery-table-scroll"><table><thead><tr><th>Delivery</th><th>Category</th><th>Reference</th><th>Method</th><th>Amount</th><th>Finance handover</th><th>Actions</th></tr></thead><tbody>'+list.flatMap(e=>e.data.payments.map(p=>'<tr><td>'+number(e)+'</td><td>'+esc(p.category)+'</td><td>'+esc(p.reference)+'</td><td>'+esc(p.method)+'</td><td>'+fmt(p.amount)+'</td><td>'+(p.method!=='Cash'?'Not applicable':p.settled?'Handed over':'With driver')+'</td><td>'+buttons(e)+'</td></tr>')).join('')+'</tbody></table></div>';
 if(tab==='Reports'){const sum=(k)=>list.reduce((s,e)=>s+Number(e.data[k]||0),0);const paid=cat=>list.reduce((s,e)=>s+total(e.data,cat),0);html='<h3>Filtered delivery totals</h3><div class="delivery-kpis">'+[['Goods due',sum('goodsDue')],['Goods paid',paid('Goods')],['Delivery fees due',sum('feeDue')],['Delivery fees paid',paid('Delivery fee')]].map(([k,v])=>'<div>'+k+'<strong>'+fmt(v)+' OMR</strong></div>').join('')+'</div><p>'+list.length+' deliveries match the current search and status filter. Export uses this same selection.</p>';}
@@ -11641,7 +11716,12 @@ function deliveryExportAuthorized(format){
 };
 function mount(){const nav=document.createElement('nav');nav.id='platformModules';nav.className='record-design-switch';nav.setAttribute('aria-label','Platform modules');nav.innerHTML=[['fuel','Fuel Consumption'],['delivery','Delivery Management'],['analysis','Fleet Analysis']].map(([k,t])=>'<button data-platform-module="'+k+'" aria-selected="'+(k==='fuel')+'" aria-pressed="'+(k==='fuel')+'">'+moduleDockIcon(k)+'<span>'+t+'</span></button>').join('')+'';document.querySelector('.container>header').after(nav);const panel=document.createElement('section');panel.id='deliveryModule';panel.className='panel';panel.innerHTML='<div class="delivery-heading"><h2 class="panel-title">'+icon('truck')+'Delivery Management</h2><div><button id="deliveryNewOrder">+ New Delivery</button><button id="deliveryNewTrip">+ New Trip</button><button id="deliveryExport">Export CSV</button><button id="deliveryRefresh">Refresh</button></div></div><div id="deliveryTabs" class="record-design-switch" role="tablist"></div><p id="deliveryMessage" role="status"></p><div class="delivery-filters"><input id="deliverySearch" placeholder="Search delivery, order, customer, driver…"><select id="deliveryStatusFilter"><option value="">All statuses</option>'+['Pending','Scheduled','In Transit','Delivered','Delayed','Cancelled'].map(x=>'<option>'+x+'</option>').join('')+'</select><select id="deliveryDriverFilter" data-delivery-picker="driver" aria-label="Driver filter"><option value="">All drivers</option></select><select id="deliveryVehicleFilter" data-delivery-picker="vehicle" aria-label="Vehicle filter"><option value="">All vehicles</option></select><select id="deliveryDestinationFilter" data-delivery-picker="destination" aria-label="Destination filter"><option value="">All Destinations</option></select><label>From<input id="deliveryFromDate" type="date"></label><label>To<input id="deliveryToDate" type="date"></label></div><div id="deliveryContent"></div>';nav.after(panel);for(const [id,name] of [['deliveryNewOrder','plus'],['deliveryNewTrip','route'],['deliveryExport','download'],['deliveryRefresh','refresh']]){const b=$(id);b.innerHTML=icon(name)+'<span>'+b.textContent.replace('+ ','')+'</span>';}const filters=panel.querySelector('.delivery-filters');filters.classList.add('filter-bar-container');for(const [id,title] of [['deliverySearch','Advanced Search'],['deliveryStatusFilter','Delivery Status'],['deliveryDriverFilter','Driver Filter'],['deliveryVehicleFilter','Vehicle Filter'],['deliveryDestinationFilter','Location / Destination'],['deliveryFromDate','From Date'],['deliveryToDate','To Date']]){const control=$(id),oldLabel=control.parentElement.tagName==='LABEL'?control.parentElement:null,group=document.createElement('div'),label=document.createElement('label');group.className='filter-item';label.htmlFor=id;label.textContent=title;if(oldLabel)oldLabel.replaceWith(group);else control.before(group);group.append(label,control);}const clear=document.createElement('button');clear.id='deliveryClear';clear.className='btn-clear-filters';clear.textContent='Clear Filters';clear.onclick=()=>{for(const id of ['deliverySearch','deliveryStatusFilter','deliveryDriverFilter','deliveryVehicleFilter','deliveryDestinationFilter','deliveryFromDate','deliveryToDate'])$(id).value='';for(const id of ['deliveryFromDate','deliveryToDate'])$(id).dispatchEvent(new Event('change',{bubbles:true}));render();};filters.append(clear);present(panel);document.body.insertAdjacentHTML('beforeend','<dialog id="deliveryEditor" class="delivery-dialog"><form id="deliveryForm" novalidate><header class="form-panel-title"><h2 id="deliveryEditorTitle"></h2><button type="button" id="deliveryClose" class="close-modal-x" aria-label="Close">×</button></header><div class="record-form-scroll"><div id="deliveryEditorBody"></div><label id="deliveryReasonLabel">Reason for change<textarea class="form-control" id="deliveryEditReason" maxlength="500"></textarea></label><p id="deliveryEditorError" role="alert"></p></div><footer class="btn-group-form"><button type="submit" id="deliverySave" class="btn">'+icon('save')+'Save & Confirm</button><button type="button" id="deliveryCancel" class="btn btn-cancel">Cancel</button></footer></form></dialog><dialog id="deliveryHistory" class="delivery-dialog"><header class="audit-dialog-header">'+icon('history')+'<div><h2>Delivery Audit History</h2><p class="audit-record-meta" id="deliveryHistoryRecord"></p><p class="audit-subtitle">Visible to all users · Read only</p></div><button id="deliveryHistoryClose" class="audit-x" aria-label="Close">×</button></header><div id="deliveryHistoryBody" class="audit-dialog-body"></div><footer class="audit-dialog-footer"><span class="audit-confirmed" id="deliveryHistoryStatus"></span><div class="delivery-history-actions"><button id="deliveryHistoryPrev" class="audit-button">Newer</button><button id="deliveryHistoryNext" class="audit-button">Older</button><button id="deliveryHistoryDone" class="audit-button">Close</button></div></footer></dialog>');document.body.dataset.activeModule='fuel';
 nav.onclick=e=>{const b=e.target.closest('[data-platform-module]');if(b)module(b.dataset.platformModule);};$('deliveryTabs').onclick=e=>{const b=e.target.closest('[data-delivery-tab]');if(b){tab=b.dataset.deliveryTab;render();}};$('deliverySearch').oninput=render;$('deliveryStatusFilter').onchange=render;for(const id of ['deliveryFromDate','deliveryToDate','deliveryDriverFilter','deliveryVehicleFilter','deliveryDestinationFilter'])$(id).onchange=render;$('deliveryNewOrder').onclick=()=>edit();$('deliveryNewTrip').onclick=()=>edit(null,'trip');$('deliveryRefresh').onclick=refresh;$('deliveryExport').onclick=exportCsv;$('deliveryClose').onclick=$('deliveryCancel').onclick=()=>{if(!busy)$('deliveryEditor').close();};$('deliveryForm').onsubmit=e=>{e.preventDefault();save();};$('deliveryEditor').addEventListener('close',()=>{if(!$('deliveryEditor').open){draft=null;selected=null;}});document.addEventListener('pointerdown',e=>{for(const p of document.querySelectorAll('.delivery-master-picker'))if(!p.contains(e.target)){p.querySelector('.delivery-master-options').hidden=true;p.querySelector('.delivery-master-selected').setAttribute('aria-expanded','false');}});$('deliveryEditor').addEventListener('cancel',e=>{if(busy)e.preventDefault();});$('deliveryHistoryClose').onclick=$('deliveryHistoryDone').onclick=()=>$('deliveryHistory').close();$('deliveryHistoryPrev').onclick=()=>history(historyId,Math.max(0,historyOffset-50));$('deliveryHistoryNext').onclick=()=>history(historyId,historyOffset+50);
-$('deliveryContent').onclick=e=>{const b=e.target.closest('button');if(!b)return;if(b.dataset.view)edit(b.dataset.view,'order',true);else if(b.dataset.history)history(b.dataset.history);else if(b.dataset.edit)edit(b.dataset.edit);else if(b.dataset.delete)deleteDelivery(b.dataset.delete);else if(b.dataset.proof)proof(b.dataset.proof);else if(b.dataset.fuelApply)applyFuel(b.dataset.fuelApply);};
+$('deliveryContent').onchange=e=>{
+ if(!e.target.matches('[data-list-size]'))return;
+ deliveryPager.size=e.target.value;deliveryPager.page=1;render();
+ $('deliveryContent').querySelector('[data-list-size]')?.focus({preventScroll:true});
+};
+$('deliveryContent').onclick=e=>{const b=e.target.closest('button');if(!b)return;if(b.dataset.listPage&&!b.disabled){deliveryPager.page=Number(b.dataset.listPage);render();$('deliveryContent').querySelector('[aria-current="page"]')?.focus({preventScroll:true});}else if(b.dataset.view)edit(b.dataset.view,'order',true);else if(b.dataset.history)history(b.dataset.history);else if(b.dataset.edit)edit(b.dataset.edit);else if(b.dataset.delete)deleteDelivery(b.dataset.delete);else if(b.dataset.deliveryWhatsapp)openDeliveryWhatsApp(b.dataset.deliveryWhatsapp);else if(b.dataset.proof)proof(b.dataset.proof);else if(b.dataset.fuelApply)applyFuel(b.dataset.fuelApply);};
 $('deliveryForm').onclick=e=>{const b=e.target.closest('button');if(!b)return;if(b.dataset.deliverySection!==undefined){collect();document.querySelectorAll('[data-delivery-section]').forEach(x=>x.setAttribute('aria-current',String(x===b)));if(deliveryDesktopSections.matches){if(b.dataset.deliverySection==='2')balance();scrollDeliverySection(b.dataset.deliverySection);}else{document.querySelectorAll('[data-delivery-form-section]').forEach(x=>x.hidden=x.dataset.deliveryFormSection!==b.dataset.deliverySection);if(b.dataset.deliverySection==='2')balance();}}else if(b.id==='addDeliveryPayment'){collect();const amount=Number($('payAmount').value),reference=$('payReference').value.trim();if(!amount||amount<0.001||!reference){$('deliveryEditorError').textContent='Enter a positive payment and reference.';return;}draft.payments.push({category:$('payCategory').value,amount,reference,method:$('payMethod').value,date:date(),settled:false});editor();document.querySelector('[data-delivery-section="2"]').click();}else if(b.dataset.removePayment!==undefined){collect();draft.payments.splice(Number(b.dataset.removePayment),1);editor();document.querySelector('[data-delivery-section="2"]').click();}else if(b.id==='deliveryProofOpen')proof(selected.id);};
 $('deliveryEditorBody').onchange=async e=>{if(e.target.dataset.settlement!==undefined)draft.payments[Number(e.target.dataset.settlement)].settled=e.target.checked;if(e.target.id==='deliveryProofFile'&&e.target.files[0]){const file=e.target.files[0];if(file.size>1048576){$('deliveryProofStatus').textContent='Maximum size is 1 MB.';e.target.value='';return;}busy=true;$('deliverySave').disabled=true;try{const content=await new Promise((resolve,reject)=>{const r=new FileReader();r.onload=()=>resolve(r.result);r.onerror=reject;r.readAsDataURL(file);});const r=await api('proofUpload',{id:selected.id,mime:file.type,base64:content.split(',')[1]});draft.proofPath=r.path;$('deliveryProofStatus').textContent='Uploaded privately. Save the record to attach.';}catch(err){$('deliveryProofStatus').textContent=err.message;}finally{busy=false;$('deliverySave').disabled=false;}}};render();setInterval(()=>{if((active||document.body.dataset.workspacePage==='dashboard')&&window.fuelHeaderAccount?.id&&!$('deliveryEditor').open&&!$('deliveryHistory').open)refresh();},5000);}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',mount);else mount();
@@ -12883,7 +12963,14 @@ function mount(){
  $('workspaceSettings').addEventListener('toggle',e=>{if(!e.target.open&&syncToggle?.getAttribute('aria-expanded')==='true')window.closeFuelHeaderMenus?.();});
  const search=generated(document.createElement('form'));search.id='workspaceSearch';search.setAttribute('role','search');search.innerHTML='<label for="workspaceSearchInput">'+icon('search')+'</label><input id="workspaceSearchInput" type="search" placeholder="Search…" aria-label="Search fuel records"><button type="submit" aria-label="Search records">'+icon('arrow')+'</button>';header.insertBefore(search,header.querySelector('.header-right'));search.onsubmit=e=>{e.preventDefault();navigate('fuel');$('filterSearch').value=$('workspaceSearchInput').value;filterAndRender();$('recordLogsPanel')?.scrollIntoView({block:'start'});};
  const status=generated(document.createElement('span'));status.id='workspaceAccountStatus';status.setAttribute('role','status');header.querySelector('.fuel-header-user-text').append(status);const source=$('cloudStatus');const updateStatus=()=>{status.textContent=source.textContent;status.dataset.syncState=source.dataset.syncState||(source.textContent.trim()==='Connected & Synced'?'synced':'pending');};new MutationObserver(updateStatus).observe(source,{subtree:true,childList:true,characterData:true,attributes:true,attributeFilter:['data-sync-state']});updateStatus();
- const heading=generated(document.createElement('section'));heading.id='workspacePageHeading';heading.innerHTML='<div><h2 id="workspacePageTitle">Dashboard</h2><p id="workspacePageDescription">'+descriptions.dashboard+'</p></div>';modules.after(heading);move(header.querySelector('.actions-bar'),heading,'fuel-actions');
+ const heading=generated(document.createElement('section'));heading.id='workspacePageHeading';heading.innerHTML='<div><h2 id="workspacePageTitle">Dashboard</h2><p id="workspacePageDescription">'+descriptions.dashboard+'</p></div>';for (const page of ['fuel', 'delivery']) {
+  const badge=document.createElement('span');
+  badge.className='axis-module-heading-icon';
+  badge.dataset.moduleIcon=page;
+  badge.innerHTML=icon(page);
+  heading.firstElementChild.append(badge);
+ }
+ modules.after(heading);move(header.querySelector('.actions-bar'),heading,'fuel-actions');
  for(const [selector,name,label] of [['.btn-add-record-main','plus','New Record'],['.btn-save','save','Save'],['.btn-export','export','Export'],['.btn-upload','import','Import']]){
   decorate(heading.querySelector(selector),icon(name)+'<span>'+label+'</span>');
  }
@@ -13641,11 +13728,15 @@ html.workspace-design .container>header .ref-brand-name{text-transform:none}
  }
  function controlsFor(cell,actions){
   for(const source of cell.querySelectorAll('button,a,input[type="checkbox"]')){
-   if(source.hidden||source.style.display==='none')continue;
+   if(source.hidden||source.style.display==='none'||source.classList.contains('fuel-desktop-view')||source.classList.contains('delivery-desktop-whatsapp'))continue;
    if(source.matches('input')){
     const label=make('label'),copy=make('input');copy.type='checkbox';copy.checked=source.checked;copy.disabled=source.disabled;copy.setAttribute('aria-label',source.getAttribute('aria-label')||'Settled');copy.addEventListener('change',()=>{if(source.isConnected&&!source.disabled&&copy.checked!==source.checked)source.click();copy.checked=source.checked;});label.append(copy,document.createTextNode(' '+(source.getAttribute('aria-label')||'Settled')));actions.append(label);continue;
    }
-   const b=make('button','',source.getAttribute('aria-label')||source.title||source.textContent.trim()||'Open');b.type='button';b.disabled=source.disabled||source.getAttribute('aria-disabled')==='true';b.addEventListener('click',()=>{if(source.isConnected&&!source.disabled&&source.getAttribute('aria-disabled')!=='true'){source.click();sync();}});if(source.matches('[data-close-record-details]'))b.classList.add('axis-close-record-details');if(source.matches('[data-delete]')){
+   const b=make('button','',source.getAttribute('aria-label')||source.title||source.textContent.trim()||'Open');b.type='button';b.disabled=source.disabled||source.getAttribute('aria-disabled')==='true';b.addEventListener('click',()=>{if(source.isConnected&&!source.disabled&&source.getAttribute('aria-disabled')!=='true'){source.click();sync();}});if(source.closest('.delivery-orders-frame')&&source.matches('[data-view],[data-history],[data-edit]')){
+    const action=source.hasAttribute('data-view')?'view':source.hasAttribute('data-history')?'history':'edit';
+    b.classList.add('axis-delivery-'+action+'-action');
+    const glyph=source.querySelector('svg');if(glyph)b.prepend(glyph.cloneNode(true));
+   }if(source.matches('[data-close-record-details]'))b.classList.add('axis-close-record-details');if(source.matches('[data-delete]')){
     b.classList.add('btn-icon','btn-icon-delete','axis-delivery-delete-action');
     const glyph=source.querySelector('svg');
     if(glyph)b.prepend(glyph.cloneNode(true));
@@ -13662,14 +13753,21 @@ html.workspace-design .container>header .ref-brand-name{text-transform:none}
   const sourceSignature=table.innerHTML;
   if(view._axisSourceSignature===sourceSignature)return;
   const openRows=new Set([...view.querySelectorAll('details[open]')].map(el=>el.dataset.row));
-  const oldFocus=view.contains(document.activeElement)?document.activeElement:null;
+  const toolbar=table.closest('#recordDesignTable')?.querySelector('#axisFuelRecordsToolbar');
+  const oldFocus=(view.contains(document.activeElement)||toolbar?.querySelector('.axis-mobile-sort')?.contains(document.activeElement))?document.activeElement:null;
   // Preserve an in-progress interaction; the next data refresh will update the card.
   if(oldFocus&&oldFocus.matches('input,select'))return;
   const frag=document.createDocumentFragment();const headers=[...(table.tHead?.rows[0]?.cells||[])];
   if(table.closest('#recordDesignTable')){
    const bar=make('div','axis-mobile-only axis-mobile-sort'),select=make('select');select.setAttribute('aria-label','Sort fuel records');
    headers.filter(h=>h.classList.contains('sortable')).forEach((h,i)=>{const option=make('option','',h.textContent.replace(/[▲▼⇅]/g,'').trim());option.value=String(headers.indexOf(h));option.selected=/sort-(asc|desc)/.test(h.className);select.append(option);});
-   const apply=make('button','','Sort / reverse');apply.type='button';apply.addEventListener('click',()=>headers[Number(select.value)]?.click());select.addEventListener('change',()=>headers[Number(select.value)]?.click());bar.append(select,apply);frag.append(bar);
+   const apply=make('button','','Sort / reverse');apply.type='button';apply.addEventListener('click',()=>headers[Number(select.value)]?.click());select.addEventListener('change',()=>headers[Number(select.value)]?.click());bar.append(select,apply);
+   const controls=toolbar||generated(make('div','axis-mobile-only'));
+   if(!toolbar){controls.id='axisFuelRecordsToolbar';view.before(controls);}
+   const search=document.getElementById('axisFuelSearch');
+   if(search&&search.parentNode!==controls)controls.prepend(search);
+   const oldBar=controls.querySelector('.axis-mobile-sort');
+   if(oldBar)oldBar.replaceWith(bar);else controls.append(bar);
   }
   const rows=[...table.tBodies].flatMap(body=>[...body.rows]);
   rows.forEach((row,index)=>{
@@ -14039,6 +14137,8 @@ html.workspace-design .container>header .ref-brand-name{text-transform:none}
   const stats=container.querySelector(':scope>.kpi-grid'),charts=container.querySelector(':scope>.main-grid');
   const analytics=disclosure(container,'axisFuelAnalytics','Fuel statistics & charts');move(stats,analytics);move(charts,analytics);
   filters(logs,'filterSearch','axisFuelSearch');
+  const toolbar=$('axisFuelRecordsToolbar'),search=$('axisFuelSearch');
+  if(toolbar&&search)toolbar.prepend(search);
   const controls=disclosure(logs,'axisFuelViewOptions','View & column options');
   move(logs.querySelector(':scope>.record-design-heading'),controls);
   const title=logs.querySelector(':scope>.panel-title');move(title,controls);
@@ -14049,6 +14149,22 @@ html.workspace-design .container>header .ref-brand-name{text-transform:none}
    const heading=panel.querySelector('.delivery-heading>div');if(heading){
     const row=make('div','axis-delivery-primary');heading.before(row);move($('deliveryNewOrder'),row);
     const tools=disclosure(row,'axisDeliveryTools','Actions');move(heading,tools);
+    const pageHeading=$('workspacePageHeading');
+    if(pageHeading){
+     const mobile=matchMedia('(max-width:767px), (max-width:1024px) and (pointer:coarse)');
+     const toolbarSlot=document.createComment('Delivery action bar');
+     row.before(toolbarSlot);
+     const updatePlacement=()=>{
+      if(mobile.matches && document.body.dataset.workspacePage==='delivery'){
+       if(row.parentElement!==pageHeading)pageHeading.append(row);
+      }else if(row.previousSibling!==toolbarSlot){
+       toolbarSlot.after(row);
+      }
+     };
+     mobile.addEventListener('change',updatePlacement);
+     new MutationObserver(updatePlacement).observe(document.body,{attributes:true,attributeFilter:['data-workspace-page']});
+     updatePlacement();
+    }
    }
   }
  }
@@ -14439,7 +14555,7 @@ html.workspace-design[data-appearance] body #recordModal .close-modal-x::after{c
 html.workspace-design[data-appearance] body #recordModal .record-section-nav{padding:4px 12px 12px!important;gap:0!important}
 html.workspace-design[data-appearance] body #recordModal .record-section-nav button{background:transparent!important;border-radius:0!important;min-height:48px!important;font-size:12px!important;line-height:1.2!important}
 html.workspace-design[data-appearance] body #recordModal .record-section-nav button::before{width:27px;height:27px;border:1px solid var(--axis-mobile-line);box-shadow:inset 0 1px 3px #ffffff24}
-html.workspace-design[data-appearance] body #recordModal .record-section-nav button.axis-step-complete::before{background:var(--axis-mobile-line)!important;color:var(--axis-mobile-accent)!important;border-color:var(--axis-mobile-muted)!important}
+html.workspace-design[data-appearance] body #recordModal .record-section-nav button.axis-step-complete::before{background:var(--axis-mobile-accent)!important;color:var(--axis-mobile-on-accent)!important;border-color:var(--axis-mobile-accent)!important;box-shadow:none}
 html.workspace-design[data-appearance] body #recordModal .record-section-nav button[aria-current="true"]::before{background:var(--axis-mobile-accent)!important;color:var(--axis-mobile-on-accent)!important;border-color:var(--axis-mobile-accent)!important}
 html.workspace-design[data-appearance] body #recordModal .record-form-scroll{padding:0 12px 14px!important}
 html.workspace-design[data-appearance] body #recordModal .form-section{padding:12px!important;border-radius:9px!important;background:var(--fuel-panel)!important;margin-bottom:10px!important}
@@ -15201,6 +15317,7 @@ html.workspace-design[data-appearance="light"] body #recordDesignTable .axis-des
  html.workspace-design[data-appearance] body .axis-fuel-actions96 button[data-fuel-action="edit"]{order:4}
  html.workspace-design[data-appearance] body .axis-fuel-actions96 button[data-fuel-action="whatsapp"]{order:5;background:linear-gradient(120deg,#173e38,#172f36);border-color:#579b8a;color:#80e5a4}
  html.workspace-design[data-appearance] body .axis-fuel-actions96 button[data-fuel-action="delete"]{order:6;background:linear-gradient(120deg,#3c2c39,#30313b);border-color:#bd7183;color:#ff8795}
+ html.workspace-design[data-appearance] body #recordDesignTable .axis-fuel-actions96:not(:has(>button[data-fuel-action="whatsapp"]))>button[data-fuel-action="delete"]{grid-column:1/-1;justify-content:center}
  html.workspace-design[data-appearance] body .axis-fuel-actions96 button:is([data-fuel-action="whatsapp"],[data-fuel-action="delete"]) svg{color:inherit}
  html.workspace-design[data-appearance] body .axis-fuel-actions96 button:focus-visible{outline:2px solid #89e6f5;outline-offset:2px}
 }
@@ -15468,13 +15585,23 @@ html[data-axis-effects="off"] :is(#fleetAnalysisLauncher .fleet-launcher-title,#
  }
  dialog.delivery-delete-confirm .audit-dialog-header>.delivery-ui-icon{width:22px;height:22px;flex:none;color:#fb7185}
  dialog.delivery-delete-confirm .audit-dialog-body p{margin:0;line-height:1.55}
+ dialog.delivery-delete-confirm #deliveryDeleteDescription span{display:block}
+ dialog.delivery-delete-confirm .audit-dialog-footer{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+ dialog.delivery-delete-confirm .audit-dialog-footer>button{width:100%}
+
+ html.workspace-design[data-appearance] body dialog.delivery-delete-confirm.axis-nav-host115{padding-bottom:0!important}
+ dialog.delivery-delete-confirm .audit-dialog-body label{display:block;margin:12px 0 6px;font-weight:600}
+ dialog.delivery-delete-confirm .audit-dialog-body input{width:100%;box-sizing:border-box}
+ dialog.delivery-delete-confirm .audit-dialog-body .delivery-delete-password-error:not([hidden]){color:#fb7185;margin-top:6px}
+ html[data-appearance="light"] dialog.delivery-delete-confirm .audit-dialog-body .delivery-delete-password-error:not([hidden]){color:#b91c1c}
+
  dialog.delivery-delete-confirm .audit-dialog-footer>button{min-height:44px}
- html body #deliveryConfirm.delivery-delete-confirm button.delivery-delete-confirm-action{
+ html body :is(#deliveryConfirm,#fuelDeleteConfirm).delivery-delete-confirm button.delivery-delete-confirm-action{
   color:#fff!important;
   background:#dc2626!important;
   border-color:#dc2626!important;
  }
- html body #deliveryConfirm.delivery-delete-confirm button.delivery-delete-confirm-action:is(:hover,:active){
+ html body :is(#deliveryConfirm,#fuelDeleteConfirm).delivery-delete-confirm button.delivery-delete-confirm-action:is(:hover,:active){
   background:#b91c1c!important;
   border-color:#b91c1c!important;
  }
@@ -15498,6 +15625,165 @@ html[data-axis-effects="off"] :is(#fleetAnalysisLauncher .fleet-launcher-title,#
 @media screen and (max-width:767px),screen and (max-width:1024px) and (pointer:coarse){
  html.workspace-design[data-appearance] body #deliveryModule .axis-mobile-card-actions{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:8px!important;width:100%!important;box-sizing:border-box!important;align-items:stretch!important}
  html.workspace-design[data-appearance] body #deliveryModule .axis-mobile-card-actions>button{display:flex!important;align-items:center!important;justify-content:center!important;width:100%!important;min-width:0!important;max-width:100%!important;height:44px!important;min-height:44px!important;max-height:44px!important;margin:0!important;padding:6px!important;box-sizing:border-box!important}
+}
+
+#deliveryModule .delivery-orders-frame{border:1px solid #42606d;border-radius:12px;overflow:hidden}
+#deliveryModule .delivery-pagination{background:transparent;border:0;display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin:0;padding:14px 16px}
+#deliveryModule .delivery-pagination .pagination-controls{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+#deliveryModule .delivery-pagination .pagination-btn{border:1px solid #52717f;border-radius:8px;min-width:34px;min-height:34px;padding:4px 9px}
+#deliveryModule .delivery-pagination .pagination-btn[aria-current="page"]{background:#12a9c0;border-color:#12a9c0;color:#06232d;font-weight:700}
+#deliveryModule .delivery-pagination .pagination-btn:disabled{opacity:.54}
+html.workspace-design[data-appearance] body #deliveryModule .delivery-orders-frame :is(button[data-view],button.axis-delivery-view-action){color:#2ed6ed!important;border-color:#26aac0!important}
+html.workspace-design[data-appearance] body #deliveryModule .delivery-orders-frame :is(button[data-history],button.axis-delivery-history-action){color:#f1cc76!important;border-color:#c39c4e!important}
+html.workspace-design[data-appearance="light"] body #deliveryModule .delivery-orders-frame :is(button[data-view],button.axis-delivery-view-action){color:#075bad!important;border-color:#83b7f0!important}
+html.workspace-design[data-appearance="light"] body #deliveryModule .delivery-orders-frame :is(button[data-history],button.axis-delivery-history-action){color:#775109!important;border-color:#b68c44!important}
+#deliveryModule .delivery-orders-frame :is(.axis-delivery-view-action,.axis-delivery-history-action,.axis-delivery-edit-action){gap:5px}
+#deliveryModule .delivery-orders-frame :is(.axis-delivery-view-action,.axis-delivery-history-action,.axis-delivery-edit-action)>svg{width:16px;height:16px;flex:none}
+#deliveryModule .delivery-orders-frame .axis-record-status{display:inline-block;border:1px solid currentColor;border-radius:20px;padding:3px 9px;white-space:nowrap}
+#deliveryModule .delivery-orders-frame .axis-record-status[data-status="pending"]{color:#eac363}
+#deliveryModule .delivery-orders-frame .axis-record-status[data-status="in-transit"]{color:#2ed6ed}
+#deliveryModule .delivery-orders-frame .axis-record-status[data-status="delivered"]{color:#5add96}
+html[data-appearance="light"] #deliveryModule .delivery-orders-frame .axis-record-status[data-status="pending"]{color:#775109}
+html[data-appearance="light"] #deliveryModule .delivery-orders-frame .axis-record-status[data-status="in-transit"]{color:#075bad}
+html[data-appearance="light"] #deliveryModule .delivery-orders-frame .axis-record-status[data-status="delivered"]{color:#146c43}
+@media screen and (min-width:768px) and (pointer:fine){
+ #deliveryModule .delivery-orders-frame td:last-child .btn-icon{display:inline-flex;align-items:center;justify-content:center;min-width:34px;min-height:34px;padding:5px;margin:2px;border:1px solid #52717f;border-radius:8px}
+ #deliveryModule .delivery-orders-frame td:last-child :is([data-view],[data-history],[data-edit],[data-delete])>span{display:none}
+}
+@media screen and (max-width:767px),screen and (max-width:1024px) and (pointer:coarse){
+ #deliveryModule .delivery-orders-frame{border:0;overflow:visible}
+ #deliveryModule .delivery-pagination{justify-content:center;text-align:center}
+ #deliveryModule .delivery-pagination>span{flex-basis:100%}
+ #deliveryModule .delivery-pagination .pagination-btn{min-height:40px}
+}
+
+.fuel-desktop-view,.delivery-desktop-whatsapp{display:none!important}
+@media screen and (min-width:768px) and (pointer:fine){
+ html.workspace-design[data-appearance] body :is(#recordDesignTable .action-btns,#deliveryModule .delivery-orders-frame td:last-child) .btn-icon{display:inline-flex!important;align-items:center;justify-content:center;width:34px;height:34px;min-width:34px;min-height:34px;padding:5px;border:1px solid #52717f;border-radius:8px}
+ html.workspace-design[data-appearance] body :is(#recordDesignTable .action-btns,#deliveryModule .delivery-orders-frame td:last-child) .btn-icon svg{width:18px;height:18px;flex:none}
+ html.workspace-design[data-appearance] body :is(#recordDesignTable .fuel-desktop-view,#deliveryModule .delivery-orders-frame button[data-view]){color:#2ed6ed!important;border-color:#26aac0!important;background:#123442}
+ html.workspace-design[data-appearance] body :is(#recordDesignTable .btn-icon-history,#deliveryModule .delivery-orders-frame button[data-history]){color:#f1cc76!important;border-color:#c39c4e!important;background:#332e24}
+ html.workspace-design[data-appearance] body :is(#recordDesignTable,#deliveryModule) .btn-icon-wa{color:#80e5a4!important;border-color:#579b8a!important;background:#173e38}
+ html.workspace-design[data-appearance="light"] body :is(#recordDesignTable .fuel-desktop-view,#deliveryModule .delivery-orders-frame button[data-view]){color:#075bad!important;border-color:#83b7f0!important;background:#e9f4ff}
+ html.workspace-design[data-appearance="light"] body :is(#recordDesignTable .btn-icon-history,#deliveryModule .delivery-orders-frame button[data-history]){color:#775109!important;border-color:#b68c44!important;background:#fff4dc}
+ html.workspace-design[data-appearance="light"] body :is(#recordDesignTable,#deliveryModule) .btn-icon-wa{color:#17664e!important;border-color:#80bca6!important;background:#e7f6ef}
+}
+@media screen and (min-width:768px) and (pointer:fine){
+ html.workspace-design[data-appearance] body #recordDesignTable .action-btns .btn-icon::after{content:none}
+ html.workspace-design[data-appearance] body #recordDesignTable .action-btns .btn-icon svg{fill:none;stroke:currentColor}
+ html.workspace-design[data-appearance] body #recordDesignTable .action-btns .btn-icon-wa svg{fill:currentColor;stroke:none}
+ html.workspace-design[data-appearance] body :is(#recordDesignTable .action-btns,#deliveryModule .delivery-orders-frame td:last-child) .btn-icon-edit{background:#162b35!important;color:#b3c7d1!important;border-color:#52717f!important}
+ html.workspace-design[data-appearance] body :is(#recordDesignTable .action-btns,#deliveryModule .delivery-orders-frame td:last-child) .btn-icon-delete{background:#371f29!important;color:#ff8795!important;border-color:#d56a7f!important}
+ html.workspace-design[data-appearance="light"] body :is(#recordDesignTable .action-btns,#deliveryModule .delivery-orders-frame td:last-child) .btn-icon-edit{background:#eef3f8!important;color:#344e63!important;border-color:#8aa3b6!important}
+ html.workspace-design[data-appearance="light"] body :is(#recordDesignTable .action-btns,#deliveryModule .delivery-orders-frame td:last-child) .btn-icon-delete{background:#fff0f1!important;color:#a82b45!important;border-color:#d38696!important}
+}
+html.workspace-design[data-appearance] body :is(#deliveryConfirm,#fuelDeleteConfirm).delivery-delete-confirm .delivery-delete-confirm-action{background:#572c38!important;border:1px solid #b65f73!important;color:#ffd7df!important}
+html.workspace-design[data-appearance] body :is(#deliveryConfirm,#fuelDeleteConfirm).delivery-delete-confirm .delivery-delete-confirm-action:is(:hover,:active){background:#713648!important;border-color:#e38798!important}
+html.workspace-design[data-appearance="light"] body :is(#deliveryConfirm,#fuelDeleteConfirm).delivery-delete-confirm .delivery-delete-confirm-action{background:#fce4e8!important;border-color:#ca7890!important;color:#8e263e!important}
+html.workspace-design[data-appearance="light"] body :is(#deliveryConfirm,#fuelDeleteConfirm).delivery-delete-confirm .delivery-delete-confirm-action:is(:hover,:active){background:#f8d0d9!important;border-color:#a84661!important}
+:is(#deliveryConfirm,#fuelDeleteConfirm).delivery-delete-confirm .audit-dialog-header{justify-content:space-between}
+:is(#deliveryConfirm,#fuelDeleteConfirm).delivery-delete-confirm .audit-dialog-header h2{margin-inline-end:auto}
+@media screen and (min-width:768px) and (pointer:fine){
+ html.workspace-design[data-appearance] body #recordDesignTable .action-btns button[title]::after{display:none!important}
+}
+
+html.workspace-design[data-appearance] body :is(#deliveryModule,#invoiceWarningDashboard) .axis-list-pager{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin:0;padding:12px;border:0;background:transparent}
+html.workspace-design[data-appearance] body :is(#deliveryModule,#invoiceWarningDashboard) .axis-list-pager .pagination-controls{display:flex;justify-content:center;flex-wrap:wrap;gap:6px;margin:0}
+.axis-list-pager-summary{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px}
+.axis-list-pager-summary label{display:flex;align-items:center;gap:6px;white-space:nowrap}
+html.workspace-design[data-appearance] body :is(#deliveryModule,#invoiceWarningDashboard) .axis-list-pager :is(button,select){height:36px;min-height:36px;max-height:36px;box-sizing:border-box;border:1px solid var(--border-color,#52717f);border-radius:8px;padding:0 8px;background:var(--bg-card);color:var(--text-main);font:inherit}
+html.workspace-design[data-appearance] body :is(#deliveryModule,#invoiceWarningDashboard) .axis-list-pager button[aria-current="page"]{background:#12a9c0;color:#06232d;border-color:#12a9c0;font-weight:700}
+html.workspace-design[data-appearance] body :is(#deliveryModule,#invoiceWarningDashboard) .axis-list-pager button:disabled{opacity:.5}
+html.workspace-design[data-appearance] body #invoiceWarningDashboard .warning-list{max-height:none;overflow:visible;padding:0;gap:6px}
+html.workspace-design[data-appearance] body #invoiceWarningDashboard .warning-item{grid-template-columns:repeat(5,minmax(0,1fr));padding:8px 10px;gap:4px 10px;align-items:center}
+html.workspace-design[data-appearance] body #invoiceWarningDashboard .warning-item strong{display:inline;margin:0 4px 0 0}
+html.workspace-design[data-appearance] body #invoiceWarningDashboard .warning-item>span{line-height:1.35}
+@media screen and (max-width:767px),screen and (max-width:1024px) and (pointer:coarse){
+ html.workspace-design[data-appearance] body :is(#deliveryModule,#invoiceWarningDashboard) .axis-list-pager{display:grid;grid-template-columns:minmax(0,1fr);row-gap:8px;padding:8px 12px 12px;border:1px solid var(--border-color,#42606d);border-radius:9px;background:var(--bg-surface);font-size:12px}
+ .axis-list-pager-summary{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;width:100%;min-height:27px}
+ .axis-list-pager-summary>span{position:relative;padding-inline-end:10px;line-height:1.2;text-align:start;justify-self:stretch}
+ .axis-list-pager-summary>span::after{content:'';position:absolute;inset-inline-end:0;top:50%;height:18px;border-inline-end:1px solid var(--border-color,#42606d);transform:translateY(-50%)}
+ .axis-list-pager-summary label{gap:4px;height:27px;box-sizing:border-box;padding-inline:7px 3px;border:1px solid var(--border-color,#52717f);border-radius:7px;color:var(--text-main)}
+ html.workspace-design[data-appearance] body :is(#deliveryModule,#invoiceWarningDashboard) .axis-list-pager .pagination-controls{display:flex;width:100%;gap:8px;flex-wrap:nowrap}
+ html.workspace-design[data-appearance] body :is(#deliveryModule,#invoiceWarningDashboard) .axis-list-pager .pagination-btn{height:35px;min-height:35px;max-height:35px;min-width:0;flex:0 0 32px;display:inline-flex;align-items:center;justify-content:center;padding:0 4px;white-space:nowrap;line-height:1}
+ html.workspace-design[data-appearance] body :is(#deliveryModule,#invoiceWarningDashboard) .axis-list-pager .pagination-btn:is(:first-child,:last-child){flex:0 1 72px;min-width:58px}
+ html.workspace-design[data-appearance] body :is(#deliveryModule,#invoiceWarningDashboard) .axis-list-pager select[data-list-size]{width:39px;min-width:0;height:25px;min-height:25px;max-height:25px;margin:0;padding:0;border:0;border-radius:0;background:transparent}
+ @media(max-width:359px){
+  html.workspace-design[data-appearance] body :is(#deliveryModule,#invoiceWarningDashboard) .axis-list-pager{padding-inline:7px;font-size:11px}
+  html.workspace-design[data-appearance] body :is(#deliveryModule,#invoiceWarningDashboard) .axis-list-pager .pagination-controls{gap:5px}
+ }
+ html.workspace-design[data-appearance] body #invoiceWarningDashboard #invoiceWarningList{height:auto;max-height:none;overflow:visible;grid-auto-rows:auto}
+ html.workspace-design[data-appearance] body #invoiceWarningDashboard #invoiceWarningMore{position:static;display:block;margin:8px 0 0;padding:0}
+ html.workspace-design[data-appearance] body #invoiceWarningDashboard #invoiceWarningMore .axis-list-pager{margin:0}
+ html.workspace-design[data-appearance] body #invoiceWarningDashboard .warning-item{position:relative;padding:6px 24px 6px 8px;min-height:0}
+ html.workspace-design[data-appearance] body #invoiceWarningDashboard .warning-item>span{font-size:11px;line-height:1.3}
+ html.workspace-design[data-appearance] body #invoiceWarningDashboard .warning-item strong{font-size:inherit!important;line-height:inherit!important}
+ #invoiceWarningDashboard .warning-item::after{content:'';position:absolute;right:10px;top:50%;width:6px;height:6px;border-top:1px solid currentColor;border-right:1px solid currentColor;transform:translateY(-50%) rotate(45deg);pointer-events:none}
+ #invoiceWarningDashboard .warning-amount>strong{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+ #invoiceWarningDashboard .warning-amount{text-align:right;white-space:nowrap}
+
+ html.workspace-design[data-appearance] body #invoiceWarningDashboard .warning-item{grid-template-columns:repeat(2,minmax(0,1fr));gap:3px 8px}
+ #invoiceWarningDashboard .warning-field-order{order:-2}
+ #invoiceWarningDashboard .warning-amount{order:-1}
+ #invoiceWarningDashboard .warning-field-delivery{grid-column:1/-1}
+}
+@media screen and (max-width:767px),screen and (max-width:1024px) and (pointer:coarse){
+ #deliveryModule .axis-mobile-card-actions>button.btn-icon:not([data-tooltip])::after{content:none!important;display:none!important}
+}
+@media screen and (max-width:767px),screen and (max-width:1024px) and (pointer:coarse){
+ html.workspace-design[data-appearance] body #deliveryModule .delivery-orders-frame :is(.delivery-table-scroll,.axis-mobile-cards){background:transparent!important;background-image:none!important;border:0!important;box-shadow:none!important}
+ html.workspace-design[data-appearance="dark"] body :is(#deliveryModule,#invoiceWarningDashboard) .axis-list-pager{--border-color:#54727b;background:#08252d!important;color:#eff7fa}
+ html.workspace-design[data-appearance="dark"] body :is(#deliveryModule,#invoiceWarningDashboard) .axis-list-pager :is(button,select){background:#08232b;color:#eff7fa}
+ html.workspace-design[data-appearance="dark"] body :is(#deliveryModule,#invoiceWarningDashboard) .axis-list-pager button[aria-current="page"]{background:#07c5db;color:#06262d;border-color:#07c5db}
+ html.workspace-design[data-appearance="dark"] body :is(#deliveryModule,#invoiceWarningDashboard) .axis-list-pager button:disabled{background:#102d35;color:#99aab0;opacity:.72}
+ html.workspace-design[data-appearance="dark"] body :is(#deliveryModule,#invoiceWarningDashboard) .axis-list-pager select[data-list-size]{background:transparent}
+ html.workspace-design[data-appearance] body :is(#deliveryModule,#invoiceWarningDashboard) .axis-list-pager .pagination-btn:is(:first-child,:last-child){flex:1 1 0}
+ html.workspace-design[data-appearance] body #deliveryModule .delivery-orders-frame>.axis-list-pager{margin-top:8px}
+}
+@media screen and (max-width:767px),screen and (max-width:1024px) and (pointer:coarse){
+ html.workspace-design[data-appearance] body #recordLogsPanel .pagination-footer{display:grid!important;grid-template-columns:minmax(0,1fr) auto!important;gap:8px 10px!important;align-items:center!important;padding:8px 12px 12px!important;border:1px solid var(--axis-mobile-line)!important;border-radius:9px!important}
+ html.workspace-design[data-appearance] body #recordLogsPanel #paginationInfo{grid-area:1/1!important;text-align:start!important;font-size:0!important;position:relative;border-inline-end:1px solid var(--axis-mobile-line);padding-inline-end:8px}
+ html.workspace-design[data-appearance] body #recordLogsPanel #paginationInfo::after{content:attr(data-mobile-range);font-size:12px;line-height:1.2}
+ html.workspace-design[data-appearance] body #recordLogsPanel .page-size-selector{grid-area:1/2!important;display:flex!important;align-items:center!important;justify-self:end!important;width:auto!important;height:27px;border:1px solid var(--axis-mobile-line);border-radius:7px;padding:0 5px;gap:4px}
+ html.workspace-design[data-appearance] body #recordLogsPanel .page-size-selector label{display:block!important;font-size:0!important}
+ html.workspace-design[data-appearance] body #recordLogsPanel .page-size-selector label::after{content:'Per page';font-size:12px;white-space:nowrap}
+ html.workspace-design[data-appearance] body #recordLogsPanel .pagination-controls{grid-area:2/1/3/-1!important;display:flex!important;justify-content:center!important;gap:6px!important}
+ html.workspace-design[data-appearance] body #recordLogsPanel :is(#btnPrevPage,#btnNextPage,#recordPageButtons .pagination-btn){width:auto!important;flex:0 0 32px!important;height:35px!important;min-height:35px!important;max-height:35px!important;border-radius:8px!important}
+ html.workspace-design[data-appearance] body #recordLogsPanel :is(#btnPrevPage,#btnNextPage){flex:1 1 72px!important}
+ html.workspace-design[data-appearance] body #recordLogsPanel #pageSizeSelect{width:42px!important;height:25px!important;min-height:25px!important;max-height:25px!important;border:0!important;background:transparent!important}
+ html.workspace-design[data-appearance="dark"] body #recordLogsPanel .pagination-footer{--axis-mobile-line:#54727b;background:#08252d!important;color:#eff7fa}
+ html.workspace-design[data-appearance="dark"] body #recordLogsPanel .pagination-footer .pagination-btn{background:#08232b!important;color:#eff7fa!important}
+ html.workspace-design[data-appearance="dark"] body #recordLogsPanel #recordPageButtons .pagination-btn[aria-current="page"]{background:#07c5db!important;color:#06262d!important;border-color:#07c5db!important}
+}
+@media screen and (max-width:767px),screen and (max-width:1024px) and (pointer:coarse){
+ html.workspace-design[data-appearance] body #invoiceWarningDashboard #invoiceWarningDropdownContent .invoice-panel-heading{align-items:center!important;gap:8px!important;margin:0;padding:0!important}
+ html.workspace-design[data-appearance] body #invoiceWarningDashboard #invoiceWarningDropdownContent .invoice-panel-icon{width:18px!important;height:18px!important;min-width:18px!important}
+ html.workspace-design[data-appearance] body #invoiceWarningDashboard #invoiceWarningDropdownContent h2{font-size:14px!important;line-height:1.25!important}
+ html.workspace-design[data-appearance] body #invoiceWarningDashboard #invoiceWarningDropdownContent #invoiceWarningSummary{margin:6px 0 10px!important;font-size:0!important;line-height:0!important}
+ #invoiceWarningSummary::after{content:attr(data-mobile-summary);font-size:12px;line-height:1.4}
+ html.workspace-design[data-appearance] body #invoiceWarningDashboard #invoiceWarningList .warning-item{padding:7px 21px 7px 9px;gap:3px 8px;border-radius:8px;background:var(--axis-mobile-field)!important;border-color:var(--axis-mobile-line)!important}
+ html.workspace-design[data-appearance="dark"] body #invoiceWarningDashboard #invoiceWarningList .warning-item{background:#102a33!important;border-color:#405a64!important}
+ html.workspace-design[data-appearance] body #invoiceWarningDashboard #invoiceWarningList .warning-item>span{line-height:1.3;min-width:0}
+ html.workspace-design[data-appearance] body #invoiceWarningDashboard #invoiceWarningList .warning-item::after{color:var(--axis-mobile-muted)}
+}
+@media screen and (max-width:767px),screen and (max-width:1024px) and (pointer:coarse){
+ html.workspace-design[data-appearance] body #invoiceWarningDashboard #invoiceWarningDropdownContent>.section-effect-switch{gap:4px!important;padding:4px!important;border:1px solid var(--axis-mobile-line);border-radius:9px;background:var(--axis-mobile-field)}
+ html.workspace-design[data-appearance] body #invoiceWarningDashboard #invoiceWarningDropdownContent>.section-effect-switch button{border-radius:6px;box-sizing:border-box}
+ html.workspace-design[data-appearance] body #recordLogsPanel .pagination-footer .page-size-selector{box-sizing:border-box;min-width:96px;max-width:100%;height:28px;gap:4px!important;margin:0!important}
+ html.workspace-design[data-appearance] body #recordLogsPanel .pagination-footer .page-size-selector label{flex:none;margin:0!important;line-height:1!important}
+ html.workspace-design[data-appearance] body #recordLogsPanel .pagination-footer .page-size-selector label::after{display:inline-block;line-height:1.2}
+ html.workspace-design[data-appearance] body #recordLogsPanel .pagination-footer .page-size-selector #pageSizeSelect{appearance:none;box-sizing:border-box!important;flex:0 0 37px!important;width:37px!important;min-width:37px!important;max-width:37px!important;height:24px!important;min-height:24px!important;max-height:24px!important;margin:0!important;padding:0 3px!important;border:0!important;line-height:1!important}
+ html.workspace-design[data-appearance] body #recordLogsPanel .pagination-footer .pagination-controls{flex-wrap:nowrap!important}
+ html.workspace-design[data-appearance] body #recordLogsPanel .pagination-footer .pagination-controls :is(#btnPrevPage,#btnNextPage){flex:1 1 72px!important;width:auto!important;min-width:60px!important;max-width:none!important;white-space:nowrap!important}
+}
+@media screen and (max-width:767px),screen and (max-width:1024px) and (pointer:coarse){
+ html.workspace-design[data-appearance] body #recordLogsPanel .pagination-footer .page-size-selector{position:relative;min-width:0!important;padding:0 0 0 7px;gap:4px!important}
+ html.workspace-design[data-appearance] body #recordLogsPanel .pagination-footer .page-size-selector>label{position:static!important;width:auto!important;height:auto!important;overflow:visible!important;clip-path:none!important;font-size:12px!important;color:var(--axis-mobile-text)}
+ html.workspace-design[data-appearance] body #recordLogsPanel .pagination-footer .page-size-selector>label::after{content:none}
+ html.workspace-design[data-appearance] body #recordLogsPanel .pagination-footer .page-size-selector::after{content:'';position:absolute;right:7px;top:50%;width:5px;height:5px;border:solid currentColor;border-width:0 1.5px 1.5px 0;transform:translateY(-65%) rotate(45deg);pointer-events:none;color:var(--axis-mobile-text)}
+ html.workspace-design[data-appearance] body #recordLogsPanel .pagination-footer .page-size-selector #pageSizeSelect{background:transparent!important;background-image:none!important;box-shadow:none!important;border-radius:0!important;padding:0 12px 0 2px!important}
+ html.workspace-design[data-appearance] body #recordLogsPanel .pagination-footer .pagination-controls .pagination-btn{font-size:12px!important;line-height:1!important}
+ html.workspace-design[data-appearance="dark"] body #recordLogsPanel .pagination-footer .pagination-controls .pagination-btn:disabled{background:#102d35!important;color:#99aab0!important;opacity:.72!important}
 }
 </style>
 
@@ -15767,6 +16053,12 @@ html.workspace-design[data-appearance] body #recordModal #fuelForm .btn-group-fo
 html.workspace-design[data-appearance] body #deliveryEditor #deliveryForm .btn-group-form:has(#axisDeliveryBack[hidden]):has(#axisDeliveryNext:not([hidden])){display:flex!important;flex-wrap:nowrap!important;align-items:stretch!important;gap:8px!important;}
 html.workspace-design[data-appearance] body #recordModal #fuelForm .btn-group-form:has(#axisFuelBack[hidden]):has(#axisFuelNext:not([hidden])) :is(#axisFuelNext,.btn-cancel),
 html.workspace-design[data-appearance] body #deliveryEditor #deliveryForm .btn-group-form:has(#axisDeliveryBack[hidden]):has(#axisDeliveryNext:not([hidden])) :is(#axisDeliveryNext,#deliveryCancel){flex:1 1 0!important;width:0!important;min-width:0!important;max-width:none!important;height:44px!important;min-height:44px!important;box-sizing:border-box!important;}
+}
+@media screen and (max-width:767px),screen and (max-width:1024px) and (pointer:coarse){
+ html.workspace-design[data-appearance] body #recordModal .record-section-nav button:is(.axis-step-complete,[aria-current="true"])::before{box-shadow:none}
+ html.workspace-design[data-appearance] body.axis-fuel-last #recordModal #fuelForm .btn-group-form:has(>#btnModalSaveAsNew[style*="display: block"]){display:grid!important;grid-template-columns:minmax(0,.76fr) minmax(0,1.30fr) minmax(0,1.18fr) minmax(0,.76fr);gap:5px!important;align-items:stretch;width:100%!important;min-width:0!important;max-width:100%!important;box-sizing:border-box!important;margin:0!important}
+ html.workspace-design[data-appearance] body.axis-fuel-last #recordModal #fuelForm .btn-group-form:has(>#btnModalSaveAsNew[style*="display: block"])>.btn{width:100%!important;min-width:0!important;max-width:100%!important;box-sizing:border-box!important;margin:0!important;height:44px!important;min-height:44px!important;max-height:44px!important;padding:0 2px!important;gap:0;font-size:clamp(9px,2.95vw,13px)!important;white-space:nowrap!important;justify-self:stretch}
+ html.workspace-design[data-appearance] body.axis-fuel-last #recordModal #fuelForm .btn-group-form:has(>#btnModalSaveAsNew[style*="display: block"])>#axisFuelBack::before{font-size:15px;margin-right:3px}
 }
 </style>
 
@@ -16345,6 +16637,220 @@ html.workspace-design[data-appearance] body #recordModal :is(#tripDocumentsEdito
 /* Override the shared button typography for these icon-only mobile actions. */
 html.workspace-design[data-appearance] body #recordModal :is(#tripDocumentsEditor .trip-document-remove,#recordTrip .remove-trip):not(#referenceReportClose):not(#axisPasswordVisibility){font-size:0!important;line-height:0!important;}
 
+}
+</style>
+<style id="axis-mobile-module-heading">
+.axis-module-heading-icon{display:none}
+@media screen and (max-width:767px),screen and (max-width:1024px) and (pointer:coarse){
+ html.workspace-design[data-appearance] body:is([data-workspace-page="fuel"],[data-workspace-page="delivery"]) #workspacePageHeading{
+  --heading-panel:#0a333b;
+  --heading-border:#558ca0;
+  --heading-action:#0bd3e9;
+  --heading-outline:#53c9dc;
+  --heading-utility:#0c2d36;
+  --heading-text:#f2f8fc;
+  --heading-muted:#bfd2dc;
+  box-sizing:border-box; padding:10px 8px 14px!important; gap:12px!important;
+  border:1px solid var(--heading-border); border-radius:12px;
+  background:var(--heading-panel); overflow:visible;
+ }
+ html.workspace-design[data-appearance="light"] body:is([data-workspace-page="fuel"],[data-workspace-page="delivery"]) #workspacePageHeading{
+  --heading-panel:#e8f6fa; --heading-border:#709dae; --heading-action:#16c7dd;
+  --heading-outline:#45889b; --heading-utility:#f6fcfe;
+  --heading-text:#133544; --heading-muted:#415d69;
+ }
+ body:is([data-workspace-page="fuel"],[data-workspace-page="delivery"]) #workspacePageHeading>div:has(>#workspacePageTitle){
+  display:grid; grid-template-columns:32px minmax(0,1fr); column-gap:10px; align-items:center; padding-inline:6px;
+ }
+ html.workspace-design[data-appearance] body:is([data-workspace-page="fuel"],[data-workspace-page="delivery"]) #workspacePageHeading #workspacePageTitle{
+  grid-column:2; margin:0!important; color:var(--heading-text)!important; font-size:clamp(17px,5vw,23px)!important;
+ }
+ html.workspace-design[data-appearance] body:is([data-workspace-page="fuel"],[data-workspace-page="delivery"]) #workspacePageHeading #workspacePageDescription{
+  grid-column:2; margin:2px 0 0!important; color:var(--heading-muted)!important; font-size:13px!important; line-height:1.35!important;
+ }
+ body[data-workspace-page="fuel"] #workspacePageHeading [data-module-icon="fuel"],
+ body[data-workspace-page="delivery"] #workspacePageHeading [data-module-icon="delivery"]{
+  display:grid; place-items:center; grid-column:1; grid-row:1/3; color:var(--heading-outline);
+ }
+ .axis-module-heading-icon svg{width:31px;height:31px}
+ html.workspace-design[data-appearance] body:is([data-workspace-page="fuel"],[data-workspace-page="delivery"]) #workspacePageHeading>:is(.actions-bar,.axis-delivery-primary){
+  margin:0!important; width:100%!important; max-width:none!important; gap:10px!important;
+ }
+ html.workspace-design[data-appearance] body #workspacePageHeading :is(.btn-add-record-main,#deliveryNewOrder){
+  background:var(--heading-action)!important; color:#071f2a!important; border:1px solid var(--heading-action)!important;
+ }
+ html.workspace-design[data-appearance] body #workspacePageHeading :is(#axisFuelCommands,#axisDeliveryTools) :is(.btn-save,.btn-export,.btn-upload,#deliveryNewTrip,#deliveryExport,#deliveryRefresh){
+  background:var(--heading-utility)!important; border:1px solid var(--heading-outline)!important;
+  color:var(--heading-text)!important; font-size:clamp(11px,3.4vw,15px)!important; gap:4px!important; box-shadow:none!important;
+ }
+ html.workspace-design[data-appearance] body #workspacePageHeading :is(#axisFuelCommands,#axisDeliveryTools) :is(.btn-save,.btn-export,.btn-upload,#deliveryNewTrip,#deliveryExport,#deliveryRefresh)>svg{
+  width:16px!important; height:16px!important; min-width:16px!important; color:var(--heading-outline)!important;
+ }
+ html.workspace-design[data-appearance] body #workspacePageHeading :is(#axisFuelCommands,#axisDeliveryTools) .workspace-chevron svg{width:12px!important;height:12px!important;min-width:12px!important}
+ html.workspace-design[data-appearance] body[data-workspace-page="delivery"] #workspacePageHeading #axisDeliveryTools :is(#deliveryNewTrip,#deliveryExport,#deliveryRefresh) svg{
+  color:var(--heading-text)!important;
+ }
+}
+</style>
+<style id="axis-mobile-module-panels">
+@media screen and (max-width:767px),screen and (max-width:1024px) and (pointer:coarse){
+ html.workspace-design[data-appearance] body{
+  --module-panel:#0c303a; --module-line:#558c9e; --module-field:#102b34;
+  --module-accent:#58cddd; --module-text:#f2f8fc;
+ }
+ html.workspace-design[data-appearance="light"] body{
+  --module-panel:#e8f6fa; --module-line:#709dae; --module-field:#f6fcfe;
+  --module-accent:#08798f; --module-text:#133544;
+ }
+ html.workspace-design[data-appearance] body[data-workspace-page="delivery"] #deliveryModule :is(#axisDeliveryTabs83,#deliveryMessage,#axisDeliverySearch),
+ html.workspace-design[data-appearance] body[data-workspace-page="fuel"] :is(#invoiceWarningDashboard,#axisFuelSearch,#recordDesignTable .axis-mobile-sort){
+  box-sizing:border-box; background:var(--module-panel)!important; border:1px solid var(--module-line)!important; margin:0!important;
+ }
+ html.workspace-design[data-appearance] body[data-workspace-page="delivery"] #deliveryModule #axisDeliveryTabs83,
+ html.workspace-design[data-appearance] body[data-workspace-page="fuel"] #invoiceWarningDashboard{
+  padding:8px!important; border-radius:12px 12px 0 0!important; border-bottom:0!important;
+ }
+ html.workspace-design[data-appearance] body[data-workspace-page="delivery"] #deliveryModule #deliveryMessage,
+ html.workspace-design[data-appearance] body[data-workspace-page="fuel"] #axisFuelSearch{
+  padding:4px 8px 8px!important; border-block:0!important; border-radius:0!important;
+ }
+ html.workspace-design[data-appearance] body[data-workspace-page="fuel"] .container:not(:has(#invoiceWarningDashboard.active)) #axisFuelSearch{
+  border-top:1px solid var(--module-line)!important; border-radius:12px 12px 0 0!important; padding-top:8px!important;
+ }
+ html.workspace-design[data-appearance] body[data-workspace-page="delivery"] #deliveryModule #axisDeliverySearch,
+ html.workspace-design[data-appearance] body[data-workspace-page="fuel"] #recordDesignTable .axis-mobile-sort{
+  padding:0 8px 8px!important; border-top:0!important; border-radius:0 0 12px 12px!important; margin-bottom:12px!important;
+ }
+ #deliveryMessage:not(:empty)::before{
+  content:''; display:inline-block; width:7px; height:7px; margin-inline-end:6px; border-radius:50%; background:currentColor; vertical-align:2px;
+ }
+ html.workspace-design[data-appearance] body :is(#axisFuelSearch,#axisDeliverySearch)>.filter-item>input{
+  padding-inline-start:30px!important;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%234da9bb' stroke-width='2'%3E%3Ccircle cx='10' cy='10' r='6'/%3E%3Cpath d='m15 15 6 6'/%3E%3C/svg%3E")!important;
+  background-position:left 8px center!important; background-size:16px!important; background-repeat:no-repeat!important;
+ }
+ html.workspace-design[data-appearance] body #axisDeliveryTabs83>button{
+  border-radius:8px!important; background:var(--module-field)!important; border-color:var(--module-line)!important;
+  color:var(--module-text)!important; min-height:38px; padding-inline:2px!important; gap:4px!important;
+ }
+ html.workspace-design[data-appearance] body #axisDeliveryTabs83>button:is([aria-pressed="true"],[aria-expanded="true"],.axis-more-active83){
+  background:var(--workspace-nav-glow)!important; border-color:var(--module-accent)!important; color:var(--module-accent)!important;
+ }
+ html.workspace-design[data-appearance] body :is(#axisFuelSearch,#axisDeliverySearch)>.filter-item>input,
+ html.workspace-design[data-appearance] body :is(#axisFuelSearchFilters,#axisDeliverySearchFilters),
+ html.workspace-design[data-appearance] body #recordDesignTable .axis-mobile-sort :is(select,button:not(#recordColumnsMenu button)),
+ html.workspace-design[data-appearance] body .axis-chart-actions91 :is(select,.app-select-trigger){
+  background-color:var(--module-field)!important; border-color:var(--module-line)!important; color:var(--module-text)!important;
+ }
+ html.workspace-design[data-appearance] body[data-workspace-page="delivery"] #deliveryModule .axis-delivery-overview-note,
+ html.workspace-design[data-appearance] body .axis-fuel-chart91{
+  background:var(--module-panel)!important; border:1px solid var(--module-line)!important; border-radius:12px!important;
+ }
+ html.workspace-design[data-appearance] body[data-workspace-page="delivery"] #deliveryModule .axis-delivery-overview-note{
+  display:flex; align-items:flex-start; gap:8px; padding:8px 10px;
+  margin:0 0 10px!important; color:var(--module-text)!important;
+  font-size:clamp(12px,3.4vw,14px)!important; line-height:1.4!important;
+ }
+ html.workspace-design[data-appearance] body[data-workspace-page="delivery"] #deliveryContent .delivery-kpis:has(+.axis-delivery-overview-note){
+  margin-bottom:10px!important;
+ }
+ .axis-delivery-overview-note::before{
+  content:'i' / ''; margin-top:1px; display:grid; place-items:center; flex:0 0 19px; height:19px; border:1.5px solid currentColor;
+  border-radius:50%; color:var(--module-accent); font:bold 13px/1 Arial,sans-serif;
+ }
+ html.workspace-design[data-appearance] body .axis-chart-legend91{
+  background:var(--module-field)!important; border-color:var(--module-line)!important;
+ }
+ html.workspace-design[data-appearance] body .axis-chart-legend91 label{border-color:var(--module-line)!important;}
+ .axis-chart-tools91 h3::before{
+  content:''; flex:0 0 22px; height:22px; margin-inline-end:8px; background:var(--module-accent);
+  mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 3v18h18M6 15l5-5 4 3 5-7m-5 0h5v5'/%3E%3C/svg%3E") center/contain no-repeat;
+ }
+ .axis-chart-tools91 h3>span{margin-inline-start:auto;padding-inline-start:8px;}
+}
+</style>
+<style id="axis-mobile-fuel-sort-menus">
+@media screen and (max-width:767px),screen and (max-width:1024px) and (pointer:coarse){
+ html.workspace-design[data-appearance] body[data-workspace-page="fuel"] #recordDesignTable .axis-mobile-sort{
+  padding:6px 8px 8px!important; gap:6px!important; margin-bottom:8px!important;
+ }
+ html.workspace-design[data-appearance] body[data-workspace-page="fuel"] #recordDesignTable .axis-mobile-sort>:is(select,button),
+ html.workspace-design[data-appearance] body[data-workspace-page="fuel"] #recordDesignTable .axis-mobile-sort #recordColumnsButton{
+  border-color:var(--module-accent)!important; border-radius:8px!important;
+ }
+ html.workspace-design[data-appearance] body[data-workspace-page="fuel"] .app-select-menu.axis-sort-menu88,
+ html.workspace-design[data-appearance] body[data-workspace-page="fuel"] #recordDesignTable #recordColumnsMenu{
+  height:auto!important; background:var(--module-panel)!important; color:var(--module-text)!important;
+  border:1px solid var(--module-line)!important; border-radius:10px!important; overscroll-behavior:contain;
+ }
+ html.workspace-design[data-appearance] body[data-workspace-page="fuel"] .app-select-menu.axis-sort-menu88{
+  max-height:min(280px,40dvh,var(--axis-sort-available,280px))!important;
+ }
+ html.workspace-design[data-appearance] body[data-workspace-page="fuel"] #recordDesignTable #recordColumnsMenu{
+  width:min(300px,calc(100vw - 48px))!important;
+  max-height:min(420px,var(--axis-columns-available,60dvh))!important;
+ }
+ html.workspace-design[data-appearance] body[data-workspace-page="fuel"] .axis-sort-menu88>button{
+  min-height:36px; white-space:normal!important; text-align:start!important;
+ }
+ html.workspace-design[data-appearance] body[data-workspace-page="fuel"] .axis-sort-menu88>button[aria-selected="true"]{
+  color:var(--module-accent)!important; font-weight:700!important;
+ }
+ html.workspace-design[data-appearance] body[data-workspace-page="fuel"] #recordColumnsMenu :is(.record-columns-search,.record-columns-actions>button){
+  background:var(--module-field)!important; border-color:var(--module-line)!important; color:var(--module-text)!important;
+ }
+}
+</style>
+<style id="axis-mobile-fuel-panel-boundaries">
+@media screen and (max-width:767px),screen and (max-width:1024px) and (pointer:coarse){
+ html.workspace-design[data-appearance] body[data-workspace-page="fuel"] #invoiceWarningDashboard{
+  border:1px solid var(--module-line)!important; border-radius:12px!important; margin:0 0 10px!important;
+ }
+ html.workspace-design[data-appearance] body[data-workspace-page="fuel"] #invoiceWarningDashboard.expanded #invoiceWarningDropdownContent{
+  border-color:var(--module-line)!important;
+ }
+ html.workspace-design[data-appearance] body[data-workspace-page="fuel"] #recordLogsPanel #axisFuelSearch{
+  border:1px solid var(--module-line)!important; border-bottom:0!important;
+  border-radius:12px 12px 0 0!important; margin:0!important; padding:8px 8px 0!important;
+ }
+ html.workspace-design[data-appearance] body[data-workspace-page="fuel"] #recordLogsPanel #recordDesignTable,
+ html.workspace-design[data-appearance] body[data-workspace-page="fuel"] #recordDesignTable>.axis-mobile-cards{
+  margin-block-start:0!important;
+ }
+ html.workspace-design[data-appearance] body[data-workspace-page="fuel"] #recordDesignTable .axis-mobile-sort{
+  padding:8px!important; margin:0!important;
+ }
+}
+</style>
+<style id="axis-fuel-mobile-spacing">
+@media screen and (max-width:767px),screen and (max-width:1024px) and (pointer:coarse){
+ html.workspace-design[data-appearance] body[data-workspace-page="fuel"] #workspacePageHeading .actions-bar .btn-add-record-main>svg{
+  color:#071f2a!important;stroke:currentColor!important;
+ }
+ html.workspace-design[data-appearance] body[data-workspace-page="fuel"] #invoiceWarningDashboard.active{
+  margin-block-end:10px!important;
+ }
+ html.workspace-design[data-appearance] body[data-workspace-page="fuel"] #recordLogsPanel{
+  margin-block-start:0!important;
+ }
+ html.workspace-design[data-appearance] body[data-workspace-page="fuel"] #recordLogsPanel #recordDesignTable,
+ html.workspace-design[data-appearance] body[data-workspace-page="fuel"] #recordDesignTable>.axis-mobile-cards{
+  margin-block-start:0!important;padding-block-start:0!important;row-gap:8px!important;
+ }
+ html.workspace-design[data-appearance] body[data-workspace-page="fuel"] #recordDesignTable #recordColumnsMenu .record-columns-search:focus-visible{
+  outline:2px solid var(--module-accent)!important;outline-offset:1px;
+ }
+}
+</style>
+<style id="axis-mobile-fuel-records-toolbar">
+@media screen and (max-width:767px),screen and (max-width:1024px) and (pointer:coarse){
+ html.workspace-design[data-appearance] body[data-workspace-page="fuel"] #axisFuelRecordsToolbar{
+  display:grid; gap:8px; box-sizing:border-box; padding:8px; margin:0 0 8px;
+  border:1px solid var(--module-line); border-radius:12px; background:var(--module-panel);
+ }
+ html.workspace-design[data-appearance] body[data-workspace-page="fuel"] #recordLogsPanel #axisFuelRecordsToolbar :is(#axisFuelSearch,.axis-mobile-sort){
+  border:0!important; background:transparent!important; padding:0!important; margin:0!important;
+ }
 }
 </style>
 </body></html>
