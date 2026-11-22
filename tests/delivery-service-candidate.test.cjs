@@ -3,7 +3,7 @@ const test=require('node:test'),assert=require('node:assert/strict'),fs=require(
 const root='operations/production-transfer/delivery-manage/';
 function service({url='https://mykwxfifrjohhjhomegf.supabase.co',permission={can_read:true,can_add:true,can_edit:true,can_manage_users:true},invalid=false,rpcError=null,existing=null,lookupError=null}={}){
  let handler;const calls=[];
- const chain={select(){return this},eq(){return this},maybeSingle:async()=>({data:permission}),order(){return this},limit:async()=>({data:[]})};
+ const chain={select(){return this},eq(){return this},is(){return this},maybeSingle:async()=>({data:permission}),order(){return this},limit:async()=>({data:[]})};
  const admin={auth:{getUser:async()=>({data:{user:invalid?null:{id:'server-user',email:'server@example.invalid',user_metadata:{}}},error:invalid?Error('expired'):null})},from:name=>{calls.push(name);return name==='app_user_permissions'?chain:{...chain,maybeSingle:async()=>({data:existing,error:lookupError})}},storage:{from:()=>({upload:async()=>{calls.push('upload');return {error:null}}})},rpc:async(name,args)=>{calls.push({name,args});return {data:{revision:2},error:rpcError}}};
  const context={Response,Uint8Array,atob,crypto,createClient:()=>admin,validateEntity(){},deliveryPlaces:[],Deno:{env:{get:key=>key==='SUPABASE_URL'?url:'server-only-test-key'},serve:fn=>{handler=fn}}};
  vm.runInNewContext(fs.readFileSync(root+'index.ts','utf8').replace(/^import .*;\n/gm,''),context);
@@ -74,4 +74,19 @@ test('production candidate retains published validation and all behavior except 
  for(const file of ['validate.js','places.js'])assert.equal(fs.readFileSync(root+file,'utf8'),fs.readFileSync('supabase/functions/delivery-manage/'+file,'utf8'));
  const candidate=fs.readFileSync(root+'index.ts','utf8').replace('// Production deployment candidate only; not deployed. Exact project boundary.','// This development service must never serve another project.').replace("if(url!=='https://mykwxfifrjohhjhomegf.supabase.co')return reply(403,{error:'Production project required.'});","if(!url?.includes('lfmuxtnurxaanixxflwc.supabase.co'))return reply(403,{error:'Staging service only.'});");
  assert.equal(candidate,fs.readFileSync('supabase/functions/delivery-manage/index.ts','utf8'));
+});
+
+test('only full administrators can delete a delivery order', async () => {
+ const full = {can_read:true, can_add:true, can_edit:true, can_delete:true, can_manage_users:true};
+ const request = {action:'delete', id:entity.id, revision:1};
+ for (const key of Object.keys(full)) {
+  const client = service({permission:{...full, [key]:false}});
+  assert.equal((await client.request(request)).status,403);
+  assert(!client.calls.some(call=>typeof call==='object'));
+ }
+ const client = service({permission:full});
+ assert.equal((await client.request(request)).status,200);
+ assert.deepEqual(JSON.parse(JSON.stringify(client.calls.at(-1))),{name:'delivery_delete_order',args:{
+  p_id:entity.id,p_revision:1,p_actor:'server-user',p_email:'server@example.invalid'
+ }});
 });

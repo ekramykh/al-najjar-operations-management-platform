@@ -12,11 +12,19 @@ Deno.serve(async req=>{
  const admin=createClient(url,Deno.env.get('SUPABASE_SERVICE_ROLE_KEY'),{auth:{persistSession:false}});
  const token=req.headers.get('Authorization')?.replace(/^Bearer\s+/i,'');if(!token)return reply(401,{error:'Sign in required.'});
  const {data:auth,error:authError}=await admin.auth.getUser(token);if(authError||!auth.user)return reply(401,{error:'Invalid session.'});
- const {data:perm,error:permError}=await admin.from('app_user_permissions').select('can_read,can_add,can_edit').eq('user_id',auth.user.id).maybeSingle();
+ const {data:perm,error:permError}=await admin.from('app_user_permissions').select('can_read,can_add,can_edit,can_delete,can_manage_users').eq('user_id',auth.user.id).maybeSingle();
  if(permError)throw permError;if(!perm?.can_read)return reply(403,{error:'Read permission required.'});
+ const canDelete=perm.can_add===true && perm.can_edit===true && perm.can_delete===true && perm.can_manage_users===true;
  const body=await req.json();let result;
- if(body.action==='list'){const {data,error}=await admin.from('delivery_entities').select('*').order('number',{ascending:false}).limit(5001);if(error)throw error;if(data.length>5000)throw Error('Too many entries; contact administrator.');result={entities:data,canWrite:perm.can_add===true||perm.can_edit===true,canAdd:perm.can_add===true,canEdit:perm.can_edit===true};}
+ if(body.action==='list'){const {data,error}=await admin.from('delivery_entities').select('*').is('deleted_at',null).order('number',{ascending:false}).limit(5001);if(error)throw error;if(data.length>5000)throw Error('Too many entries; contact administrator.');result={entities:data,canWrite:perm.can_add===true||perm.can_edit===true,canAdd:perm.can_add===true,canEdit:perm.can_edit===true,canDelete};}
  else if(body.action==='history'){const {data,error}=await admin.from('delivery_audit').select('*').eq('entity_id',body.id).order('sequence',{ascending:false}).range(Number(body.offset)||0,(Number(body.offset)||0)+49);if(error)throw error;const {data:creation,error:creationError}=await admin.from('delivery_audit').select('*').eq('entity_id',body.id).order('sequence',{ascending:true}).limit(1);if(creationError)throw creationError;result={events:data,record_info:creation?.[0]||null};}
+ else if(body.action==='delete'){
+  if(!canDelete)return reply(403,{error:'Full administrator permissions required.'});
+  if(typeof body.id!=='string'||!Number.isSafeInteger(body.revision)||body.revision<1)throw Error('Invalid order or revision.');
+  const {error}=await admin.rpc('delivery_delete_order',{p_id:body.id,p_revision:body.revision,p_actor:auth.user.id,p_email:auth.user.email});
+  if(error)throw error;
+  result={deleted:true};
+ }
  else if(body.action==='save'){
  if(!(body.revision===0?perm.can_add===true:perm.can_edit===true))return reply(403,{error:body.revision===0?'Add permission required.':'Edit permission required.'});
  validateEntity(body.kind,body.data,deliveryPlaces);
@@ -27,14 +35,15 @@ Deno.serve(async req=>{
  const {data,error}=await admin.rpc('delivery_commit',{p_id:body.id,p_kind:body.kind,p_revision:body.revision,p_data:body.data,p_actor:auth.user.id,p_email:auth.user.email,p_reason:body.reason});if(error)throw error;result={entity:data};
  }else if(body.action==='proofUpload'){
  if(perm.can_add!==true&&perm.can_edit!==true)return reply(403,{error:'Write permission required.'});
- const {data:existing,error:existingError}=await admin.from('delivery_entities').select('id').eq('id',body.id).maybeSingle();if(existingError)throw existingError;
+ const {data:existing,error:existingError}=await admin.from('delivery_entities').select('id,deleted_at').eq('id',body.id).maybeSingle();if(existingError)throw existingError;
+ if(existing?.deleted_at)return reply(409,{error:'This order was deleted.'});
  if(!(existing?perm.can_edit===true:perm.can_add===true))return reply(403,{error:existing?'Edit permission required.':'Add permission required.'});
  if(!/^[0-9a-f-]{36}$/i.test(body.id)||!['image/jpeg','image/png','application/pdf'].includes(body.mime)||typeof body.base64!=='string'||body.base64.length>1400000)throw Error('Invalid attachment (maximum 1 MB).');
  const bytes=Uint8Array.from(atob(body.base64),c=>c.charCodeAt(0));if(bytes.length>1048576)throw Error('Maximum attachment size is 1 MB.');
  const sig=Array.from(bytes.slice(0,8)).join(',');if(body.mime==='image/jpeg'&&!sig.startsWith('255,216,255')||body.mime==='image/png'&&!sig.startsWith('137,80,78,71,13,10,26,10')||body.mime==='application/pdf'&&!sig.startsWith('37,80,68,70,45'))throw Error('File content does not match type.');
  const path=body.id+'/'+crypto.randomUUID();const {error}=await admin.storage.from('delivery-proof').upload(path,bytes,{contentType:body.mime,upsert:false});if(error)throw error;result={path};
  }else if(body.action==='proofRead'){
- const {data:row}=await admin.from('delivery_entities').select('data').eq('id',body.id).maybeSingle();if(!row?.data?.proofPath)throw Error('No attachment.');const {data,error}=await admin.storage.from('delivery-proof').createSignedUrl(row.data.proofPath,60);if(error)throw error;result={url:data.signedUrl};
+ const {data:row}=await admin.from('delivery_entities').select('data').is('deleted_at',null).eq('id',body.id).maybeSingle();if(!row?.data?.proofPath)throw Error('No attachment.');const {data,error}=await admin.storage.from('delivery-proof').createSignedUrl(row.data.proofPath,60);if(error)throw error;result={url:data.signedUrl};
  }else return reply(400,{error:'Unsupported action.'});
  return reply(200,result);
  }catch(e){return reply(400,{error:e.message||'Delivery operation failed.'});}
