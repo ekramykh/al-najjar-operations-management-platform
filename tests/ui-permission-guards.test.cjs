@@ -25,6 +25,7 @@ function harness(flags = {}, ready = true) {
     sortRecordsArray(){},filterAndRender(){},closeRecordModal(){},
     updateFormAndFilterDatalists(){},onDriverSelectionChange(){},
     promptPassword(_message,callback){context.passwordCallback=callback},
+    confirmRecordDeletion(){return new Promise(resolve=>context.passwordCallback=resolve)},
     confirm:()=>true,adminPassword:'unchanged',
   };
   context.window.confirm=()=>true;
@@ -99,12 +100,12 @@ test('changed or deleted open record rejects stale edit but permits a new copy',
     c.saveRecordAsNew();assert.equal(c.saves,1);
   }
 });
-test('delete rechecks permission after password prompt and uses stable identity',()=>{
-  const {context:c}=harness(admin);c.deleteRecord(0);
-  c.currentPermissions=reader;c.passwordCallback('unchanged');
+test('delete rechecks permission after password prompt and uses stable identity',async()=>{
+  const {context:c}=harness(admin);let deletion=c.deleteRecord(0);
+  c.currentPermissions=reader;c.passwordCallback(true);await deletion;
   assert.equal(c.fuelRecords.length,1);assert.equal(c.deletions,undefined);
-  c.currentPermissions=admin;c.deleteRecord(0);
-  c.fuelRecords.unshift({sn:2,_syncId:'remote'});c.passwordCallback('unchanged');
+  c.currentPermissions=admin;deletion=c.deleteRecord(0);
+  c.fuelRecords.unshift({sn:2,_syncId:'remote'});c.passwordCallback(true);await deletion;
   assert.equal(c.fuelRecords.length,1);assert.equal(c.fuelRecords[0]._syncId,'remote');assert.equal(c.saves,1);
 });
 test('replacement import requires all three mutation permissions',()=>{
