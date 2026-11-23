@@ -8,6 +8,7 @@ test('record renderer escapes shared text and passes alert data through a callba
  const c={fuelRecords:[r,{sn:2,fuel:10}],currentPage:1,pageSize:25,currentSelectedRange:'Max',driverPhonesMap:{},window:{},document:{getElementById:get,createElement:()=>({setAttribute(){},querySelector(){return this.innerHTML.includes('data-fuel-alert')?{addEventListener:(_type,fn)=>callback=fn}:null}})},updateInvoiceWarningDashboard(){},calculateVariantKm:(a,b)=>Number(b||0)-Number(a||0),calculateAverageKmPerLiter:(km,f)=>f?km/f:0,tripDocumentSummary:()=>({invoiceAmount:0}),tripDocuments:()=>[],lowTripInvoice:()=>false,iconPencil:'',iconTrash:'',iconWhatsApp:'',filterRecordsByRange:x=>x,renderFinancialLineChart(){},updateFormAndFilterDatalists(){},syncActionsBarWidth(){},openWhatsAppDirect:(...args)=>passed=args};
  loadVehicleBrand(c);
  vm.runInNewContext(fs.readFileSync('assets/sales-order-table-warning.js','utf8'),c);
+ vm.runInNewContext(html.slice(html.indexOf('    function listPage('),html.indexOf('    function updateInvoiceWarningDashboard()')),c);
  vm.runInNewContext(html.slice(html.indexOf('    function escapeHtml(value)'),html.indexOf('    function createChartExportImage()')),c);c.renderDashboard();
  assert.ok(!rows[0].innerHTML.includes('<img'));assert.ok(rows[0].innerHTML.includes('&lt;img'));assert.ok(!rows[0].innerHTML.includes('onclick="openWhatsAppDirect'));callback();assert.equal(passed[2],driver);assert.equal(passed[0],payload);
 });

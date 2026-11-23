@@ -3193,6 +3193,7 @@ const r=new FileReader();r.onload=()=>{if(!requireFuelPermission('import'))retur
     <div id="invoiceWarningDashboard" class="invoice-warning-dashboard" role="alert" aria-live="polite">
         <button type="button" class="warning-dropdown-toggle" onclick="toggleInvoiceWarningDropdown()" aria-expanded="false">
             <span class="warning-title dashboard-section-heading"><svg class="dashboard-heading-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 2 21h20L12 3Z"/><path d="M12 9v5M12 18h.01"/></svg>Sales Order Amount Warning</span>
+            <span class="warning-desktop-threshold">Below <b>OMR 500</b></span>
             <span id="invoiceWarningCount" class="warning-count-badge">0</span>
             <span class="warning-chevron">▾</span>
         </button>
@@ -3445,7 +3446,8 @@ const r=new FileReader();r.onload=()=>{if(!requireFuelPermission('import'))retur
         </div>
         <aside id="recordDesignDetails" aria-label="Record details" hidden></aside>
         </div>
-        <div class="pagination-footer">
+        <div id="fuelDesktopPager"></div>
+        <div id="fuelLegacyPager" class="pagination-footer">
             <div id="paginationInfo">Showing 0 of 0 records (Total System Records: 0)</div>
             <div class="pagination-controls">
                 <button type="button" class="pagination-btn" id="btnPrevPage" onclick="changePage(-1)" disabled="">‹ Previous</button>
@@ -7325,14 +7327,26 @@ window.applySyncedAdminPassword = function(value) {
         const start = (state.page-1)*size;
         return {pages,start,end:Math.min(start+size,count)};
     }
-    function renderListPager(state,count,noun,label) {
+    function renderListPager(state,count,noun,label,{jump=false,showJumpOnShortLists=false}={}) {
         if (!count) return '';
         const {pages,start,end}=listPage(state,count);
         const first=Math.max(1,Math.min(state.page-1,pages-2));
-        const button=(page,text,disabled=false)=>'<button type="button" class="pagination-btn" data-list-page="'+page+'"'+(disabled?' disabled':'')+(typeof text==='number'&&page===state.page?' aria-current="page"':'')+'>'+text+'</button>';
-        const numbers=Array.from({length:Math.min(3,pages)},(_,i)=>button(first+i,first+i)).join('');
+        const button=(page,text,disabled=false,edge=false)=>'<button type="button" class="pagination-btn'+(edge?' warning-page-edge':'')+'" data-list-page="'+page+'"'+(disabled?' disabled':'')+(typeof text==='number'&&page===state.page?' aria-current="page"':'')+'>'+text+'</button>';
+        const gap='<span class="warning-page-gap" aria-hidden="true">…</span>';
+        const leading=jump&&first>1 ? button(1,1,false,true)+(first>2?gap:'') : '';
+        const last=first+Math.min(3,pages)-1;
+        const trailing=jump&&last<pages ? (last<pages-1?gap:'')+button(pages,pages,false,true) : '';
+        const numbers=leading+Array.from({length:Math.min(3,pages)},(_,i)=>button(first+i,first+i)).join('')+trailing;
+        const jumpForm=jump&&(pages>3||showJumpOnShortLists) ? '<form class="warning-page-jump"><label>Go to page <input type="number" min="1" max="'+pages+'" step="1" required value="'+state.page+'"></label><button type="submit">Go</button></form>' : '';
         const sizes=['5','10','25','50','100','all'].map(size=>'<option value="'+size+'"'+(state.size===size?' selected':'')+'>'+(size==='all'?'All':size)+'</option>').join('');
-        return '<nav class="pagination-footer delivery-pagination axis-list-pager" aria-label="'+label+'"><div class="axis-list-pager-summary"><span>Showing '+(start+1)+'–'+end+' of '+count+' '+noun+'</span><label>Per page <select data-list-size>'+sizes+'</select></label></div><div class="pagination-controls">'+button(state.page-1,'‹ Previous',state.page===1)+numbers+button(state.page+1,'Next ›',state.page===pages)+'</div></nav>';
+        return '<nav class="pagination-footer delivery-pagination axis-list-pager"'+(jump?' data-desktop-list-pager':'')+' aria-label="'+label+'"><div class="axis-list-pager-summary"><span>Showing '+(start+1)+'–'+end+' of '+count+' '+noun+'</span><label>Per page <select data-list-size>'+sizes+'</select></label></div><div class="pagination-controls">'+button(state.page-1,'‹ Previous',state.page===1)+numbers+button(state.page+1,'Next ›',state.page===pages)+'</div>'+jumpForm+'</nav>';
+    }
+
+    function jumpListPage(event, setPage) {
+        if (!event.target.matches('.warning-page-jump')) return;
+        event.preventDefault();
+        const input=event.target.querySelector('input');
+        if (input.checkValidity()) setPage(input.valueAsNumber);
     }
 
     function updateInvoiceWarningDashboard() {
@@ -7364,14 +7378,19 @@ window.applySyncedAdminPassword = function(value) {
             const r = x.record;
             const amount = Number(r.salesOrderAmount) || 0;
             return `<div class="warning-item" role="button" tabindex="0" ondblclick="goToInvoiceWarningRecord(${x.index})" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();goToInvoiceWarningRecord(${x.index})}">
-                <span class="warning-field-date"><strong>Date:</strong> ${escapeHtml(r.date || '-')}</span>
-                <span class="warning-field-order"><strong>SO:</strong> ${escapeHtml(r.salesOrderNumber || '-')}</span>
-                <span class="warning-amount"><strong>Amount:</strong> OMR ${amount.toFixed(3)}</span>
-                <span class="warning-field-branch"><strong>Branch:</strong> ${escapeHtml(r.branch || '-')}</span>
-                <span class="warning-field-delivery"><strong>Delivery:</strong> ${escapeHtml(r.deliveryNumber || '-')}</span>
+                <span class="warning-field-date"><strong>Date:</strong> <span class="warning-value">${escapeHtml(r.date || '-')}</span></span>
+                <span class="warning-field-order"><strong>SO:</strong> <span class="warning-value">${escapeHtml(r.salesOrderNumber || '-')}</span></span>
+                <span class="warning-amount"><strong>Amount:</strong> <span class="warning-value">OMR ${amount.toFixed(3)}</span></span>
+                <span class="warning-field-branch"><strong>Branch:</strong> <span class="warning-value">${escapeHtml(r.branch || '-')}</span></span>
+                <span class="warning-field-delivery"><strong>Delivery:</strong> <span class="warning-value">${escapeHtml(r.deliveryNumber || '-')}</span></span>
             </div>`;
         }).join('');
-        more.innerHTML = renderListPager(invoiceWarningPager,lowInvoices.length,'warnings','Warning pages');
+        more.innerHTML = renderListPager(invoiceWarningPager,lowInvoices.length,'warnings','Warning pages',{jump:true,showJumpOnShortLists:true});
+        more.onsubmit = event => jumpListPage(event, page => {
+            invoiceWarningPager.page=page;
+            updateInvoiceWarningDashboard();
+            more.querySelector('.warning-page-jump input')?.focus({preventScroll:true});
+        });
         more.onclick = event => {
             const button=event.target.closest('button[data-list-page]');
             if(!button||button.disabled)return;
@@ -7505,6 +7524,27 @@ window.applySyncedAdminPassword = function(value) {
             });
             tbody.appendChild(row);
         });
+
+        const desktopPager=document.getElementById('fuelDesktopPager');
+        if (desktopPager) {
+            desktopPager.innerHTML=renderListPager({page:currentPage,size:String(pageSize)},totalRecords,'records','Fuel record pages',{jump:true});
+            const setPage=(page, selector)=>{
+                currentPage=page;
+                filterAndRender();
+                desktopPager.querySelector(selector)?.focus({preventScroll:true});
+            };
+            desktopPager.onclick=event=>{
+                const button=event.target.closest('[data-list-page]');
+                if (button && !button.disabled) setPage(Number(button.dataset.listPage),'[aria-current="page"]');
+            };
+            desktopPager.onsubmit=event=>jumpListPage(event,page=>setPage(page,'.warning-page-jump input'));
+            desktopPager.onchange=event=>{
+                if (!event.target.matches('[data-list-size]')) return;
+                document.getElementById('pageSizeSelect').value=event.target.value;
+                changePageSize(event.target.value);
+                desktopPager.querySelector('[data-list-size]')?.focus({preventScroll:true});
+            };
+        }
 
         const displayedCount = paginatedRecords.length;
         document.getElementById('paginationInfo').setAttribute?.('data-mobile-range', displayedCount
@@ -11656,9 +11696,15 @@ async function deleteDelivery(id){
  }
  if(actor===window.fuelHeaderAccount?.id)await refresh();
 }
-const deliveryPager={page:1,size:'5'};
-function deliveryPagination(count){
- return renderListPager(deliveryPager,count,'deliveries','Delivery pages');
+const deliveryPagers=new Map(tabs.map(name=>[name,{page:1,size:'5'}]));
+const deliveryDesktopPager=matchMedia('(min-width:901px) and (pointer:fine), (min-width:1025px)');
+deliveryDesktopPager.addEventListener('change',render);
+function deliveryTable(columns,rows,noun){
+ const state=deliveryPagers.get(tab);
+ const paginated=deliveryDesktopPager.matches||tab==='Overview'||tab==='Delivery Orders';
+ const page=paginated ? listPage(state,rows.length) : {start:0,end:rows.length};
+ const pager=paginated ? renderListPager(state,rows.length,noun,'Delivery pages',{jump:true,showJumpOnShortLists:true}) : '';
+ return '<div class="delivery-orders-frame"><div class="delivery-table-scroll"><table><thead><tr>'+columns.map(column=>'<th>'+column+'</th>').join('')+'</tr></thead><tbody>'+rows.slice(page.start,page.end).map(row=>row()).join('')+'</tbody></table></div>'+pager+'</div>';
 }
 function deliveryWhatsAppPhone(order){
  const phone=String(order.data.driverPhone||deliveryDrivers().find(([name])=>name===order.data.driver)?.[1]||'').replace(/[^0-9]/g,'').replace(/^00/,'');
@@ -11674,10 +11720,10 @@ function openDeliveryWhatsApp(id){
 function buttons(e){return '<button data-view="'+e.id+'">View</button><button data-history="'+e.id+'" title="Audit History">◷ History</button>'+(canEdit?'<button data-edit="'+e.id+'">Edit</button>':'')+(e.kind==='order'&&canDelete?'<button type="button" data-delete="'+e.id+'">Delete order</button>':'')+(e.kind==='order'&&deliveryWhatsAppPhone(e)?'<button type="button" class="btn-icon btn-icon-wa delivery-desktop-whatsapp" data-delivery-whatsapp="'+e.id+'" aria-label="WhatsApp driver" title="WhatsApp driver">'+iconWhatsApp+'</button>':'')+(e.data.proofPath?'<button data-proof="'+e.id+'">Proof</button>':'')+(e.kind==='order'&&e.data.fuelRecordId&&e.data.feeDue>0&&total(e.data,'Delivery fee')>=e.data.feeDue?'<button data-fuel-apply="'+e.id+'">Use fee in Fuel</button>':'');}
 function render(){if(!$('deliveryContent'))return;$('deliveryTabs').innerHTML=tabs.map(t=>'<button data-delivery-tab="'+t+'" aria-selected="'+(t===tab)+'" aria-pressed="'+(t===tab)+'">'+icon(tabIcons[t])+'<span>'+t+'</span></button>').join('');$('deliveryNewOrder').disabled=!canAdd;$('deliveryNewTrip').disabled=!canAdd;for(const [id,key] of [['deliveryDriverFilter','driver'],['deliveryVehicleFilter','vehicle'],['deliveryDestinationFilter','destination']]){const el=$(id),value=el.value;el.innerHTML=deliveryOptions(key,value,true);el.value=value;el.dispatchEvent(new Event('delivery-options'));}const list=filtered();let html='';
 if(tab==='Overview'){const all=orders(),due=all.reduce((s,e)=>s+e.data.feeDue-total(e.data,'Delivery fee'),0);html='<div class="delivery-kpis">'+[['Pending',all.filter(e=>['Pending','Scheduled'].includes(e.data.status)).length],['In Transit',all.filter(e=>e.data.status==='In Transit').length],['Delivered',all.filter(e=>e.data.status==='Delivered').length],['Delivery fees outstanding',fmt(due)+' OMR']].map(([label,v])=>'<div><span>'+label+'</span><strong>'+v+'</strong></div>').join('')+'</div><p class="axis-delivery-overview-note">Plan deliveries, link orders to trips, record payments separately and track proof of delivery. No records are imported automatically.</p>';}
-if(tab==='Overview'||tab==='Delivery Orders'){const pager=deliveryPagination(list.length);const {start,end}=listPage(deliveryPager,list.length);html+='<div class="delivery-orders-frame"><div class="delivery-table-scroll"><table><thead><tr><th>Delivery</th><th>Sales Order</th><th>Customer / Area</th><th>Driver Name</th><th>Driver Phone</th><th>Vehicle</th><th>Status</th><th>Delivery fee</th><th>Paid</th><th>Actions</th></tr></thead><tbody>'+list.slice(start,end).map(e=>'<tr><td>'+number(e)+'</td><td>'+esc(e.data.salesOrder)+'</td><td>'+esc(e.data.customer)+'<small>'+esc(e.data.destination)+'</small></td><td>'+esc(e.data.driver)+'</td><td class="delivery-driver-phone">'+esc(e.data.driverPhone||deliveryDrivers().find(([n])=>n===e.data.driver)?.[1]||'')+'</td><td>'+VehicleBrand.label(e.data.vehicle,{brand:e.data.vehicleBrand,chosenIcon:e.data.vehicleIcon,delivery:true})+'</td><td><span class="axis-record-status" data-status="'+esc(String(e.data.status||'').toLowerCase().replace(/\s+/g,'-'))+'">'+esc(e.data.status)+'</span></td><td>'+fmt(e.data.feeDue)+'</td><td>'+fmt(total(e.data,'Delivery fee'))+'</td><td>'+buttons(e)+'</td></tr>').join('')+'</tbody></table></div>'+pager+'</div>';}
-if(tab==='Trip Planning')html='<div class="delivery-table-scroll"><table><thead><tr><th>Trip</th><th>Date</th><th>Driver Name</th><th>Driver Phone</th><th>Vehicle</th><th>Route</th><th>Deliveries</th><th>Actions</th></tr></thead><tbody>'+filteredDeliveryTrips().map(e=>'<tr><td>'+number(e)+'</td><td>'+esc(deliveryDate(e.data.date))+'</td><td>'+esc(e.data.driver)+'</td><td class="delivery-driver-phone">'+esc(e.data.driverPhone||deliveryDrivers().find(([n])=>n===e.data.driver)?.[1]||'')+'</td><td>'+VehicleBrand.label(e.data.vehicle,{brand:e.data.vehicleBrand,chosenIcon:e.data.vehicleIcon,delivery:true})+'</td><td>'+esc(e.data.route)+'</td><td>'+orders().filter(o=>o.data.tripIds.includes(e.id)).map(number).join(', ')+'</td><td>'+buttons(e)+'</td></tr>').join('')+'</tbody></table></div>';
-if(tab==='Collections & Settlements')html='<div class="delivery-table-scroll"><table><thead><tr><th>Delivery</th><th>Category</th><th>Reference</th><th>Method</th><th>Amount</th><th>Finance handover</th><th>Actions</th></tr></thead><tbody>'+list.flatMap(e=>e.data.payments.map(p=>'<tr><td>'+number(e)+'</td><td>'+esc(p.category)+'</td><td>'+esc(p.reference)+'</td><td>'+esc(p.method)+'</td><td>'+fmt(p.amount)+'</td><td>'+(p.method!=='Cash'?'Not applicable':p.settled?'Handed over':'With driver')+'</td><td>'+buttons(e)+'</td></tr>')).join('')+'</tbody></table></div>';
-if(tab==='Reports'){const sum=(k)=>list.reduce((s,e)=>s+Number(e.data[k]||0),0);const paid=cat=>list.reduce((s,e)=>s+total(e.data,cat),0);html='<h3>Filtered delivery totals</h3><div class="delivery-kpis">'+[['Goods due',sum('goodsDue')],['Goods paid',paid('Goods')],['Delivery fees due',sum('feeDue')],['Delivery fees paid',paid('Delivery fee')]].map(([k,v])=>'<div>'+k+'<strong>'+fmt(v)+' OMR</strong></div>').join('')+'</div><p>'+list.length+' deliveries match the current search and status filter. Export uses this same selection.</p>';}
+if(tab==='Overview'||tab==='Delivery Orders')html+=deliveryTable(['Delivery','Sales Order','Customer / Area','Driver Name','Driver Phone','Vehicle','Status','Delivery fee','Paid','Actions'],list.map(e=>()=>'<tr><td>'+number(e)+'</td><td>'+esc(e.data.salesOrder)+'</td><td>'+esc(e.data.customer)+'<small>'+esc(e.data.destination)+'</small></td><td>'+esc(e.data.driver)+'</td><td class="delivery-driver-phone">'+esc(e.data.driverPhone||deliveryDrivers().find(([n])=>n===e.data.driver)?.[1]||'')+'</td><td>'+VehicleBrand.label(e.data.vehicle,{brand:e.data.vehicleBrand,chosenIcon:e.data.vehicleIcon,delivery:true})+'</td><td><span class="axis-record-status" data-status="'+esc(String(e.data.status||'').toLowerCase().replace(/\s+/g,'-'))+'">'+esc(e.data.status)+'</span></td><td>'+fmt(e.data.feeDue)+'</td><td>'+fmt(total(e.data,'Delivery fee'))+'</td><td>'+buttons(e)+'</td></tr>'),'deliveries');
+if(tab==='Trip Planning')html=deliveryTable(['Trip','Date','Driver Name','Driver Phone','Vehicle','Route','Deliveries','Actions'],filteredDeliveryTrips().map(e=>()=>'<tr><td>'+number(e)+'</td><td>'+esc(deliveryDate(e.data.date))+'</td><td>'+esc(e.data.driver)+'</td><td class="delivery-driver-phone">'+esc(e.data.driverPhone||deliveryDrivers().find(([n])=>n===e.data.driver)?.[1]||'')+'</td><td>'+VehicleBrand.label(e.data.vehicle,{brand:e.data.vehicleBrand,chosenIcon:e.data.vehicleIcon,delivery:true})+'</td><td>'+esc(e.data.route)+'</td><td>'+orders().filter(o=>o.data.tripIds.includes(e.id)).map(number).join(', ')+'</td><td>'+buttons(e)+'</td></tr>'),'trips');
+if(tab==='Collections & Settlements')html=deliveryTable(['Delivery','Category','Reference','Method','Amount','Finance handover','Actions'],list.flatMap(e=>e.data.payments.map(p=>()=>'<tr><td>'+number(e)+'</td><td>'+esc(p.category)+'</td><td>'+esc(p.reference)+'</td><td>'+esc(p.method)+'</td><td>'+fmt(p.amount)+'</td><td>'+(p.method!=='Cash'?'Not applicable':p.settled?'Handed over':'With driver')+'</td><td>'+buttons(e)+'</td></tr>')),'payments');
+if(tab==='Reports'){const sum=(k)=>list.reduce((s,e)=>s+Number(e.data[k]||0),0);const paid=cat=>list.reduce((s,e)=>s+total(e.data,cat),0);html='<h3>Filtered delivery totals</h3><div class="delivery-kpis">'+[['Goods due',sum('goodsDue')],['Goods paid',paid('Goods')],['Delivery fees due',sum('feeDue')],['Delivery fees paid',paid('Delivery fee')]].map(([k,v])=>'<div>'+k+'<strong>'+fmt(v)+' OMR</strong></div>').join('')+'</div><p class="axis-delivery-report-note">'+list.length+' deliveries match the current search and status filter. Export uses this same selection.</p>';}
 const content=$('deliveryContent'),markup=html+(entities.length?'':'<p class="delivery-empty">No delivery data yet. Create a trip or delivery order to begin.</p>');
 if(content._axisDeliveryMarkup!==markup){
  content._axisDeliveryOpenRows=new Set([...content.querySelectorAll('.axis-record-disclosure[open]')].map(el=>el.dataset.row));
@@ -11716,12 +11762,16 @@ function deliveryExportAuthorized(format){
 };
 function mount(){const nav=document.createElement('nav');nav.id='platformModules';nav.className='record-design-switch';nav.setAttribute('aria-label','Platform modules');nav.innerHTML=[['fuel','Fuel Consumption'],['delivery','Delivery Management'],['analysis','Fleet Analysis']].map(([k,t])=>'<button data-platform-module="'+k+'" aria-selected="'+(k==='fuel')+'" aria-pressed="'+(k==='fuel')+'">'+moduleDockIcon(k)+'<span>'+t+'</span></button>').join('')+'';document.querySelector('.container>header').after(nav);const panel=document.createElement('section');panel.id='deliveryModule';panel.className='panel';panel.innerHTML='<div class="delivery-heading"><h2 class="panel-title">'+icon('truck')+'Delivery Management</h2><div><button id="deliveryNewOrder">+ New Delivery</button><button id="deliveryNewTrip">+ New Trip</button><button id="deliveryExport">Export CSV</button><button id="deliveryRefresh">Refresh</button></div></div><div id="deliveryTabs" class="record-design-switch" role="tablist"></div><p id="deliveryMessage" role="status"></p><div class="delivery-filters"><input id="deliverySearch" placeholder="Search delivery, order, customer, driver…"><select id="deliveryStatusFilter"><option value="">All statuses</option>'+['Pending','Scheduled','In Transit','Delivered','Delayed','Cancelled'].map(x=>'<option>'+x+'</option>').join('')+'</select><select id="deliveryDriverFilter" data-delivery-picker="driver" aria-label="Driver filter"><option value="">All drivers</option></select><select id="deliveryVehicleFilter" data-delivery-picker="vehicle" aria-label="Vehicle filter"><option value="">All vehicles</option></select><select id="deliveryDestinationFilter" data-delivery-picker="destination" aria-label="Destination filter"><option value="">All Destinations</option></select><label>From<input id="deliveryFromDate" type="date"></label><label>To<input id="deliveryToDate" type="date"></label></div><div id="deliveryContent"></div>';nav.after(panel);for(const [id,name] of [['deliveryNewOrder','plus'],['deliveryNewTrip','route'],['deliveryExport','download'],['deliveryRefresh','refresh']]){const b=$(id);b.innerHTML=icon(name)+'<span>'+b.textContent.replace('+ ','')+'</span>';}const filters=panel.querySelector('.delivery-filters');filters.classList.add('filter-bar-container');for(const [id,title] of [['deliverySearch','Advanced Search'],['deliveryStatusFilter','Delivery Status'],['deliveryDriverFilter','Driver Filter'],['deliveryVehicleFilter','Vehicle Filter'],['deliveryDestinationFilter','Location / Destination'],['deliveryFromDate','From Date'],['deliveryToDate','To Date']]){const control=$(id),oldLabel=control.parentElement.tagName==='LABEL'?control.parentElement:null,group=document.createElement('div'),label=document.createElement('label');group.className='filter-item';label.htmlFor=id;label.textContent=title;if(oldLabel)oldLabel.replaceWith(group);else control.before(group);group.append(label,control);}const clear=document.createElement('button');clear.id='deliveryClear';clear.className='btn-clear-filters';clear.textContent='Clear Filters';clear.onclick=()=>{for(const id of ['deliverySearch','deliveryStatusFilter','deliveryDriverFilter','deliveryVehicleFilter','deliveryDestinationFilter','deliveryFromDate','deliveryToDate'])$(id).value='';for(const id of ['deliveryFromDate','deliveryToDate'])$(id).dispatchEvent(new Event('change',{bubbles:true}));render();};filters.append(clear);present(panel);document.body.insertAdjacentHTML('beforeend','<dialog id="deliveryEditor" class="delivery-dialog"><form id="deliveryForm" novalidate><header class="form-panel-title"><h2 id="deliveryEditorTitle"></h2><button type="button" id="deliveryClose" class="close-modal-x" aria-label="Close">×</button></header><div class="record-form-scroll"><div id="deliveryEditorBody"></div><label id="deliveryReasonLabel">Reason for change<textarea class="form-control" id="deliveryEditReason" maxlength="500"></textarea></label><p id="deliveryEditorError" role="alert"></p></div><footer class="btn-group-form"><button type="submit" id="deliverySave" class="btn">'+icon('save')+'Save & Confirm</button><button type="button" id="deliveryCancel" class="btn btn-cancel">Cancel</button></footer></form></dialog><dialog id="deliveryHistory" class="delivery-dialog"><header class="audit-dialog-header">'+icon('history')+'<div><h2>Delivery Audit History</h2><p class="audit-record-meta" id="deliveryHistoryRecord"></p><p class="audit-subtitle">Visible to all users · Read only</p></div><button id="deliveryHistoryClose" class="audit-x" aria-label="Close">×</button></header><div id="deliveryHistoryBody" class="audit-dialog-body"></div><footer class="audit-dialog-footer"><span class="audit-confirmed" id="deliveryHistoryStatus"></span><div class="delivery-history-actions"><button id="deliveryHistoryPrev" class="audit-button">Newer</button><button id="deliveryHistoryNext" class="audit-button">Older</button><button id="deliveryHistoryDone" class="audit-button">Close</button></div></footer></dialog>');document.body.dataset.activeModule='fuel';
 nav.onclick=e=>{const b=e.target.closest('[data-platform-module]');if(b)module(b.dataset.platformModule);};$('deliveryTabs').onclick=e=>{const b=e.target.closest('[data-delivery-tab]');if(b){tab=b.dataset.deliveryTab;render();}};$('deliverySearch').oninput=render;$('deliveryStatusFilter').onchange=render;for(const id of ['deliveryFromDate','deliveryToDate','deliveryDriverFilter','deliveryVehicleFilter','deliveryDestinationFilter'])$(id).onchange=render;$('deliveryNewOrder').onclick=()=>edit();$('deliveryNewTrip').onclick=()=>edit(null,'trip');$('deliveryRefresh').onclick=refresh;$('deliveryExport').onclick=exportCsv;$('deliveryClose').onclick=$('deliveryCancel').onclick=()=>{if(!busy)$('deliveryEditor').close();};$('deliveryForm').onsubmit=e=>{e.preventDefault();save();};$('deliveryEditor').addEventListener('close',()=>{if(!$('deliveryEditor').open){draft=null;selected=null;}});document.addEventListener('pointerdown',e=>{for(const p of document.querySelectorAll('.delivery-master-picker'))if(!p.contains(e.target)){p.querySelector('.delivery-master-options').hidden=true;p.querySelector('.delivery-master-selected').setAttribute('aria-expanded','false');}});$('deliveryEditor').addEventListener('cancel',e=>{if(busy)e.preventDefault();});$('deliveryHistoryClose').onclick=$('deliveryHistoryDone').onclick=()=>$('deliveryHistory').close();$('deliveryHistoryPrev').onclick=()=>history(historyId,Math.max(0,historyOffset-50));$('deliveryHistoryNext').onclick=()=>history(historyId,historyOffset+50);
+$('deliveryContent').onsubmit=event=>jumpListPage(event,page=>{
+ deliveryPagers.get(tab).page=page;render();
+ $('deliveryContent').querySelector('.warning-page-jump input')?.focus({preventScroll:true});
+});
 $('deliveryContent').onchange=e=>{
  if(!e.target.matches('[data-list-size]'))return;
- deliveryPager.size=e.target.value;deliveryPager.page=1;render();
+ const pager=deliveryPagers.get(tab);pager.size=e.target.value;pager.page=1;render();
  $('deliveryContent').querySelector('[data-list-size]')?.focus({preventScroll:true});
 };
-$('deliveryContent').onclick=e=>{const b=e.target.closest('button');if(!b)return;if(b.dataset.listPage&&!b.disabled){deliveryPager.page=Number(b.dataset.listPage);render();$('deliveryContent').querySelector('[aria-current="page"]')?.focus({preventScroll:true});}else if(b.dataset.view)edit(b.dataset.view,'order',true);else if(b.dataset.history)history(b.dataset.history);else if(b.dataset.edit)edit(b.dataset.edit);else if(b.dataset.delete)deleteDelivery(b.dataset.delete);else if(b.dataset.deliveryWhatsapp)openDeliveryWhatsApp(b.dataset.deliveryWhatsapp);else if(b.dataset.proof)proof(b.dataset.proof);else if(b.dataset.fuelApply)applyFuel(b.dataset.fuelApply);};
+$('deliveryContent').onclick=e=>{const b=e.target.closest('button');if(!b)return;if(b.dataset.listPage&&!b.disabled){deliveryPagers.get(tab).page=Number(b.dataset.listPage);render();$('deliveryContent').querySelector('[aria-current="page"]')?.focus({preventScroll:true});}else if(b.dataset.view)edit(b.dataset.view,'order',true);else if(b.dataset.history)history(b.dataset.history);else if(b.dataset.edit)edit(b.dataset.edit);else if(b.dataset.delete)deleteDelivery(b.dataset.delete);else if(b.dataset.deliveryWhatsapp)openDeliveryWhatsApp(b.dataset.deliveryWhatsapp);else if(b.dataset.proof)proof(b.dataset.proof);else if(b.dataset.fuelApply)applyFuel(b.dataset.fuelApply);};
 $('deliveryForm').onclick=e=>{const b=e.target.closest('button');if(!b)return;if(b.dataset.deliverySection!==undefined){collect();document.querySelectorAll('[data-delivery-section]').forEach(x=>x.setAttribute('aria-current',String(x===b)));if(deliveryDesktopSections.matches){if(b.dataset.deliverySection==='2')balance();scrollDeliverySection(b.dataset.deliverySection);}else{document.querySelectorAll('[data-delivery-form-section]').forEach(x=>x.hidden=x.dataset.deliveryFormSection!==b.dataset.deliverySection);if(b.dataset.deliverySection==='2')balance();}}else if(b.id==='addDeliveryPayment'){collect();const amount=Number($('payAmount').value),reference=$('payReference').value.trim();if(!amount||amount<0.001||!reference){$('deliveryEditorError').textContent='Enter a positive payment and reference.';return;}draft.payments.push({category:$('payCategory').value,amount,reference,method:$('payMethod').value,date:date(),settled:false});editor();document.querySelector('[data-delivery-section="2"]').click();}else if(b.dataset.removePayment!==undefined){collect();draft.payments.splice(Number(b.dataset.removePayment),1);editor();document.querySelector('[data-delivery-section="2"]').click();}else if(b.id==='deliveryProofOpen')proof(selected.id);};
 $('deliveryEditorBody').onchange=async e=>{if(e.target.dataset.settlement!==undefined)draft.payments[Number(e.target.dataset.settlement)].settled=e.target.checked;if(e.target.id==='deliveryProofFile'&&e.target.files[0]){const file=e.target.files[0];if(file.size>1048576){$('deliveryProofStatus').textContent='Maximum size is 1 MB.';e.target.value='';return;}busy=true;$('deliverySave').disabled=true;try{const content=await new Promise((resolve,reject)=>{const r=new FileReader();r.onload=()=>resolve(r.result);r.onerror=reject;r.readAsDataURL(file);});const r=await api('proofUpload',{id:selected.id,mime:file.type,base64:content.split(',')[1]});draft.proofPath=r.path;$('deliveryProofStatus').textContent='Uploaded privately. Save the record to attach.';}catch(err){$('deliveryProofStatus').textContent=err.message;}finally{busy=false;$('deliverySave').disabled=false;}}};render();setInterval(()=>{if((active||document.body.dataset.workspacePage==='dashboard')&&window.fuelHeaderAccount?.id&&!$('deliveryEditor').open&&!$('deliveryHistory').open)refresh();},5000);}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',mount);else mount();
@@ -16925,6 +16975,172 @@ html.workspace-design[data-appearance] body #recordModal :is(#tripDocumentsEdito
     border-inline-start: 0;
     border-block-start: 1px solid var(--border-color);
   }
+}
+</style>
+<style>
+.warning-desktop-threshold,.warning-page-edge,.warning-page-gap,.warning-page-jump,#fuelDesktopPager{display:none}
+@media screen and (min-width:901px) and (pointer:fine),screen and (min-width:1025px){
+ html.workspace-design body #invoiceWarningDashboard{
+  --warning-line:#526b83;--warning-accent:#ffc052;--warning-chip:#982f42;
+  --warning-row:#202b36;--warning-ink:#f4f8ff;
+ }
+ html.workspace-design[data-appearance="light"] body #invoiceWarningDashboard{
+  --warning-line:#a8bbc9;--warning-accent:#865000;--warning-chip:#982f42;
+  --warning-row:#f5f8fc;--warning-ink:#192f44;
+ }
+ html.workspace-design[data-appearance] body #invoiceWarningDashboard.active{
+  padding:0;border:1px solid var(--warning-line)!important;border-radius:10px;
+  background:var(--bg-surface)!important;box-shadow:none!important;
+ }
+ html.workspace-design[data-appearance] body #invoiceWarningDashboard>.warning-dropdown-toggle{
+  width:100%;margin:0!important;border:0!important;border-radius:9px;
+  background:var(--bg-surface)!important;box-shadow:none!important;
+  color:var(--warning-ink)!important;justify-content:flex-start;gap:12px!important;
+ }
+ html.workspace-design[data-appearance] body #invoiceWarningDashboard.expanded>.warning-dropdown-toggle{
+  border-bottom:1px solid var(--warning-line)!important;border-radius:9px 9px 0 0;
+ }
+ html.workspace-design[data-appearance] body #invoiceWarningDashboard>.warning-dropdown-toggle::before{
+  animation:none!important;background:none!important;
+ }
+ html.workspace-design[data-appearance] body #invoiceWarningDashboard #invoiceWarningDropdownContent{
+  margin:0!important;border:0!important;border-radius:0 0 9px 9px;
+  background:var(--bg-surface)!important;box-shadow:none!important;
+  padding-bottom:0!important;
+ }
+ #invoiceWarningDashboard #invoiceWarningMore{margin:6px 0 0;padding:0}
+ html.workspace-design[data-appearance] body :is(#invoiceWarningMore,#deliveryContent) .axis-list-pager[data-desktop-list-pager] .warning-page-jump button{
+  height:30px;min-height:30px;max-height:30px;padding-block:0;
+  display:inline-flex;align-items:center;justify-content:center;line-height:1;
+ }
+ #invoiceWarningDashboard .warning-dropdown-toggle .warning-title{width:auto;flex:0 1 auto;margin:0;color:inherit!important}
+ #invoiceWarningDashboard .warning-dropdown-toggle .dashboard-heading-icon{color:var(--warning-accent);flex:none}
+ #invoiceWarningDashboard .warning-desktop-threshold{display:inline-block;border-inline-start:1px solid var(--warning-line);padding-inline-start:12px;white-space:nowrap;font-size:12px}
+ #invoiceWarningDashboard .warning-desktop-threshold b{color:var(--warning-accent)}
+ #invoiceWarningDashboard #invoiceWarningCount{background:transparent!important;color:var(--warning-accent)!important;border:1px solid currentColor;border-radius:999px;padding:2px 8px;white-space:nowrap}
+ #invoiceWarningDashboard #invoiceWarningCount::after{content:' warnings'}
+ html.workspace-design[data-appearance] body #invoiceWarningDashboard>.warning-dropdown-toggle .warning-title{color:var(--warning-ink)!important}
+ html.workspace-design[data-appearance] body #invoiceWarningDashboard>.warning-dropdown-toggle .dashboard-heading-icon{
+  box-sizing:content-box;width:19px;height:19px;padding:5px;color:var(--warning-accent)!important
+ }
+ #invoiceWarningDashboard .warning-desktop-threshold{margin-inline-start:auto;border-inline-start:0;padding-inline-start:0}
+ html.workspace-design[data-appearance] body #invoiceWarningDashboard .warning-chevron{
+  display:grid;place-items:center;margin:0;width:28px;height:28px;flex:none;
+  border:0;background:transparent;color:var(--warning-ink)!important;
+ }
+ #invoiceWarningDashboard .warning-chevron svg{width:16px;height:16px}
+
+ #invoiceWarningDashboard .invoice-panel-heading{display:none}
+ html.workspace-design[data-appearance] body #invoiceWarningDashboard #invoiceWarningSummary{margin:0 0 8px;padding-inline-end:125px;min-height:24px;display:flex;align-items:center}
+ html.workspace-design[data-appearance] body #invoiceWarningDashboard #invoiceWarningList .warning-item{
+  position:relative;isolation:isolate;grid-template-columns:minmax(0,.85fr) minmax(0,.55fr) minmax(0,1.15fr) minmax(0,1.2fr) minmax(0,1fr);
+  padding:5px 28px 5px 12px;gap:0;border-radius:7px;
+  background:var(--warning-row)!important;border:1px solid var(--warning-line)!important;border-inline-start:4px solid var(--warning-accent)!important;
+ }
+ html.workspace-design[data-appearance] body #invoiceWarningDashboard #invoiceWarningList .warning-item:is(:hover,:focus-visible){
+  outline:1px solid var(--warning-accent);outline-offset:-1px;
+ }
+ #invoiceWarningDashboard .warning-item>span{min-width:0;padding-inline:9px;overflow-wrap:anywhere}
+ #invoiceWarningDashboard .warning-item>span+span{border-inline-start:1px solid var(--warning-line)}
+ #invoiceWarningDashboard .warning-item strong{display:block;font-size:9px!important;font-weight:500;text-transform:uppercase;color:var(--text-muted)}
+ #invoiceWarningDashboard .warning-value{font-weight:650}
+ #invoiceWarningDashboard .warning-amount{order:1;text-align:start}
+ #invoiceWarningDashboard .warning-amount .warning-value{display:inline-block;background:var(--warning-chip);color:#fff;border-radius:999px;padding:0 7px;white-space:nowrap}
+ #invoiceWarningDashboard .warning-item::after{content:'';position:absolute;right:10px;top:50%;width:6px;height:6px;border-top:1px solid currentColor;border-right:1px solid currentColor;transform:translateY(-50%) rotate(45deg);pointer-events:none}
+ html.workspace-design[data-appearance] body #recordLogsPanel:has(#fuelDesktopPager:not(:empty)){
+  padding-bottom:0!important;
+ }
+ html.workspace-design[data-appearance] body #recordLogsPanel #fuelDesktopPager{display:block;margin-top:6px}
+ html.workspace-design[data-appearance] body #recordLogsPanel #fuelDesktopPager:not(:empty)+#fuelLegacyPager{display:none!important}
+ html.workspace-design[data-appearance] body :is(#fuelDesktopPager,#deliveryContent) .axis-list-pager[data-desktop-list-pager]{
+  --warning-line:#526b83;--warning-accent:#ffc052;--warning-row:#202b36;--warning-ink:#f4f8ff;
+ }
+ html.workspace-design[data-appearance="light"] body :is(#fuelDesktopPager,#deliveryContent) .axis-list-pager[data-desktop-list-pager]{
+  --warning-line:#a8bbc9;--warning-accent:#865000;--warning-row:#f5f8fc;--warning-ink:#192f44;
+ }
+ html.workspace-design[data-appearance] body :is(#invoiceWarningMore,#fuelDesktopPager,#deliveryContent) .axis-list-pager[data-desktop-list-pager]{
+  display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:8px;
+  background:transparent!important;border:0;border-top:1px solid var(--warning-line);border-radius:0;
+  margin:0;padding:8px 0;min-height:47px;box-sizing:border-box;
+ }
+ :is(#invoiceWarningMore,#fuelDesktopPager,#deliveryContent) .axis-list-pager[data-desktop-list-pager] .axis-list-pager-summary{display:contents}
+ :is(#invoiceWarningMore,#fuelDesktopPager,#deliveryContent) .axis-list-pager[data-desktop-list-pager] .axis-list-pager-summary>span{grid-column:1;grid-row:1}
+ :is(#invoiceWarningMore,#fuelDesktopPager,#deliveryContent) .axis-list-pager[data-desktop-list-pager] .axis-list-pager-summary>label{grid-column:3;grid-row:1;justify-self:end}
+ html.workspace-design[data-appearance] body :is(#invoiceWarningMore,#fuelDesktopPager,#deliveryContent) .axis-list-pager[data-desktop-list-pager] select[data-list-size]{
+  box-sizing:border-box;width:62px;height:30px;min-height:30px;margin:0;padding:0 6px;
+  border:1px solid var(--warning-line);border-radius:6px;background:var(--warning-row);color:var(--warning-ink);
+ }
+ :is(#invoiceWarningMore,#fuelDesktopPager,#deliveryContent) .axis-list-pager[data-desktop-list-pager] .pagination-controls{grid-column:2;grid-row:1;display:flex;justify-self:center;flex-wrap:nowrap;gap:0;margin:0;border:1px solid var(--warning-line);border-radius:6px}
+ html.workspace-design[data-appearance] body :is(#invoiceWarningMore,#fuelDesktopPager,#deliveryContent) .axis-list-pager[data-desktop-list-pager] .pagination-btn{
+  box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;
+  border:0;border-radius:0;height:30px;min-height:30px;min-width:29px;margin:0;padding:0 6px;
+  font-size:11px;line-height:1;white-space:nowrap;background:transparent!important;color:var(--warning-ink)!important;
+ }
+ html.workspace-design[data-appearance] body :is(#invoiceWarningMore,#fuelDesktopPager,#deliveryContent) .axis-list-pager[data-desktop-list-pager] .pagination-btn:is(:first-child,:last-child){
+  box-sizing:border-box;flex:0 0 76px;width:76px;height:30px;
+ }
+ :is(#invoiceWarningMore,#fuelDesktopPager,#deliveryContent) .axis-list-pager[data-desktop-list-pager] .pagination-btn+.pagination-btn{border-inline-start:1px solid var(--warning-line)!important}
+ :is(#invoiceWarningMore,#fuelDesktopPager,#deliveryContent) .axis-list-pager[data-desktop-list-pager] .pagination-btn[aria-current="page"]{box-shadow:inset 0 -3px var(--warning-accent)}
+ :is(#invoiceWarningMore,#fuelDesktopPager,#deliveryContent) .axis-list-pager[data-desktop-list-pager] .pagination-btn:disabled{opacity:.45}
+ :is(#invoiceWarningMore,#fuelDesktopPager,#deliveryContent) .axis-list-pager[data-desktop-list-pager] .warning-page-edge{display:inline-block}
+ :is(#invoiceWarningMore,#fuelDesktopPager,#deliveryContent) .axis-list-pager[data-desktop-list-pager] .warning-page-gap{display:grid;place-items:center;min-width:20px;color:var(--text-muted)}
+ :is(#invoiceWarningMore,#fuelDesktopPager,#deliveryContent) .axis-list-pager[data-desktop-list-pager]:has(.warning-page-jump){grid-template-columns:minmax(0,1fr) auto auto auto}
+ :is(#invoiceWarningMore,#fuelDesktopPager,#deliveryContent) .axis-list-pager[data-desktop-list-pager]:has(.warning-page-jump) .axis-list-pager-summary>label{grid-column:4}
+ :is(#invoiceWarningMore,#fuelDesktopPager,#deliveryContent) .axis-list-pager[data-desktop-list-pager] .warning-page-jump{grid-column:3;grid-row:1;display:flex;align-items:center;gap:5px;justify-self:end;margin:0}
+ :is(#invoiceWarningMore,#fuelDesktopPager,#deliveryContent) .axis-list-pager[data-desktop-list-pager] .warning-page-jump label{display:flex;align-items:center;gap:5px;white-space:nowrap}
+ :is(#invoiceWarningMore,#fuelDesktopPager,#deliveryContent) .axis-list-pager[data-desktop-list-pager] .warning-page-jump input,:is(#invoiceWarningMore,#fuelDesktopPager,#deliveryContent) .axis-list-pager[data-desktop-list-pager] .warning-page-jump button{
+  box-sizing:border-box;height:30px;border:1px solid var(--warning-line);border-radius:6px;background:var(--warning-row);color:var(--warning-ink)
+ }
+ :is(#invoiceWarningMore,#fuelDesktopPager,#deliveryContent) .axis-list-pager[data-desktop-list-pager] .warning-page-jump input{width:55px;padding-inline:5px}
+ :is(#invoiceWarningMore,#fuelDesktopPager,#deliveryContent) .axis-list-pager[data-desktop-list-pager] .warning-page-jump button{padding-inline:8px}
+ :is(#invoiceWarningMore,#fuelDesktopPager),#deliveryContent .delivery-orders-frame:has([data-desktop-list-pager]){container-type:inline-size}
+ @container (max-width:780px){
+  :is(#invoiceWarningMore,#fuelDesktopPager,#deliveryContent) .axis-list-pager[data-desktop-list-pager]:has(.warning-page-jump){grid-template-columns:1fr 1fr}
+  :is(#invoiceWarningMore,#fuelDesktopPager,#deliveryContent) .axis-list-pager[data-desktop-list-pager]:has(.warning-page-jump) .axis-list-pager-summary>label{grid-column:2}
+  :is(#invoiceWarningMore,#fuelDesktopPager,#deliveryContent) .axis-list-pager[data-desktop-list-pager]:has(.warning-page-jump) .pagination-controls{grid-column:1;grid-row:2;justify-self:start}
+  :is(#invoiceWarningMore,#fuelDesktopPager,#deliveryContent) .axis-list-pager[data-desktop-list-pager] .warning-page-jump{grid-column:2;grid-row:2}
+ }
+
+ html.workspace-design[data-appearance] body #deliveryModule .delivery-filters{
+  box-sizing:border-box;gap:10px;padding:10px 12px;margin:0 0 12px;
+  border:1px solid var(--border-color);border-radius:8px;background:var(--bg-card)!important;
+ }
+ html.workspace-design[data-appearance] body #deliveryModule .delivery-filters .filter-item{
+  flex:1 1 112px;
+ }
+ html.workspace-design[data-appearance] body #deliveryModule .delivery-filters .filter-item:first-child{
+  flex:1.4 1 150px;
+ }
+ html.workspace-design[data-appearance] body #deliveryModule .delivery-filters :is(.app-select-trigger,.delivery-master-selected,input:not([type=hidden]),#deliveryClear){
+  box-sizing:border-box;height:38px;min-height:38px;
+ }
+ html.workspace-design[data-appearance] body #deliveryModule :is(.axis-delivery-overview-note,.axis-delivery-report-note){
+  margin:12px 0 10px;padding:8px 12px;line-height:1.45;color:var(--text-muted);
+  border:1px solid var(--border-color);border-radius:8px;background:var(--bg-card);
+ }
+ html.workspace-design[data-appearance] body #deliveryModule #deliveryContent .delivery-orders-frame > .axis-list-pager[data-desktop-list-pager]{
+  padding-inline:12px;
+ }
+
+ html.workspace-design[data-appearance] body #recordLogsPanel .filter-bar-container{
+  box-sizing:border-box;gap:10px;padding:10px 12px;margin:0 0 12px;
+  border:1px solid var(--border-color);border-radius:8px;
+ }
+ html.workspace-design[data-appearance] body #recordLogsPanel .filter-fields-group{
+  flex:1 1 560px;min-width:0;gap:10px;flex-wrap:wrap;
+ }
+ html.workspace-design[data-appearance] body #recordLogsPanel .filter-fields-group>.filter-item{
+  flex:1 1 108px;min-width:0!important;
+ }
+ html.workspace-design[data-appearance] body #recordLogsPanel .filter-fields-group>.filter-item:first-child{
+  flex:1.5 1 155px!important;
+ }
+ html.workspace-design[data-appearance] body #recordLogsPanel .filter-bar-container :is(#filterSearch,.app-select-trigger,.filter-item>select,.date-display-input,.btn-clear-filters){
+  box-sizing:border-box;height:38px;min-height:38px;
+ }
+ html.workspace-design[data-appearance] body #recordLogsPanel #fuelDesktopPager .axis-list-pager[data-desktop-list-pager]{
+  padding-inline:12px;
+ }
 }
 </style>
 </body></html>
