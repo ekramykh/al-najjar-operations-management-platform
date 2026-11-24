@@ -3086,7 +3086,8 @@ body{overflow-x:clip}
   <details class="fleet-section-card" open><summary><svg class="fleet-ui-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 5h12v12H2zM14 10h4l4 4v3h-8"/><circle cx="6" cy="18" r="2"/><circle cx="18" cy="18" r="2"/></svg>Vehicle Performance</summary><div style="overflow:auto"><table class="fleet-analysis-table"><thead><tr><th>Vehicle</th><th>Trips</th><th>Total KM</th><th>Total Fuel L</th><th>Actual KM/L</th><th>Expected KM/L</th><th>Variance</th><th>Excess Fuel L</th><th>Status</th></tr></thead><tbody id="fleetVehicleAnalysis"></tbody></table></div></details>
   <details class="fleet-section-card" open><summary><svg class="fleet-ui-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="7" r="4"/><path d="M4 22v-5a8 8 0 0 1 16 0v5"/></svg>Driver Performance</summary><div style="overflow:auto"><table class="fleet-analysis-table"><thead><tr><th>Driver</th><th>Trips</th><th>Total KM</th><th>Total Fuel L</th><th>Actual KM/L</th><th>Vehicles</th></tr></thead><tbody id="fleetDriverAnalysis"></tbody></table></div></details>
   <details class="fleet-section-card" open><summary><svg class="fleet-ui-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3L2 21h20zM12 9v5M12 17v1"/></svg>Transactions Requiring Review</summary><style>
-#fleetReviewScroll{overscroll-behavior:contain;scrollbar-gutter:stable;scrollbar-width:auto!important}
+#fleetReviewScroll{overscroll-behavior:contain;scrollbar-gutter:stable;scrollbar-width:thin!important}
+@media screen and (min-width:901px) and (pointer:fine), screen and (min-width:1025px){#fleetReviewScroll{overscroll-behavior-y:auto}}
 #fleetReviewScroll::-webkit-scrollbar{width:8px;height:8px}
 #fleetReviewScroll::-webkit-scrollbar-track{background:#111827}
 #fleetReviewScroll::-webkit-scrollbar-thumb{background:#64748b;border-radius:8px}
@@ -10431,6 +10432,7 @@ html.workspace-design[data-appearance] #requiredCloudLoginGate #axisPasswordVisi
  const tableViewport=document.getElementById('recordDesignTable');
  const columnStorageKey='najjar-record-visible-columns-v1',columnDefaultStorageKey='najjar-record-default-columns-v1';
  let hiddenColumns=new Set();try{const saved=JSON.parse(localStorage.getItem(columnDefaultStorageKey)||localStorage.getItem(columnStorageKey)||'[]');if(Array.isArray(saved))hiddenColumns=new Set(saved.filter(id=>typeof id==='string'));}catch(_){}
+ window.axisRefreshFuelColumnVisibility=applyColumnVisibility;
  window.axisRecordColumnVisibility={get:()=>[...hiddenColumns],set(value){hiddenColumns=new Set(Array.isArray(value)?value:[]);applyColumnVisibility();}};
  const columnsButton=document.getElementById('recordColumnsButton'),columnsMenu=document.getElementById('recordColumnsMenu');
  const emptyColumns=document.createElement('p');emptyColumns.className='record-columns-empty';emptyColumns.textContent='No columns selected. Use Columns to choose what to display.';emptyColumns.hidden=true;tableViewport.prepend(emptyColumns);
@@ -10513,7 +10515,7 @@ html.workspace-design[data-appearance] #requiredCloudLoginGate #axisPasswordVisi
  }
  function clearDetails(){body.querySelectorAll('.record-row-chevron').forEach(el=>{el.textContent='›';el.setAttribute('aria-expanded','false');});body.querySelectorAll('.record-expanded-detail').forEach(el=>el.remove());body.querySelectorAll('.record-selected').forEach(el=>el.classList.remove('record-selected'));body.querySelectorAll('.record-invoice-toggle').forEach(el=>{el.setAttribute('aria-expanded','false');});pane.innerHTML='<div class="record-detail-empty">Select an invoice count to view details.</div>';pane.hidden=design!=='2';}
  function pages(){const container=document.getElementById('recordPageButtons');container.textContent='';let first=Math.max(1,Math.min(currentPage-1,pageCount-2));for(let n=first;n<=Math.min(pageCount,first+2);n++){const button=document.createElement('button');button.type='button';button.className='pagination-btn';button.textContent=n;button.setAttribute('aria-current',n===currentPage?'page':'false');button.addEventListener('click',()=>{currentPage=n;filterAndRender();});container.appendChild(button);}}
- window.refreshRecordDesign=function(count,totalPages){if(typeof count==='number')recordCount=count;if(typeof totalPages==='number')pageCount=totalPages;clearDetails();
+ window.refreshRecordDesign=function(count,totalPages){window.axisRestoreFuelColumnOrder?.();if(typeof count==='number')recordCount=count;if(typeof totalPages==='number')pageCount=totalPages;clearDetails();
   const vehicleTotals=new Map();for(const record of fuelRecords){const km=calculateVariantKm(record.lastKm,record.currentKm),liters=Number(record.fuel);if(record._deleted||km<=0||!Number.isFinite(liters)||liters<=0)continue;const key=(record.car||'').trim().toUpperCase();const total=vehicleTotals.get(key)||{km:0,fuel:0};total.km+=km;total.fuel+=liters;vehicleTotals.set(key,total);}
   const efficiencyHeader=document.getElementById('th-avrgKm');efficiencyHeader.title='Record fuel efficiency compared with the weighted average of this vehicle';efficiencyHeader.parentElement.insertBefore(efficiencyHeader,document.getElementById('th-driver'));
 
@@ -10532,7 +10534,7 @@ html.workspace-design[data-appearance] #requiredCloudLoginGate #axisPasswordVisi
 
 
   }
-  applyColumnVisibility();document.getElementById('paginationInfo').textContent=recordCount+' records';pages();
+  window.axisApplyFuelColumnOrder?.();applyColumnVisibility();document.getElementById('paginationInfo').textContent=recordCount+' records';pages();
  };
  for(const button of switches)button.addEventListener('click',()=>{design=button.dataset.logDesign;layout.dataset.design=design;for(const control of switches)control.setAttribute('aria-pressed',String(control===button));document.getElementById('recordDesignNumber').textContent=design;document.getElementById('recordDesignName').textContent=names[design][0];document.getElementById('recordDesignCaption').textContent=names[design][1];window.refreshRecordDesign();});
  recordCount=fuelRecords.length;pageCount=Math.max(1,Math.ceil(recordCount/(pageSize==='all'?Math.max(1,recordCount):pageSize)));window.refreshRecordDesign();buildColumnsMenu();
@@ -11704,7 +11706,7 @@ function deliveryTable(columns,rows,noun){
  const paginated=deliveryDesktopPager.matches||tab==='Overview'||tab==='Delivery Orders';
  const page=paginated ? listPage(state,rows.length) : {start:0,end:rows.length};
  const pager=paginated ? renderListPager(state,rows.length,noun,'Delivery pages',{jump:true,showJumpOnShortLists:true}) : '';
- return '<div class="delivery-orders-frame"><div class="delivery-table-scroll"><table><thead><tr>'+columns.map(column=>'<th>'+column+'</th>').join('')+'</tr></thead><tbody>'+rows.slice(page.start,page.end).map(row=>row()).join('')+'</tbody></table></div>'+pager+'</div>';
+ return '<div class="delivery-orders-frame"><div class="delivery-table-scroll"><table data-delivery-column-table="'+tab+'"><thead><tr>'+columns.map(column=>'<th>'+column+'</th>').join('')+'</tr></thead><tbody>'+rows.slice(page.start,page.end).map(row=>row()).join('')+'</tbody></table></div>'+pager+'</div>';
 }
 function deliveryWhatsAppPhone(order){
  const phone=String(order.data.driverPhone||deliveryDrivers().find(([name])=>name===order.data.driver)?.[1]||'').replace(/[^0-9]/g,'').replace(/^00/,'');
@@ -17143,4 +17145,237 @@ html.workspace-design[data-appearance] body #recordModal :is(#tripDocumentsEdito
  }
 }
 </style>
+<style>
+@media screen and (min-width:901px) and (pointer:fine), screen and (min-width:1025px) {
+ :is(#deliveryContent .delivery-orders-frame > .delivery-table-scroll,#deliveryContent:has(> .axis-delivery-report-note)) {
+  max-height:460px;
+  overflow-y:auto;
+  overscroll-behavior-y:auto;
+  scrollbar-gutter:stable;
+  scrollbar-width:thin;
+  scrollbar-color:#506b8d #071320;
+ }
+ html[data-appearance="light"] :is(#deliveryContent .delivery-orders-frame > .delivery-table-scroll,#deliveryContent:has(> .axis-delivery-report-note)) {
+  scrollbar-color:#a6b9d1 #edf2f8;
+ }
+}
+</style>
+<style>
+.axis-table-column-grip{display:none}
+@media screen and (min-width:768px) and (pointer:fine),screen and (min-width:1025px){
+ .axis-column-grip-anchor{position:relative}
+ .axis-table-column-grip{
+  display:block;position:absolute;inset:0 0 0 auto;width:8px;z-index:8;
+  cursor:col-resize;touch-action:none;outline:none;
+ }
+ .axis-table-column-grip::after{content:'';position:absolute;inset:20% 2px;width:2px;border-radius:2px}
+ .axis-table-column-grip:is(:hover,:focus-visible)::after,
+ .axis-table-column-grip[data-dragging]::after{background:#22c9d0}
+ :is(#deliveryContent,#fleetAnalysisPanel) table[data-column-widths-set]{
+  table-layout:fixed!important;display:table!important;
+  width:var(--axis-table-width)!important;min-width:var(--axis-table-width)!important;max-width:none!important;
+ }
+ :is(#deliveryContent,#fleetAnalysisPanel) table[data-column-widths-set] > thead > tr > th{
+  box-sizing:border-box!important;width:var(--axis-column-width)!important;
+  min-width:0!important;max-width:none!important;overflow-wrap:anywhere;
+ }
+ :is(#deliveryContent,#fleetAnalysisPanel) table[data-column-widths-set] > tbody > tr > td{
+  min-width:0!important;max-width:none!important;width:auto!important;overflow-wrap:anywhere;
+ }
+}
+</style>
+<script id="axis-delivery-fleet-column-resize">
+(()=>{
+ const desktop=matchMedia('(min-width:768px) and (pointer:fine), (min-width:1025px)');
+ const selector='#deliveryContent table[data-delivery-column-table],#fleetAnalysisPanel table.fleet-analysis-table';
+ const clamp=value=>Math.max(48,Math.min(1000,Math.round(value)));
+ const widthsByTable=new Map();
+ function bind(table){
+  const headers=Array.from(table.tHead?.rows[0]?.cells||[]);
+  if(!desktop.matches||!headers.length||headers[0].querySelector('.axis-table-column-grip'))return;
+  const key='ek-axis-column-widths-v1:'+ (table.dataset.deliveryColumnTable ? 'delivery:'+table.dataset.deliveryColumnTable : 'fleet:'+table.tBodies[0].id);
+  let widths=widthsByTable.get(key);
+  if(!widths){
+   try{widths=JSON.parse(localStorage.getItem(key)||'null');}catch(_){}
+   if(!Array.isArray(widths)||widths.length!==headers.length||!widths.every(Number.isFinite))widths=null;
+   else widths=widths.map(clamp);
+  }
+  function apply(){
+   table.dataset.columnWidthsSet='';
+   table.style.setProperty('--axis-table-width',widths.reduce((sum,width)=>sum+width,0)+'px');
+   headers.forEach((header,index)=>{
+    header.style.setProperty('--axis-column-width',widths[index]+'px');
+    header.querySelector('.axis-table-column-grip').setAttribute('aria-valuenow',String(widths[index]));
+   });
+  }
+  function initialize(){
+   if(!widths)widths=headers.map(header=>clamp(header.offsetWidth||120));
+  }
+  function save(){
+   widthsByTable.set(key,widths);
+   try{localStorage.setItem(key,JSON.stringify(widths));}catch(_){}
+  }
+  headers.forEach((header,index)=>{
+   if(getComputedStyle(header).position==='static')header.classList.add('axis-column-grip-anchor');
+   const grip=document.createElement('span');
+   grip.className='axis-table-column-grip';
+   grip.tabIndex=0;
+   grip.setAttribute('role','separator');
+   grip.setAttribute('aria-orientation','vertical');
+   grip.setAttribute('aria-label','Resize '+header.textContent.trim()+' column');
+   grip.setAttribute('aria-valuemin','48');
+   grip.setAttribute('aria-valuemax','1000');
+   let drag;
+   grip.addEventListener('click',event=>event.stopPropagation());
+   grip.addEventListener('pointerdown',event=>{
+    if(!desktop.matches||event.button!==0)return;
+    event.preventDefault();event.stopPropagation();
+    initialize();
+    drag={id:event.pointerId,x:event.clientX,width:widths[index],zoom:header.currentCSSZoom||1};
+    grip.setPointerCapture(event.pointerId);
+    grip.dataset.dragging='';
+   });
+   grip.addEventListener('pointermove',event=>{
+    if(drag?.id!==event.pointerId)return;
+    widths[index]=clamp(drag.width+(event.clientX-drag.x)/drag.zoom);
+    apply();
+   });
+   grip.addEventListener('lostpointercapture',()=>{
+    if(!drag)return;
+    drag=null;delete grip.dataset.dragging;save();
+   });
+   grip.addEventListener('keydown',event=>{
+    if(!desktop.matches||!['ArrowLeft','ArrowRight'].includes(event.key))return;
+    event.preventDefault();event.stopPropagation();initialize();
+    widths[index]=clamp(widths[index]+(event.key==='ArrowRight'?8:-8));apply();save();
+   });
+   header.append(grip);
+  });
+  if(widths)apply();
+ }
+ const scan=()=>document.querySelectorAll(selector).forEach(bind);
+ const delivery=document.getElementById('deliveryContent');
+ if(delivery)new MutationObserver(scan).observe(delivery,{childList:true});
+ else {
+  const module=document.getElementById('deliveryModule');
+  if(module)new MutationObserver(scan).observe(module,{childList:true,subtree:true});
+  else document.addEventListener('DOMContentLoaded',()=>{
+   const content=document.getElementById('deliveryContent');
+   if(content)new MutationObserver(scan).observe(content,{childList:true});
+   scan();
+  });
+ }
+ desktop.addEventListener('change',scan);
+ scan();
+})();
+</script>
+<style>
+@media screen and (min-width:768px) and (pointer:fine),screen and (min-width:1025px){
+ th[data-axis-column-move]{cursor:grab}
+ th[data-axis-column-drop="before"]{box-shadow:inset 3px 0 #22c9d0}
+ th[data-axis-column-drop="after"]{box-shadow:inset -3px 0 #22c9d0}
+}
+</style>
+<script id="axis-desktop-column-order">
+(()=>{
+ const desktop=matchMedia('(min-width:768px) and (pointer:fine), (min-width:1025px)');
+ const fuel=document.querySelector('#recordDesignTable > table');
+ const layouts=new Map();
+ const canonical=new WeakMap();
+ const headerRows=new WeakSet();
+ let dragged=null,marked=null;
+
+ function key(table){
+  if(table===fuel)return 'fuel';
+  return table.dataset.deliveryColumnTable ? 'delivery:'+table.dataset.deliveryColumnTable : 'fleet:'+table.tBodies[0].id;
+ }
+ function cells(row){
+  if(!canonical.has(row))canonical.set(row,Array.from(row.cells));
+  return canonical.get(row);
+ }
+ function place(row,order){
+  if(row.cells.length!==order.length)return;
+  const original=cells(row);
+  order.forEach((index,position)=>{
+   const cell=original[index];
+   if(row.cells[position]!==cell)row.insertBefore(cell,row.cells[position]||null);
+  });
+ }
+ function apply(table,restore=false){
+  const head=table?.tHead?.rows[0];
+  if(!head)return;
+  const original=cells(head),defaults=original.map((_,index)=>index);
+  const storageKey='ek-axis-column-order-v1:'+key(table);
+  if(!layouts.has(storageKey)){
+   let saved;
+   try{saved=JSON.parse(localStorage.getItem(storageKey)||'null');}catch(_){}
+   const valid=Array.isArray(saved)&&saved.length===defaults.length&&new Set(saved).size===defaults.length&&saved.every(index=>defaults.includes(index));
+   layouts.set(storageKey,valid?saved:defaults);
+  }
+  const order=desktop.matches&&!restore?layouts.get(storageKey):defaults;
+  if(order.length!==original.length)return;
+  place(head,order);
+  for(const body of table.tBodies)for(const row of body.rows){
+   if(!restore||canonical.has(row))place(row,order);
+  }
+  if(!desktop.matches||restore||headerRows.has(head))return;
+  headerRows.add(head);
+  for(const header of original){
+   header.dataset.axisColumnMove='';
+   header.title=[header.title,'Drag to move column'].filter(Boolean).join(' · ');
+   header.addEventListener('dragstart',event=>{
+    if(!desktop.matches||event.target.closest('.axis-column-resize-handle,.axis-table-column-grip,button,input')){event.preventDefault();return;}
+    dragged=header;
+    event.dataTransfer.effectAllowed='move';
+    event.dataTransfer.setData('text/plain','column');
+   });
+   header.addEventListener('dragover',event=>{
+    if(!dragged||dragged===header||dragged.parentElement!==head)return;
+    event.preventDefault();
+    event.dataTransfer.dropEffect='move';
+    if(marked&&marked!==header)delete marked.dataset.axisColumnDrop;
+    marked=header;
+    const rect=header.getBoundingClientRect();
+    header.dataset.axisColumnDrop=event.clientX<rect.left+rect.width/2?'before':'after';
+   });
+   header.addEventListener('drop',event=>{
+    if(!dragged||dragged===header||dragged.parentElement!==head)return;
+    event.preventDefault();event.stopPropagation();
+    const next=Array.from(head.cells).filter(cell=>cell!==dragged);
+    next.splice(next.indexOf(header)+(header.dataset.axisColumnDrop==='after'?1:0),0,dragged);
+    const order=next.map(cell=>original.indexOf(cell));
+    layouts.set(storageKey,order);
+    try{localStorage.setItem(storageKey,JSON.stringify(order));}catch(_){}
+    clearDrag();apply(table);
+    if(table===fuel)window.axisRefreshFuelColumnVisibility?.();
+   });
+   header.addEventListener('dragend',clearDrag);
+  }
+ }
+ function clearDrag(){
+  if(marked)delete marked.dataset.axisColumnDrop;
+  dragged=null;marked=null;
+ }
+ const selector='#recordDesignTable > table,#deliveryContent table[data-delivery-column-table],#fleetAnalysisPanel table.fleet-analysis-table';
+ function scan(){
+  for(const table of document.querySelectorAll(selector)){
+   apply(table);
+   for(const header of table.tHead.rows[0].cells)header.draggable=desktop.matches;
+  }
+ }
+ window.axisRestoreFuelColumnOrder=()=>apply(fuel,true);
+ window.axisApplyFuelColumnOrder=()=>apply(fuel);
+ function start(){
+  const delivery=document.getElementById('deliveryContent');
+  if(delivery)new MutationObserver(scan).observe(delivery,{childList:true});
+  for(const body of document.querySelectorAll('#fleetAnalysisPanel table.fleet-analysis-table > tbody')){
+   new MutationObserver(()=>apply(body.closest('table'))).observe(body,{childList:true});
+  }
+  scan();window.axisRefreshFuelColumnVisibility?.();
+ }
+ desktop.addEventListener('change',()=>{clearDrag();scan();window.axisRefreshFuelColumnVisibility?.();});
+ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start);
+ else start();
+})();
+</script>
 </body></html>
