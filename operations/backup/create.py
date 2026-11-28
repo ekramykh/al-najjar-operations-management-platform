@@ -4,11 +4,13 @@ import argparse
 from datetime import datetime, timezone
 import json
 import os
+import re
 from pathlib import Path
 import shutil
 import subprocess
 import tempfile
 from types import SimpleNamespace
+from urllib.error import HTTPError, URLError
 from urllib.parse import quote
 from urllib.request import HTTPRedirectHandler, Request, build_opener
 
@@ -45,7 +47,15 @@ def storage_inventory():
     return json.loads(result)
 
 
-def collect_objects(directory, storage, key):
+def storage_headers(key):
+    if re.fullmatch(r"sb_secret_[A-Za-z0-9_-]+", key):
+        return {"apikey": key}
+    if re.fullmatch(r"[A-Za-z0-9_-]+(?:\.[A-Za-z0-9_-]+){2}", key):
+        return {"apikey": key, "Authorization": f"Bearer {key}"}
+    raise ValueError("Invalid staging storage key format. Copy exactly one key.")
+
+
+def collect_objects(directory, storage, headers):
     opener = build_opener(NoRedirect())
     objects = []
     for index, item in enumerate(storage["objects"]):
@@ -56,12 +66,17 @@ def collect_objects(directory, storage, key):
         object_name = "/".join(quote(part, safe="") for part in name.split("/"))
         request = Request(
             f"{API}/storage/v1/object/authenticated/{bucket}/{object_name}",
-            headers={"apikey": key, "Authorization": f"Bearer {key}"},
+            headers=headers,
         )
         relative = f"objects/{index:08d}"
         path = directory / relative
-        with opener.open(request, timeout=60) as response, path.open("xb") as output:
-            shutil.copyfileobj(response, output)
+        try:
+            with opener.open(request, timeout=60) as response, path.open("xb") as output:
+                shutil.copyfileobj(response, output)
+        except HTTPError as error:
+            raise RuntimeError(f"Storage download {index} failed (HTTP {error.code}).") from None
+        except (URLError, ValueError, OSError):
+            raise RuntimeError(f"Storage download {index} could not be completed.") from None
         size = path.stat().st_size
         expected_size = (item.get("metadata") or {}).get("size")
         if expected_size is not None and size != int(expected_size):
@@ -85,9 +100,13 @@ def main():
     args = parser.parse_args()
     destination = args.destination.resolve()
     recipient = args.recipient.resolve(strict=True)
-    key = os.environ.get("EKAXIS_STAGING_STORAGE_KEY")
+    key = os.environ.get("EKAXIS_STAGING_STORAGE_KEY", "").strip()
     if not key:
         parser.error("Set EKAXIS_STAGING_STORAGE_KEY for the staging project.")
+    try:
+        headers = storage_headers(key)
+    except ValueError as error:
+        parser.error(str(error))
     if destination.exists():
         parser.error("The destination already exists.")
 
@@ -106,7 +125,7 @@ def main():
         subprocess.run(
             ["pg_restore", "--list", database_dump], check=True, stdout=subprocess.DEVNULL,
         )
-        objects = collect_objects(directory, before, key)
+        objects = collect_objects(directory, before, headers)
         if before != storage_inventory():
             raise RuntimeError("Storage changed during export. Retry the backup.")
         source = directory / "source.bundle"
